@@ -152,11 +152,9 @@ function BorrowRowCells({
 
 function HeaderCell({
   layout,
-  underline = true,
   children,
 }: {
   layout: 'center' | 'space-between'
-  underline?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -167,7 +165,7 @@ function HeaderCell({
         fontSize: '12px',
         fontWeight: 500,
         fontFamily: 'Inter',
-        borderBottom: underline ? '1px solid #E0E2EB' : 'none',
+        borderBottom: '1px solid #E0E2EB',
         display: 'flex',
         alignItems: 'center',
         justifyContent: layout,

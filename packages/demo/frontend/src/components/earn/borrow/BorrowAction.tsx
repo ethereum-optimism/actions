@@ -548,20 +548,13 @@ function AmountSection({
 }) {
   const symbol =
     activeAsset?.metadata.symbol.replace('_DEMO', '') ?? 'Select token'
-  const inputProps = onTokenClick
-    ? {
-        value: amount,
-        onChange: onAmountChange,
-        disabled: false,
-        displaySymbol: symbol,
-        onTokenClick,
-      }
-    : {
-        value: amount,
-        onChange: onAmountChange,
-        disabled: false,
-        displaySymbol: symbol,
-      }
+  const inputProps = {
+    value: amount,
+    onChange: onAmountChange,
+    disabled: false,
+    displaySymbol: symbol,
+    ...(onTokenClick ? { onTokenClick } : {}),
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

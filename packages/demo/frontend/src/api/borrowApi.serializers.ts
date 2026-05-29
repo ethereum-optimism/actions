@@ -77,15 +77,15 @@ export function deserializeQuote(q: Serialized<BorrowQuote>): BorrowQuote {
     positionBefore,
     positionAfter,
     borrowAmountRaw:
-      q.borrowAmountRaw !== undefined && q.borrowAmountRaw !== null
+      q.borrowAmountRaw != null
         ? BigInt(q.borrowAmountRaw as unknown as string)
         : undefined,
     collateralAmountRaw:
-      q.collateralAmountRaw !== undefined && q.collateralAmountRaw !== null
+      q.collateralAmountRaw != null
         ? BigInt(q.collateralAmountRaw as unknown as string)
         : undefined,
     gasEstimate:
-      q.gasEstimate !== undefined && q.gasEstimate !== null
+      q.gasEstimate != null
         ? BigInt(q.gasEstimate as unknown as string)
         : undefined,
   } as BorrowQuote
@@ -97,11 +97,11 @@ export function deserializeReceipt(
   return {
     ...r,
     borrowAmount:
-      r.borrowAmount !== undefined && r.borrowAmount !== null
+      r.borrowAmount != null
         ? BigInt(r.borrowAmount as unknown as string)
         : undefined,
     collateralAmount:
-      r.collateralAmount !== undefined && r.collateralAmount !== null
+      r.collateralAmount != null
         ? BigInt(r.collateralAmount as unknown as string)
         : undefined,
     positionAfter: r.positionAfter

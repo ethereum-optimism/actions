@@ -44,11 +44,7 @@ export function BorrowTab() {
   const positionsWithDeposits = useMemo(
     () =>
       effectiveLendPositions.filter(
-        (p) =>
-          p.depositedAmount &&
-          parseFloat(p.depositedAmount) > 0 &&
-          p.depositedAmount !== '0' &&
-          p.depositedAmount !== '0.00',
+        (p) => p.depositedAmount && parseFloat(p.depositedAmount) > 0,
       ),
     [effectiveLendPositions],
   )
