@@ -1,13 +1,17 @@
 /**
  * Active Positions table for the Borrow tab.
  *
- * Thin wrapper around the extracted `<PositionsTable>` chrome. Renders
- * Asset / Amount / Borrow APY / Collateral / Value columns on desktop;
- * mobile uses a stacked-card layout. Active highlight is wired to the
- * `getBorrowPosition` activity action so the card lights up when a
- * matching log entry is hovered.
+ * Three-column desktop layout: Collateral | Borrow APY | Borrowed.
+ * Each side cell uses `space-between` so the amount-and-asset cluster sits
+ * on the inner edge and the USD value sits on the outer edge; this gives
+ * a symmetric "value at the edges, units toward the centered APY" rhythm.
+ * Mobile uses a stacked-card layout.
+ *
+ * Active highlight is wired to the `getBorrowPosition` activity action so
+ * the card lights up when a matching log entry is hovered.
  */
 
+import { useEffect, useRef, useState } from 'react'
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
@@ -65,11 +69,11 @@ function DesktopTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-          <Th align="left">Asset</Th>
-          <Th align="right">Borrow APY</Th>
-          <Th align="right">Collateral</Th>
-          <Th align="right">Amount</Th>
-          <Th align="right">Value</Th>
+          <Th align="left">Collateral</Th>
+          <Th align="center">
+            <BorrowApyHeaderLabel />
+          </Th>
+          <Th align="right">Borrowed</Th>
         </tr>
       </thead>
       <tbody>
@@ -105,6 +109,12 @@ function BorrowRow({
   const collateralAmount = formatDisplayAmount(
     position.collateralAmountFormatted,
   )
+  const collateralValue = formatDisplayAmount(
+    (
+      (parseFloat(position.collateralAmountFormatted) || 0) *
+      stubPriceUsd(position.collateralAsset.metadata.symbol)
+    ).toFixed(4),
+  )
   const borrowValue = formatDisplayAmount(
     (
       (parseFloat(position.borrowAmountFormatted) || 0) *
@@ -113,74 +123,215 @@ function BorrowRow({
   )
   return (
     <tr>
+      {/* Collateral cell: amount + logo + symbol on the left, USD on the
+          right (inner edge, near the centered APY). */}
       <Td bg={positionRowBg}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img
-            src={getAssetLogo(position.borrowAsset.metadata.symbol)}
-            alt={borrSymbol}
-            style={{ width: '24px', height: '24px', borderRadius: '50%' }}
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <AssetAmount
+            amount={collateralAmount}
+            logo={getAssetLogo(position.collateralAsset.metadata.symbol)}
+            symbol={collSymbol}
+            fontWeight={500}
           />
-          <span
-            className="positions-table-asset-label"
-            style={{
-              color: '#1a1b1e',
-              fontSize: '14px',
-              fontFamily: 'Inter',
-            }}
-          >
-            {position.borrowAsset.metadata.name}
-          </span>
+          <UsdValue value={collateralValue} />
         </span>
       </Td>
-      <Td bg={positionRowBg} align="right">
+      <Td bg={positionRowBg} align="center">
         {(position.borrowApy * 100).toFixed(2)}%
       </Td>
-      <Td bg={positionRowBg} align="right">
+      {/* Borrowed cell: amount + logo + symbol on the left (inner edge,
+          near APY), USD on the right (outer edge). */}
+      <Td bg={positionRowBg}>
         <span
           style={{
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            justifyContent: 'flex-end',
-            color: '#1a1b1e',
-            fontSize: '14px',
-            fontFamily: 'Inter',
+            justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
-          <img
-            src={getAssetLogo(position.collateralAsset.metadata.symbol)}
-            alt={collSymbol}
-            style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+          <AssetAmount
+            amount={borrowAmount}
+            logo={getAssetLogo(position.borrowAsset.metadata.symbol)}
+            symbol={borrSymbol}
+            fontWeight={500}
           />
-          {collateralAmount.main}
-          <span style={{ color: '#9195A6', fontSize: '12px' }}>
-            {collateralAmount.secondary}
-          </span>{' '}
-          {collSymbol}
-        </span>
-      </Td>
-      <Td bg={positionRowBg} align="right" fontWeight={500}>
-        {borrowAmount.main}
-        <span style={{ color: '#9195A6', fontSize: '12px' }}>
-          {borrowAmount.secondary}
-        </span>{' '}
-        {borrSymbol}
-      </Td>
-      <Td bg={positionRowBg} align="right" fontWeight={500}>
-        <span
-          style={{
-            color: '#1a1b1e',
-            fontSize: '14px',
-            fontFamily: 'Inter',
-          }}
-        >
-          ${borrowValue.main}
-          <span style={{ color: '#9195A6', fontSize: '12px' }}>
-            {borrowValue.secondary}
-          </span>
+          <UsdValue value={borrowValue} fontWeight={500} />
         </span>
       </Td>
     </tr>
+  )
+}
+
+function AssetAmount({
+  amount,
+  logo,
+  symbol,
+  fontWeight = 400,
+}: {
+  amount: { main: string; secondary: string }
+  logo: string
+  symbol: string
+  fontWeight?: number
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        color: '#1a1b1e',
+        fontSize: '14px',
+        fontFamily: 'Inter',
+        fontWeight,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>
+        {amount.main}
+        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+          {amount.secondary}
+        </span>
+      </span>
+      <img
+        src={logo}
+        alt={symbol}
+        style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+      />
+      <span className="positions-table-asset-label">{symbol}</span>
+    </span>
+  )
+}
+
+function UsdValue({
+  value,
+  fontWeight = 400,
+}: {
+  value: { main: string; secondary: string }
+  fontWeight?: number
+}) {
+  return (
+    <span
+      style={{
+        color: '#1a1b1e',
+        fontSize: '14px',
+        fontFamily: 'Inter',
+        fontWeight,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      ${value.main}
+      <span style={{ color: '#9195A6', fontSize: '12px' }}>
+        {value.secondary}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * "Borrow APY" header label with a help-cursor info icon. Hovering the
+ * label shows a tooltip explaining how the rate is computed and behaves.
+ * Wording is grounded in Morpho's IRM docs: the rate is per-second,
+ * applied with continuous compounding (`(1 + r)^secondsPerYear - 1` in
+ * effect), and adjusts as the market's utilization moves relative to its
+ * target.
+ */
+function BorrowApyHeaderLabel() {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (show && ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos({ top: rect.top - 8, left: rect.left + rect.width / 2 })
+    }
+  }, [show])
+
+  return (
+    <>
+      <span
+        ref={ref}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          cursor: 'help',
+        }}
+      >
+        Borrow APY
+        <InfoIcon />
+      </span>
+      {show && (
+        <div
+          style={{
+            position: 'fixed',
+            top: `${pos.top}px`,
+            left: `${pos.left}px`,
+            transform: 'translate(-50%, -100%)',
+            padding: '10px 14px',
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            color: '#FFFFFF',
+            fontSize: '12px',
+            lineHeight: 1.4,
+            borderRadius: '8px',
+            maxWidth: '280px',
+            zIndex: 9999,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            pointerEvents: 'none',
+            fontFamily: 'Inter',
+            textAlign: 'left',
+            fontWeight: 400,
+          }}
+        >
+          The annualized interest rate paid on your borrowed amount. Interest
+          accrues to your debt continuously, and the rate adjusts as the
+          market's utilization changes.
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '4px solid transparent',
+              borderRight: '4px solid transparent',
+              borderTop: '4px solid rgba(0, 0, 0, 0.78)',
+            }}
+          />
+        </div>
+      )}
+    </>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="7" cy="7" r="5.5" stroke="#9195A6" strokeWidth="1.2" />
+      <path
+        d="M7 4V7M7 9.25V9.5"
+        stroke="#9195A6"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
@@ -284,7 +435,7 @@ function Th({
   minWidth,
   children,
 }: {
-  align?: 'left' | 'right'
+  align?: 'left' | 'center' | 'right'
   minWidth?: string
   children: React.ReactNode
 }) {
@@ -312,7 +463,7 @@ function Td({
   children,
 }: {
   bg: string
-  align?: 'left' | 'right'
+  align?: 'left' | 'center' | 'right'
   fontWeight?: number
   children: React.ReactNode
 }) {
