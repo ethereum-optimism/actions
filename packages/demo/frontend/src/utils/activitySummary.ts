@@ -88,6 +88,38 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
   return [{ type: 'text', value: 'Withdrew ' }, tokenSegment('USDC')]
 }
 
+function buildBorrowSummary(entry: ActivityEntry): SummarySegment[] {
+  const m = entry.metadata
+  if (m?.amount && m.assetSymbol) {
+    const segments: SummarySegment[] = [
+      { type: 'text', value: `Borrowed ${m.amount} ` },
+      tokenSegment(m.assetSymbol, m.assetLogo),
+    ]
+    if (m.marketName) {
+      segments.push({ type: 'text', value: ' from ' })
+      segments.push(marketSegment(m.marketName))
+    }
+    return segments
+  }
+  return [{ type: 'text', value: 'Borrowed ' }, tokenSegment('OP')]
+}
+
+function buildRepaySummary(entry: ActivityEntry): SummarySegment[] {
+  const m = entry.metadata
+  if (m?.amount && m.assetSymbol) {
+    const segments: SummarySegment[] = [
+      { type: 'text', value: `Repaid ${m.amount} ` },
+      tokenSegment(m.assetSymbol, m.assetLogo),
+    ]
+    if (m.marketName) {
+      segments.push({ type: 'text', value: ' to ' })
+      segments.push(marketSegment(m.marketName))
+    }
+    return segments
+  }
+  return [{ type: 'text', value: 'Repaid ' }, tokenSegment('OP')]
+}
+
 function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
   const m = entry.metadata
   const amount = m?.amount ? `${m.amount} ` : ''
@@ -107,6 +139,8 @@ const SUMMARY_BUILDERS: Record<
   swap: buildSwapSummary,
   deposit: buildDepositSummary,
   withdraw: buildWithdrawSummary,
+  borrow: buildBorrowSummary,
+  repay: buildRepaySummary,
   mint: buildMintSummary,
   create: () => [{ type: 'text', value: 'Created wallet' }],
   createHosted: () => [{ type: 'text', value: 'Created hosted wallet' }],
@@ -127,7 +161,11 @@ export function getActivitySummary(entry: ActivityEntry): ActivitySummary {
           ? 'Fund'
           : entry.type === 'swap'
             ? 'Swap'
-            : 'Wallet'
+            : entry.type === 'borrow'
+              ? 'Borrow'
+              : entry.type === 'repay'
+                ? 'Repay'
+                : 'Wallet'
 
   return {
     segments: [{ type: 'text', value: `${typeLabel}: ${entry.action}` }],

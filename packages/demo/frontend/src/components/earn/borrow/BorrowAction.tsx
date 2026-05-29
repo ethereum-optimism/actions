@@ -68,6 +68,13 @@ function lendPositionUsd(position: MarketPosition): number {
   return parseFloat(position.depositedAmount || '0') * price
 }
 
+function marketProviderDisplayName(kind: string): string {
+  if (kind === 'morpho-blue') return 'Morpho'
+  // Fallback: capitalize the provider prefix (e.g. `aave-v3` -> `Aave`).
+  const head = kind.split('-')[0] ?? kind
+  return head.charAt(0).toUpperCase() + head.slice(1)
+}
+
 function directLendPositionUsd(position: MarketPosition): number {
   const price = stubPriceUsd(position.asset.metadata.symbol)
   return parseFloat(position.directDepositedAmount || '0') * price
@@ -354,6 +361,10 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     const activity = logActivity(mode, {
       amount: amountNum.toString(),
       assetSymbol: symbol,
+      // Provider display name (e.g. "Morpho"), derived from the market's
+      // discriminator. Used by the activity summary to render
+      // "Borrowed X OP from Morpho" instead of "Wallet: borrow".
+      marketName: marketProviderDisplayName(activeMarket.marketId.kind),
     })
     setIsExecuting(true)
     setReviewModalOpen(false)
