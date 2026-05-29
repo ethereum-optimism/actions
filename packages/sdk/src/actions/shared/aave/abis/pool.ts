@@ -1,11 +1,23 @@
 import { parseAbi } from 'viem'
 
 /**
- * Aave Pool ABI - supply and withdraw functions
+ * Aave Pool ABI - supply, withdraw, borrow, and repay functions
  */
 export const POOL_ABI = parseAbi([
   'function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)',
   'function withdraw(address asset, uint256 amount, address to) returns (uint256)',
+  'function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf)',
+  'function repay(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf) returns (uint256)',
+])
+
+/**
+ * Aave Pool ABI - aggregate account and reserve list reads.
+ * `getUserAccountData` returns position health in the pool's base currency;
+ * `getReservesList` enumerates the reserve underlying addresses.
+ */
+export const POOL_ACCOUNT_ABI = parseAbi([
+  'function getUserAccountData(address user) view returns (uint256 totalCollateralBase, uint256 totalDebtBase, uint256 availableBorrowsBase, uint256 currentLiquidationThreshold, uint256 ltv, uint256 healthFactor)',
+  'function getReservesList() view returns (address[])',
 ])
 
 /**
@@ -73,9 +85,13 @@ export const POOL_GET_RESERVE_DATA_ABI = [
 ] as const
 
 /**
- * Aave WETHGateway ABI - for native ETH deposits/withdrawals
+ * Aave WrappedTokenGatewayV3 ABI - native ETH deposit, withdraw, borrow, repay.
+ * `borrowETH` requires prior `approveDelegation` on the variable debt token;
+ * `repayETH` sends the repayment as `msg.value`.
  */
 export const WETH_GATEWAY_ABI = parseAbi([
   'function depositETH(address pool, address onBehalfOf, uint16 referralCode) payable',
   'function withdrawETH(address pool, uint256 amount, address to)',
+  'function borrowETH(address pool, uint256 amount, uint256 interestRateMode, uint16 referralCode)',
+  'function repayETH(address pool, uint256 amount, uint256 rateMode, address onBehalfOf) payable',
 ])
