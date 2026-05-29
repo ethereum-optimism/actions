@@ -18,7 +18,7 @@ import type {
   BorrowMarketPosition,
   BorrowQuote,
 } from '@eth-optimism/actions-sdk'
-import { stubPriceUsd } from '@/api/borrowApi' // retired by #482
+import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useActivityLogger } from '@/hooks/useActivityLogger'

@@ -19,7 +19,7 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
-import { stubPriceUsd } from '@/api/borrowApi' // retired by #482
+import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 import { getAssetLogo } from '@/constants/logos'
