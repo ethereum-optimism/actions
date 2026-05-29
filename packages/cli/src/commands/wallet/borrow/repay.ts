@@ -1,7 +1,9 @@
-import { CliError } from '@/output/errors.js'
-import { parseAmount } from '@/utils/parseAmount.js'
-
-import { parseApprovalMode, runBorrowAction } from './runBorrowAction.js'
+import {
+  amountOrMaxToEnvelope,
+  parseApprovalMode,
+  resolveAmountOrMax,
+  runBorrowAction,
+} from './runBorrowAction.js'
 
 export interface BorrowRepayFlags {
   market: string
@@ -19,28 +21,21 @@ export interface BorrowRepayFlags {
 export async function runWalletBorrowRepay(
   flags: BorrowRepayFlags,
 ): Promise<void> {
-  const isMax = flags.max === true
-  if (isMax && flags.amount !== undefined) {
-    throw new CliError(
-      'validation',
-      'Pass either --amount or --max, not both',
-      { amount: flags.amount, max: true },
-    )
-  }
-  if (!isMax && flags.amount === undefined) {
-    throw new CliError('validation', 'Either --amount or --max is required')
-  }
-  const amount = isMax ? undefined : parseAmount(flags.amount as string)
+  const amount = resolveAmountOrMax(
+    {
+      amountFlag: '--amount',
+      maxFlag: '--max',
+      raw: flags.amount,
+      isMax: flags.max === true,
+    },
+    true,
+  )
   const approvalMode = parseApprovalMode(flags.approvalMode)
   await runBorrowAction({
     action: 'repay',
     marketName: flags.market,
     buildAndDispatch: async (wallet, market) =>
-      wallet.borrow.repay({
-        market,
-        amount: isMax ? { max: true } : { amount: amount as number },
-        approvalMode,
-      }),
-    envelopeAmounts: { borrowAmount: isMax ? 'max' : amount },
+      wallet.borrow.repay({ market, amount, approvalMode }),
+    envelopeAmounts: { borrowAmount: amountOrMaxToEnvelope(amount) },
   })
 }

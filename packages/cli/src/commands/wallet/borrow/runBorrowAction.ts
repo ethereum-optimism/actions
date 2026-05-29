@@ -1,5 +1,4 @@
 import {
-  type Amount,
   type AmountOrMax,
   APPROVAL_MODES,
   type ApprovalMode,
@@ -26,32 +25,67 @@ import { requireBorrowCapability } from './requireBorrowCapability.js'
 
 type WalletWithBorrow = Wallet & { borrow: NonNullable<Wallet['borrow']> }
 
-/**
- * @description Wraps a `parseAmount(raw)` result in the `{ amount }` discriminant of the SDK's `Amount` union. Borrow params don't accept bare numbers; #379 conventions require either `{ amount }` (human-readable) or `{ amountRaw }` (wei). The CLI always takes a human-readable amount, so we never produce the raw variant.
- * @param raw - The CLI argv value as a string.
- * @param flag - Flag label surfaced in `CliError` messages (e.g. `--borrow-amount`).
- * @returns An `Amount` of the form `{ amount: number }`.
- * @throws `CliError` with code `validation` when the value is not a positive plain decimal.
- */
-export function toAmount(raw: string, flag = '--amount'): Amount {
-  return { amount: parseAmount(raw, flag) }
+interface ResolveAmountOrMaxArgs {
+  /** Flag label for the amount input, e.g. `--amount` or `--borrow-amount`. */
+  amountFlag: string
+  /** Flag label for the full-balance input, e.g. `--max` or `--borrow-max`. */
+  maxFlag: string
+  /** Raw CLI value supplied for `amountFlag`, if any. */
+  raw: string | undefined
+  /** Whether the user passed `maxFlag`. */
+  isMax: boolean
 }
 
 /**
- * @description Builds an `AmountOrMax` from the mutually-exclusive amount/max flag pair. Returns `{ max: true }` when `isMax` is set, otherwise wraps the parsed amount via `toAmount`. Callers are responsible for enforcing the xor at the CLI surface; this helper just maps the resolved booleans to the right discriminant.
- * @param raw - The CLI argv value, if any.
- * @param isMax - Whether the user opted into the SDK's full-balance path.
- * @param flag - Flag label surfaced in `CliError` messages (e.g. `--borrow-amount`).
- * @returns An `AmountOrMax` value.
- * @throws `CliError` with code `validation` when `isMax` is false and `raw` is not a positive plain decimal.
+ * @description Resolves the mutually-exclusive `<amount>` / `<max>` flag pair to an `AmountOrMax`, enforcing the xor at the CLI surface. The `required: true` overload narrows the return type to `AmountOrMax`; `required: false` allows the absence-of-both case and widens to `AmountOrMax | undefined`. Used by every borrow write verb that accepts `--max` on at least one leg (`close`, `withdraw-collateral`, `repay`). Flag labels are passed in (rather than constructed from a leg prefix) so single-leg callers can use `--amount` / `--max` and `close` can use `--borrow-amount` / `--borrow-max` / `--collateral-amount` / `--collateral-max` from the same code path.
+ * @param args - Flag labels, the raw amount value, and the `isMax` boolean.
+ * @param required - When `true`, throws if neither flag is set; when `false`, returns `undefined`.
+ * @returns The resolved `AmountOrMax`, or `undefined` when the leg is optional and unset.
+ * @throws `CliError` with code `validation` when both flags are set, when the amount fails to parse, or when neither flag is set and `required` is `true`.
  */
-export function toAmountOrMax(
-  raw: string | undefined,
-  isMax: boolean,
-  flag = '--amount',
-): AmountOrMax {
+export function resolveAmountOrMax(
+  args: ResolveAmountOrMaxArgs,
+  required: true,
+): AmountOrMax
+export function resolveAmountOrMax(
+  args: ResolveAmountOrMaxArgs,
+  required: false,
+): AmountOrMax | undefined
+export function resolveAmountOrMax(
+  args: ResolveAmountOrMaxArgs,
+  required: boolean,
+): AmountOrMax | undefined {
+  const { amountFlag, maxFlag, raw, isMax } = args
+  if (raw !== undefined && isMax) {
+    throw new CliError(
+      'validation',
+      `Pass either ${amountFlag} or ${maxFlag}, not both`,
+      { [amountFlag]: raw, [maxFlag]: true },
+    )
+  }
   if (isMax) return { max: true }
-  return toAmount(raw as string, flag)
+  if (raw !== undefined) return { amount: parseAmount(raw, amountFlag) }
+  if (required) {
+    throw new CliError(
+      'validation',
+      `Either ${amountFlag} or ${maxFlag} is required`,
+    )
+  }
+  return undefined
+}
+
+/**
+ * @description Projects an `AmountOrMax` (or absent leg) into the envelope's `number | 'max'` representation. The CLI envelope speaks in decimals and the literal string `'max'`; the SDK's discriminated `{ amount } | { amountRaw } | { max }` shape never leaves the wallet method call. Used by every verb that emits `borrowAmount` / `collateralAmount` in the action envelope.
+ * @param value - The resolved leg, or `undefined` when the leg was untouched.
+ * @returns `'max'` for the full-balance path, the bare number for `{ amount }`, otherwise `undefined`. `amountRaw` is intentionally not handled (the CLI never builds it).
+ */
+export function amountOrMaxToEnvelope(
+  value: AmountOrMax | undefined,
+): number | 'max' | undefined {
+  if (value === undefined) return undefined
+  if ('max' in value) return 'max'
+  if ('amount' in value) return value.amount
+  return undefined
 }
 
 /**

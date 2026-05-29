@@ -1,9 +1,8 @@
-import type { AmountOrMax } from '@eth-optimism/actions-sdk'
-
-import { CliError } from '@/output/errors.js'
-import { parseAmount } from '@/utils/parseAmount.js'
-
-import { runBorrowAction } from './runBorrowAction.js'
+import {
+  amountOrMaxToEnvelope,
+  resolveAmountOrMax,
+  runBorrowAction,
+} from './runBorrowAction.js'
 
 /**
  * @description Loose argv shape for `actions wallet borrow close`. Commander hands the handler a plain object with no per-flag mutual exclusivity enforced, so the field types here mirror what commander produces and the runtime guards in `runWalletBorrowClose` translate that into the strict `AmountOrMax` per leg.
@@ -24,16 +23,22 @@ export interface BorrowCloseFlags {
 export async function runWalletBorrowClose(
   flags: BorrowCloseFlags,
 ): Promise<void> {
-  const borrowAmount = resolveLeg(
-    'borrow',
-    flags.borrowAmount,
-    flags.borrowMax === true,
+  const borrowAmount = resolveAmountOrMax(
+    {
+      amountFlag: '--borrow-amount',
+      maxFlag: '--borrow-max',
+      raw: flags.borrowAmount,
+      isMax: flags.borrowMax === true,
+    },
     true,
   )
-  const collateralAmount = resolveLeg(
-    'collateral',
-    flags.collateralAmount,
-    flags.collateralMax === true,
+  const collateralAmount = resolveAmountOrMax(
+    {
+      amountFlag: '--collateral-amount',
+      maxFlag: '--collateral-max',
+      raw: flags.collateralAmount,
+      isMax: flags.collateralMax === true,
+    },
     false,
   )
   await runBorrowAction({
@@ -46,56 +51,8 @@ export async function runWalletBorrowClose(
         collateralAmount,
       }),
     envelopeAmounts: {
-      borrowAmount: envelopeFor(borrowAmount),
-      collateralAmount: envelopeFor(collateralAmount),
+      borrowAmount: amountOrMaxToEnvelope(borrowAmount),
+      collateralAmount: amountOrMaxToEnvelope(collateralAmount),
     },
   })
-}
-
-function resolveLeg(
-  leg: 'borrow' | 'collateral',
-  raw: string | undefined,
-  isMax: boolean,
-  required: true,
-): AmountOrMax
-function resolveLeg(
-  leg: 'borrow' | 'collateral',
-  raw: string | undefined,
-  isMax: boolean,
-  required: false,
-): AmountOrMax | undefined
-function resolveLeg(
-  leg: 'borrow' | 'collateral',
-  raw: string | undefined,
-  isMax: boolean,
-  required: boolean,
-): AmountOrMax | undefined {
-  const amountFlag = `--${leg}-amount`
-  const maxFlag = `--${leg}-max`
-  if (raw !== undefined && isMax) {
-    throw new CliError(
-      'validation',
-      `Pass either ${amountFlag} or ${maxFlag}, not both`,
-      { leg, [amountFlag.slice(2)]: raw, [maxFlag.slice(2)]: true },
-    )
-  }
-  if (isMax) return { max: true }
-  if (raw !== undefined) return { amount: parseAmount(raw, amountFlag) }
-  if (required) {
-    throw new CliError(
-      'validation',
-      `Either ${amountFlag} or ${maxFlag} is required`,
-      { leg },
-    )
-  }
-  return undefined
-}
-
-function envelopeFor(
-  value: AmountOrMax | undefined,
-): number | 'max' | undefined {
-  if (value === undefined) return undefined
-  if ('max' in value) return 'max'
-  if ('amount' in value) return value.amount
-  return undefined
 }
