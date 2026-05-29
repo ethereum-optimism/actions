@@ -13,11 +13,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type {
-  BorrowMarket,
-  BorrowMarketPosition,
-  BorrowQuote,
-} from '@eth-optimism/actions-sdk'
+import type { BorrowMarket, BorrowQuote } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
@@ -27,6 +23,11 @@ import {
   computeProjection,
   computeSafeCeilingLtv,
 } from '@/utils/borrowMath'
+import {
+  directLendPositionUsd,
+  lendPositionUsd,
+  positionUsd,
+} from '@/utils/borrowValuation'
 import type { MarketPosition } from '@/types/market'
 import { AmountInput } from '../AmountInput'
 import { CtaButton, MaxButton } from '../CtaButton'
@@ -46,38 +47,11 @@ export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
 }
 
-interface PositionUsd {
-  collateralValueUsd: number
-  borrowValueUsd: number
-}
-
-function positionUsd(position: BorrowMarketPosition | null): PositionUsd {
-  if (!position) return { collateralValueUsd: 0, borrowValueUsd: 0 }
-  const collPrice = stubPriceUsd(position.collateralAsset.metadata.symbol)
-  const borrPrice = stubPriceUsd(position.borrowAsset.metadata.symbol)
-  return {
-    collateralValueUsd:
-      parseFloat(position.collateralAmountFormatted || '0') * collPrice,
-    borrowValueUsd:
-      parseFloat(position.borrowAmountFormatted || '0') * borrPrice,
-  }
-}
-
-function lendPositionUsd(position: MarketPosition): number {
-  const price = stubPriceUsd(position.asset.metadata.symbol)
-  return parseFloat(position.depositedAmount || '0') * price
-}
-
 function marketProviderDisplayName(kind: string): string {
   if (kind === 'morpho-blue') return 'Morpho'
   // Fallback: capitalize the provider prefix (e.g. `aave-v3` -> `Aave`).
   const head = kind.split('-')[0] ?? kind
   return head.charAt(0).toUpperCase() + head.slice(1)
-}
-
-function directLendPositionUsd(position: MarketPosition): number {
-  const price = stubPriceUsd(position.asset.metadata.symbol)
-  return parseFloat(position.directDepositedAmount || '0') * price
 }
 
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
