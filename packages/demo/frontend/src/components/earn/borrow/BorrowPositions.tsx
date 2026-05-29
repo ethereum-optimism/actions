@@ -88,7 +88,20 @@ function DesktopTable({
         <span>Value</span>
       </HeaderCell>
       <HeaderCell layout="center" underline={false}>
-        <BorrowApyHeaderLabel />
+        {/* Inline underline under just the label so the rule is short
+            (hugs the text + info icon) instead of spanning the whole
+            APY column. */}
+        <span
+          style={{
+            borderBottom: '1px solid #E0E2EB',
+            paddingBottom: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <BorrowApyHeaderLabel />
+        </span>
       </HeaderCell>
       <HeaderCell layout="space-between">
         <span>Borrowed</span>
