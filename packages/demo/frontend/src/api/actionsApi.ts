@@ -14,55 +14,15 @@ interface GetWalletResponse {
   address: Address
 }
 
-import { env } from '../envVars.js'
 import type { LendExecutePositionParams } from '../types/index.js'
 import type { Serialized } from '../util/serialize.js'
+import {
+  ActionsApiError,
+  BaseApiClient,
+  MUTATION_TIMEOUT_MS,
+} from './apiClient.js'
 
-class ActionsApiError extends Error {
-  status?: number
-
-  constructor(message: string, status?: number) {
-    super(message)
-    this.name = 'ActionsApiError'
-    this.status = status
-  }
-}
-
-class ActionsApiClient {
-  private baseUrl = env.VITE_ACTIONS_API_URL
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
-    const { headers, ...rest } = options
-
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      ...rest,
-    })
-
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorData.message || errorMessage
-      } catch {
-        // If JSON parsing fails, use the default error message
-      }
-
-      throw new ActionsApiError(errorMessage, response.status)
-    }
-
-    const data = await response.json()
-    return data
-  }
-
+class ActionsApiClient extends BaseApiClient {
   async getWallet(headers: HeadersInit = {}): Promise<GetWalletResponse> {
     return this.request<GetWalletResponse>(`/wallet`, {
       method: 'GET',
@@ -120,6 +80,7 @@ class ActionsApiClient {
     return this.request(`/wallet/usdc`, {
       method: 'POST',
       headers,
+      timeoutMs: MUTATION_TIMEOUT_MS,
     })
   }
 
@@ -144,12 +105,13 @@ class ActionsApiClient {
     }
   }
 
-  async openLendPosition(
+  private async lendMutation(
+    endpoint: string,
     { amount, asset, marketId }: LendExecutePositionParams,
-    headers: HeadersInit = {},
+    headers: HeadersInit,
   ): Promise<LendTransactionReceipt> {
     const { result } = await this.request<{ result: LendTransactionReceipt }>(
-      '/lend/position/open',
+      endpoint,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -158,28 +120,24 @@ class ActionsApiClient {
           marketId,
         }),
         headers,
+        timeoutMs: MUTATION_TIMEOUT_MS,
       },
     )
     return result
   }
 
-  async closeLendPosition(
-    { amount, asset, marketId }: LendExecutePositionParams,
+  async openLendPosition(
+    params: LendExecutePositionParams,
     headers: HeadersInit = {},
   ): Promise<LendTransactionReceipt> {
-    const { result } = await this.request<{ result: LendTransactionReceipt }>(
-      '/lend/position/close',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          amount,
-          tokenAddress: asset.address[marketId.chainId],
-          marketId,
-        }),
-        headers,
-      },
-    )
-    return result
+    return this.lendMutation('/lend/position/open', params, headers)
+  }
+
+  async closeLendPosition(
+    params: LendExecutePositionParams,
+    headers: HeadersInit = {},
+  ): Promise<LendTransactionReceipt> {
+    return this.lendMutation('/lend/position/close', params, headers)
   }
 
   async dripEthToWallet(
@@ -192,6 +150,7 @@ class ActionsApiClient {
       body: JSON.stringify({
         walletAddress,
       }),
+      timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return result
   }
@@ -318,6 +277,7 @@ class ActionsApiClient {
         provider,
       }),
       headers,
+      timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return {
       amountIn: Number(result.amountIn),
