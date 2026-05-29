@@ -2,6 +2,12 @@ import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
+import {
+  getPoolAddress,
+  getSupportedChainIds,
+  getWETHGatewayAddress,
+} from '@/actions/shared/aave/addresses.js'
 import { WETH } from '@/constants/assets.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -19,12 +25,6 @@ import type {
 } from '@/types/lend/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
-import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
-import {
-  getPoolAddress,
-  getSupportedChainIds,
-  getWETHGatewayAddress,
-} from './addresses.js'
 import { getATokenAddress, getReserve, getReserves } from './sdk.js'
 
 /**
