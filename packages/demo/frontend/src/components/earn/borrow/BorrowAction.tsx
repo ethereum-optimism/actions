@@ -34,6 +34,7 @@ import { CtaButton, MaxButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
 import TransactionModal from '../TransactionModal'
 import { Toast } from '../Toast'
+import InfoIcon from '@/components/icons/InfoIcon'
 import { BorrowAssetModal } from './BorrowAssetModal'
 import { BorrowHealthCard } from './BorrowHealthCard'
 import { ReviewBorrowHealthModal } from './ReviewBorrowHealthModal'
@@ -527,7 +528,7 @@ function SectionHeader() {
       }}
     >
       Select Asset
-      <InlineInfoIcon />
+      <InfoIcon />
     </div>
   )
 }
@@ -588,25 +589,5 @@ function AmountSection({
         </span>
       </div>
     </div>
-  )
-}
-
-function InlineInfoIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="7" cy="7" r="5.5" stroke="#9195A6" strokeWidth="1.2" />
-      <path
-        d="M7 4V7M7 9.25V9.5"
-        stroke="#9195A6"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

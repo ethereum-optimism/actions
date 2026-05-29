@@ -23,6 +23,7 @@ import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 import { getAssetLogo } from '@/constants/logos'
+import InfoIcon from '@/components/icons/InfoIcon'
 import { PositionsTable } from '../PositionsTable'
 
 export interface BorrowPositionsProps {
@@ -326,7 +327,7 @@ function BorrowApyHeaderLabel() {
         }}
       >
         APY
-        <InfoIcon />
+        <InfoIcon width={12} height={12} />
       </span>
       {show && (
         <div
@@ -369,26 +370,6 @@ function BorrowApyHeaderLabel() {
         </div>
       )}
     </>
-  )
-}
-
-function InfoIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="7" cy="7" r="5.5" stroke="#9195A6" strokeWidth="1.2" />
-      <path
-        d="M7 4V7M7 9.25V9.5"
-        stroke="#9195A6"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }
 

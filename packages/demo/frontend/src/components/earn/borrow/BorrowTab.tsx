@@ -17,6 +17,7 @@ import { useLendProviderContext } from '@/contexts/LendProviderContext'
 import type { MarketPosition } from '@/types/market'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
+import InfoIcon from '@/components/icons/InfoIcon'
 import { Dropdown } from '../Dropdown'
 import { BorrowAction } from './BorrowAction'
 import { BorrowPositions } from './BorrowPositions'
@@ -269,29 +270,13 @@ function NoCollateralBanner() {
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <InfoIcon />
+      <InfoIcon
+        width={20}
+        height={20}
+        strokeWidth={1.5}
+        style={{ flexShrink: 0 }}
+      />
       <span>To borrow you need to lend any asset to be used as collateral</span>
     </div>
-  )
-}
-
-function InfoIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-hidden="true"
-      style={{ flexShrink: 0 }}
-    >
-      <circle cx="10" cy="10" r="8" stroke="#9195A6" strokeWidth="1.5" />
-      <path
-        d="M10 6V10M10 13V13.5"
-        stroke="#9195A6"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

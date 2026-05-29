@@ -22,6 +22,7 @@ import {
   computeHealthTier,
   type HealthTier,
 } from '@/utils/borrowMath'
+import InfoIcon from '@/components/icons/InfoIcon'
 import type { Asset } from '@eth-optimism/actions-sdk'
 
 export interface BorrowHealthCardProps {
@@ -366,7 +367,7 @@ function HealthLabelWithTooltip() {
         }}
       >
         Health
-        <InlineInfoIcon />
+        <InfoIcon />
       </span>
       {show && (
         <div
@@ -408,25 +409,5 @@ function HealthLabelWithTooltip() {
         </div>
       )}
     </>
-  )
-}
-
-function InlineInfoIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="7" cy="7" r="5.5" stroke="#9195A6" strokeWidth="1.2" />
-      <path
-        d="M7 4V7M7 9.25V9.5"
-        stroke="#9195A6"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }
