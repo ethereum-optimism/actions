@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
+import { formatAmountParts } from '@/utils/tokenDisplay'
 import Shimmer from './Shimmer'
 import { PositionsTable } from './PositionsTable'
 
@@ -80,21 +81,6 @@ function LentBalance({
     }
   }, [showApyTooltip])
 
-  const formatDepositedAmount = (amount: string) => {
-    const num = parseFloat(amount)
-    if (isNaN(num)) return { main: '0.00', secondary: '00' }
-
-    const formatted = num.toFixed(4)
-    const parts = formatted.split('.')
-    const wholePart = parts[0]
-    const decimalPart = parts[1] || '0000'
-
-    return {
-      main: `${wholePart}.${decimalPart.substring(0, 2)}`,
-      secondary: decimalPart.substring(2, 4),
-    }
-  }
-
   const isCardHighlighted =
     hoveredAction === 'getMarket' || hoveredAction === 'getPosition'
 
@@ -169,7 +155,7 @@ function LentBalance({
                       <Shimmer width="60px" height="16px" variant="rectangle" />
                     </div>
                   )
-                const fmt = formatDepositedAmount(amount)
+                const fmt = formatAmountParts(amount)
                 return (
                   <>
                     {market.asset.metadata.symbol !== 'ETH' && '$'}
@@ -493,7 +479,7 @@ function LentBalance({
                         />
                       </div>
                     )
-                  const fmt = formatDepositedAmount(amount)
+                  const fmt = formatAmountParts(amount)
                   return (
                     <>
                       {market.asset.metadata.symbol !== 'ETH' && '$'}

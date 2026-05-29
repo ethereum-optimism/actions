@@ -24,23 +24,11 @@ import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 import { getAssetLogo } from '@/constants/logos'
 import InfoIcon from '@/components/icons/InfoIcon'
+import { formatAmountParts } from '@/utils/tokenDisplay'
 import { PositionsTable } from '../PositionsTable'
 
 export interface BorrowPositionsProps {
   positions: readonly BorrowMarketPosition[]
-}
-
-function formatDisplayAmount(amount: string) {
-  const num = parseFloat(amount)
-  if (Number.isNaN(num)) return { main: '0.00', secondary: '00' }
-
-  const formatted = num.toFixed(4)
-  const [wholePart, decimalPart = '0000'] = formatted.split('.')
-
-  return {
-    main: `${wholePart}.${decimalPart.substring(0, 2)}`,
-    secondary: decimalPart.substring(2, 4),
-  }
 }
 
 export function BorrowPositions({ positions }: BorrowPositionsProps) {
@@ -121,17 +109,15 @@ function BorrowRowCells({
     hoveredAction === 'getBorrowPosition'
       ? colors.highlight.background
       : 'transparent'
-  const borrowAmount = formatDisplayAmount(position.borrowAmountFormatted)
-  const collateralAmount = formatDisplayAmount(
-    position.collateralAmountFormatted,
-  )
-  const collateralValue = formatDisplayAmount(
+  const borrowAmount = formatAmountParts(position.borrowAmountFormatted)
+  const collateralAmount = formatAmountParts(position.collateralAmountFormatted)
+  const collateralValue = formatAmountParts(
     (
       (parseFloat(position.collateralAmountFormatted) || 0) *
       stubPriceUsd(position.collateralAsset.metadata.symbol)
     ).toFixed(4),
   )
-  const borrowValue = formatDisplayAmount(
+  const borrowValue = formatAmountParts(
     (
       (parseFloat(position.borrowAmountFormatted) || 0) *
       stubPriceUsd(position.borrowAsset.metadata.symbol)
@@ -423,7 +409,7 @@ function MobileCards({
               >
                 $
                 {
-                  formatDisplayAmount(
+                  formatAmountParts(
                     (
                       (parseFloat(p.borrowAmountFormatted) || 0) *
                       stubPriceUsd(p.borrowAsset.metadata.symbol)
@@ -432,7 +418,7 @@ function MobileCards({
                 }
                 <span style={{ color: '#C2C5D0' }}>
                   {
-                    formatDisplayAmount(
+                    formatAmountParts(
                       (
                         (parseFloat(p.borrowAmountFormatted) || 0) *
                         stubPriceUsd(p.borrowAsset.metadata.symbol)
@@ -449,16 +435,16 @@ function MobileCards({
                 fontFamily: 'Inter',
               }}
             >
-              {formatDisplayAmount(p.borrowAmountFormatted).main}
+              {formatAmountParts(p.borrowAmountFormatted).main}
               <span style={{ color: '#C2C5D0' }}>
-                {formatDisplayAmount(p.borrowAmountFormatted).secondary}
+                {formatAmountParts(p.borrowAmountFormatted).secondary}
               </span>{' '}
               {p.borrowAsset.metadata.symbol.replace('_DEMO', '')} ·{' '}
               {(p.borrowApy * 100).toFixed(2)}% APY · Coll{' '}
               {p.collateralAsset.metadata.symbol.replace('_DEMO', '')} $
-              {formatDisplayAmount(p.collateralAmountFormatted).main}
+              {formatAmountParts(p.collateralAmountFormatted).main}
               <span style={{ color: '#C2C5D0' }}>
-                {formatDisplayAmount(p.collateralAmountFormatted).secondary}
+                {formatAmountParts(p.collateralAmountFormatted).secondary}
               </span>
             </div>
           </div>

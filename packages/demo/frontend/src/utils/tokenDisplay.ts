@@ -71,6 +71,23 @@ export function deriveUsdRates(
  * Split a number into main and secondary decimal parts for display.
  * Shows first 4 decimals as main, rest as secondary (smaller text).
  */
+export function formatAmountParts(amount: string): {
+  main: string
+  secondary: string
+} {
+  const num = parseFloat(amount)
+  if (Number.isNaN(num)) return { main: '0.00', secondary: '00' }
+  const [wholePart, decimalPart = '0000'] = num.toFixed(4).split('.')
+  return {
+    main: `${wholePart}.${decimalPart.substring(0, 2)}`,
+    secondary: decimalPart.substring(2, 4),
+  }
+}
+
+/**
+ * Split a number into main and secondary decimal parts for display.
+ * Shows first 4 decimals as main, rest as secondary (smaller text).
+ */
 export function formatSwapAmount(amount: number): {
   main: string
   secondary: string
