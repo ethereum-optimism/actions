@@ -31,6 +31,7 @@ import type {
   StubOpenParams,
   StubRepayParams,
 } from '@/api/borrowApi'
+import { isEmptyPosition } from '@/api/borrowApi.serializers'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
   dispatchEarnPositionsChanged,
@@ -265,7 +266,7 @@ export function useBorrowProvider(
           const filtered = current.filter(
             (p) => !sameMarketId(p.marketId, next.marketId),
           )
-          return isEmptyBorrowPosition(next) ? filtered : [...filtered, next]
+          return isEmptyPosition(next) ? filtered : [...filtered, next]
         })
       }
       // Don't reconcile against the chain immediately. RPC propagation on
@@ -342,8 +343,4 @@ function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
     return a.marketId === b.marketId
   }
   return false
-}
-
-function isEmptyBorrowPosition(p: BorrowMarketPosition): boolean {
-  return p.collateralAmount === 0n && p.borrowAmount === 0n
 }

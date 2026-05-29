@@ -22,6 +22,7 @@ import type {
   StubOpenParams,
   StubRepayParams,
 } from '@/api/borrowApi'
+import { isEmptyPosition } from '@/api/borrowApi.serializers'
 import { ALL_BORROW_MARKETS, MorphoBorrowDemo } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
 
@@ -86,14 +87,6 @@ function buildWalletBorrowParams(
   }
 }
 
-function isEmptyBorrowPosition(
-  position: Awaited<
-    ReturnType<FrontendWalletOperationsWallet['borrow']['getPosition']>
-  >,
-): boolean {
-  return position.collateralAmount === 0n && position.borrowAmount === 0n
-}
-
 export function buildFrontendWalletOperations(
   wallet: FrontendWalletOperationsWallet,
   actions: FrontendWalletOperationsActions,
@@ -153,7 +146,7 @@ export function buildFrontendBorrowOperations(
         marketId,
         walletAddress: wallet.address,
       })
-      return isEmptyBorrowPosition(position) ? null : position
+      return isEmptyPosition(position) ? null : position
     },
     getQuote: async (params) =>
       actions.borrow.getQuote(buildWalletBorrowParams(params, wallet.address)),
