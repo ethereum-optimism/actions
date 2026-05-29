@@ -16,13 +16,13 @@
  * Aave-style decimal (1.0 = liquidation, Infinity = no debt).
  */
 
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo } from 'react'
 import {
   computeHealthBarValue,
   computeHealthTier,
   type HealthTier,
 } from '@/utils/borrowMath'
-import InfoIcon from '@/components/icons/InfoIcon'
+import { InfoTooltip } from '../InfoTooltip'
 import type { Asset } from '@eth-optimism/actions-sdk'
 
 export interface BorrowHealthCardProps {
@@ -236,7 +236,11 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
         label="Liquidation at"
         value={`${(maxLtv * 100).toFixed(1)}%`}
       />
-      <DetailRow label="Buffer" value={`${(bufferPct * 100).toFixed(0)}%`} />
+      <DetailRow
+        label="Buffer"
+        value={`${(bufferPct * 100).toFixed(0)}%`}
+        info="Safety margin below liquidation. Max borrow stops here, not at the limit, to leave room for price moves and interest."
+      />
       <DetailRow
         label="Borrow APY"
         value={`${(borrowApy * 100).toFixed(2)}%`}
@@ -326,88 +330,45 @@ function HealthReading({
 function DetailRow({
   label,
   value,
+  info,
 }: {
   label: string
   value: React.ReactNode
+  info?: string
 }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: '#666666', fontSize: '13px' }}>{label}</span>
+      <span
+        style={{
+          color: '#666666',
+          fontSize: '13px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        {label}
+        {info && <InfoTooltip text={info} />}
+      </span>
       <span style={{ color: '#1a1b1e', fontSize: '13px' }}>{value}</span>
     </div>
   )
 }
 
 function HealthLabelWithTooltip() {
-  const [show, setShow] = useState(false)
-  const [pos, setPos] = useState({ top: 0, left: 0 })
-  const ref = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    if (show && ref.current) {
-      const rect = ref.current.getBoundingClientRect()
-      setPos({ top: rect.top - 8, left: rect.left + rect.width / 2 })
-    }
-  }, [show])
-
   return (
-    <>
-      <span
-        ref={ref}
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          cursor: 'help',
-          color: '#1a1b1e',
-          fontSize: '14px',
-          fontWeight: 600,
-        }}
-      >
-        Health
-        <InfoIcon />
-      </span>
-      {show && (
-        <div
-          style={{
-            position: 'fixed',
-            top: `${pos.top}px`,
-            left: `${pos.left}px`,
-            transform: 'translate(-50%, -100%)',
-            padding: '10px 14px',
-            backgroundColor: 'rgba(0, 0, 0, 0.78)',
-            color: '#FFFFFF',
-            fontSize: '12px',
-            lineHeight: 1.4,
-            borderRadius: '8px',
-            maxWidth: '280px',
-            zIndex: 9999,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            pointerEvents: 'none',
-            fontFamily: 'Inter',
-          }}
-        >
-          Bar fills as your loan-to-value approaches liquidation. The numeric
-          reading shows your current LTV; at 100% bar fill you would be
-          liquidated. The Max button leaves a safety buffer before that point.
-          Interest accrues continuously; your Health drifts even without action.
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 0,
-              height: 0,
-              borderLeft: '4px solid transparent',
-              borderRight: '4px solid transparent',
-              borderTop: '4px solid rgba(0, 0, 0, 0.78)',
-            }}
-          />
-        </div>
-      )}
-    </>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        color: '#1a1b1e',
+        fontSize: '14px',
+        fontWeight: 600,
+      }}
+    >
+      Health
+      <InfoTooltip text="Loan-to-value against the liquidation point. At 100% you're liquidated; interest pushes it up over time." />
+    </span>
   )
 }
