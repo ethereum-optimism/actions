@@ -30,7 +30,7 @@ export function MobileCards({
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr auto 1fr',
-        columnGap: '12px',
+        columnGap: '48px',
         alignItems: 'stretch',
       }}
     >
