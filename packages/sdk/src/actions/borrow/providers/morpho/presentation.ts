@@ -2,6 +2,7 @@ import type { AccrualPosition, Market } from '@morpho-org/blue-sdk'
 import { formatUnits } from 'viem'
 
 import {
+  isVaultWrappedCollateral,
   liquidationBonusFromIncentive,
   morphoFractionOrNull,
   morphoWadToNumber,
@@ -55,12 +56,7 @@ function sharesToUnderlying(
   shares: bigint,
   sharePrice: bigint,
 ): bigint {
-  const assetAddress = config.collateralAsset.address[config.chainId]
-  const isVaultWrapped =
-    assetAddress !== undefined &&
-    assetAddress.toLowerCase() !==
-      config.marketParams.collateralToken.toLowerCase()
-  if (!isVaultWrapped) return shares
+  if (!isVaultWrappedCollateral(config)) return shares
   return (shares * sharePrice) / 10n ** 18n
 }
 
