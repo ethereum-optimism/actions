@@ -82,6 +82,9 @@ export function PositionsTable({
                 rows remain identifiable. Thresholds are intentionally low so
                 that the typical sidebar-open layout still shows full labels. */}
             <style>{`
+              @container positions-table (max-width: 680px) {
+                .positions-table-secondary-digits { display: none; }
+              }
               @container positions-table (max-width: 480px) {
                 .positions-table-asset-label { display: none; }
               }

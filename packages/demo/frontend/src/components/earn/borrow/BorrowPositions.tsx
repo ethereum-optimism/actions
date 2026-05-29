@@ -247,7 +247,10 @@ function AssetAmount({
     >
       <span>
         {amount.main}
-        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+        <span
+          className="positions-table-secondary-digits"
+          style={{ color: '#9195A6', fontSize: '12px' }}
+        >
           {amount.secondary}
         </span>
       </span>
@@ -279,7 +282,10 @@ function UsdValue({
       }}
     >
       ${value.main}
-      <span style={{ color: '#9195A6', fontSize: '12px' }}>
+      <span
+        className="positions-table-secondary-digits"
+        style={{ color: '#9195A6', fontSize: '12px' }}
+      >
         {value.secondary}
       </span>
     </span>
