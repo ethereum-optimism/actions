@@ -3,6 +3,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
 import { formatAmountParts } from '@/utils/tokenDisplay'
+import { isEthSymbol } from '@/utils/assetUtils'
 import Shimmer from './Shimmer'
 import { PositionsTable } from './PositionsTable'
 
@@ -155,7 +156,10 @@ function LentBalance({
                       <Shimmer width="60px" height="16px" variant="rectangle" />
                     </div>
                   )
-                const fmt = formatAmountParts(amount)
+                const fmt = formatAmountParts(
+                  amount,
+                  isEthSymbol(market.asset.metadata.symbol),
+                )
                 return (
                   <>
                     {market.asset.metadata.symbol !== 'ETH' && '$'}
@@ -479,7 +483,10 @@ function LentBalance({
                         />
                       </div>
                     )
-                  const fmt = formatAmountParts(amount)
+                  const fmt = formatAmountParts(
+                    amount,
+                    isEthSymbol(market.asset.metadata.symbol),
+                  )
                   return (
                     <>
                       {market.asset.metadata.symbol !== 'ETH' && '$'}

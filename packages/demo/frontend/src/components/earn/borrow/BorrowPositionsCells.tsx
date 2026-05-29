@@ -8,6 +8,7 @@ import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { getAssetLogo } from '@/constants/logos'
 import { formatAmountParts } from '@/utils/tokenDisplay'
+import { isEthSymbol } from '@/utils/assetUtils'
 
 type AmountParts = { main: string; secondary: string }
 
@@ -39,10 +40,16 @@ export function deriveBorrowRowDisplay(
     borrSymbol: borrMeta.symbol.replace('_DEMO', ''),
     collLogo: getAssetLogo(collMeta.symbol),
     borrLogo: getAssetLogo(borrMeta.symbol),
-    collateralAmount: formatAmountParts(position.collateralAmountFormatted),
-    borrowAmount: formatAmountParts(position.borrowAmountFormatted),
-    collateralValue: formatAmountParts(collateralUsd.toFixed(4)),
-    borrowValue: formatAmountParts(borrowUsd.toFixed(4)),
+    collateralAmount: formatAmountParts(
+      position.collateralAmountFormatted,
+      isEthSymbol(collMeta.symbol),
+    ),
+    borrowAmount: formatAmountParts(
+      position.borrowAmountFormatted,
+      isEthSymbol(borrMeta.symbol),
+    ),
+    collateralValue: formatAmountParts(collateralUsd.toFixed(2)),
+    borrowValue: formatAmountParts(borrowUsd.toFixed(2)),
     apy: `${(position.borrowApy * 100).toFixed(2)}%`,
   }
 }

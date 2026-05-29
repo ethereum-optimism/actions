@@ -68,14 +68,24 @@ export function deriveUsdRates(
 }
 
 /**
- * Split a number into main and secondary decimal parts for display.
- * Shows first 4 decimals as main, rest as secondary (smaller text).
+ * Split a token amount string into a main part and a secondary part (the
+ * latter rendered as smaller, dimmer trailing digits).
+ *
+ * Default precision is two decimals with no secondary part. Pass
+ * `extended` (used for ETH, where two decimals is too coarse) to show
+ * four decimals split as two main + two secondary digits.
  */
-export function formatAmountParts(amount: string): {
+export function formatAmountParts(
+  amount: string,
+  extended = false,
+): {
   main: string
   secondary: string
 } {
   const num = parseFloat(amount)
+  if (!extended) {
+    return { main: Number.isNaN(num) ? '0.00' : num.toFixed(2), secondary: '' }
+  }
   if (Number.isNaN(num)) return { main: '0.00', secondary: '00' }
   const [wholePart, decimalPart = '0000'] = num.toFixed(4).split('.')
   return {
