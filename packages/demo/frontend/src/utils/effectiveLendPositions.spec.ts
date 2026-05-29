@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
+import { buildBorrowMarketPosition } from '@/test-utils/borrowFixtures'
 import { buildEffectiveLendPositions } from './effectiveLendPositions'
 
 const market: MarketInfo = {
@@ -43,12 +43,8 @@ const directPosition: MarketPosition = {
   provider: market.provider,
 }
 
-const pledgedPosition: BorrowMarketPosition = {
-  marketId: {
-    kind: 'morpho-blue',
-    marketId: '0xborrow',
-    chainId: 84532,
-  },
+const pledgedPosition = buildBorrowMarketPosition({
+  marketId: { kind: 'morpho-blue', marketId: '0xborrow', chainId: 84532 },
   collateralAsset: market.asset,
   collateralShares: 75n,
   collateralSharesFormatted: '75',
@@ -62,13 +58,10 @@ const pledgedPosition: BorrowMarketPosition = {
   borrowAmount: 10n,
   borrowAmountFormatted: '10',
   healthFactor: 2,
-  liquidationPrice: 0n,
-  liquidationPriceFormatted: '0',
   borrowApy: 0.03,
   liquidationBonus: 0.05,
   ltv: 0.1,
-  maxLtv: 0.86,
-}
+})
 
 describe('buildEffectiveLendPositions', () => {
   it('adds pledged collateral to the displayed lend balance', () => {

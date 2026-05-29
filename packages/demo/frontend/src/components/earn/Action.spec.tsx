@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { createElement, type ReactNode } from 'react'
 import type {
   Asset,
   BorrowMarket,
@@ -9,8 +8,11 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { Action } from './Action'
-import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
+import {
+  buildBorrowMarketPosition,
+  makeBorrowContextWrapper,
+} from '@/test-utils/borrowFixtures'
 
 // Mock dependencies
 vi.mock('../../contexts/ActivityHighlightContext', () => ({
@@ -47,7 +49,7 @@ const borrowMarketId = {
 }
 
 function pledgedPosition(): BorrowMarketPosition {
-  return {
+  return buildBorrowMarketPosition({
     marketId: borrowMarketId,
     collateralAsset: usdcAsset,
     borrowAsset: opAsset,
@@ -58,12 +60,9 @@ function pledgedPosition(): BorrowMarketPosition {
     borrowAmount: 100_000_000_000_000_000_000n,
     borrowAmountFormatted: '100',
     healthFactor: 8.6,
-    liquidationPrice: 0n,
-    borrowApy: 0.05,
     liquidationBonus: 0.05,
     ltv: 0.1,
-    maxLtv: 0.86,
-  } as BorrowMarketPosition
+  })
 }
 
 function borrowMarketFixture(): BorrowMarket {
@@ -91,12 +90,7 @@ function withBorrowCtx(
     isInitialLoad: false,
     markets,
   } as unknown as UseBorrowProviderReturn
-  return ({ children }: { children: ReactNode }) =>
-    createElement(
-      BorrowProviderContext.Provider,
-      { value: ctx },
-      children as ReactNode,
-    )
+  return makeBorrowContextWrapper(ctx)
 }
 
 const defaultProps = {
