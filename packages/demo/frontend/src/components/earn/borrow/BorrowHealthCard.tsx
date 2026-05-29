@@ -140,10 +140,14 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
             position: 'relative',
           }}
         >
-          {/* Current fill — always reflects the live LTV. While a user is
-              typing a hypothetical action, this stays put and the delta
-              section to its right (or its trim, when the action shrinks
-              the position) shows the projected change. */}
+          {/* Solid fill — represents what the bar will look like *after*
+              the typed action lands. When the action shrinks the bar
+              (improving / repay / deposit-collateral), the solid stops
+              at the projected width so the gap between solid and current
+              reads as "this slice will be released", with the gray track
+              showing through under the stripes. When the action grows
+              the bar (borrow / withdraw-collateral), the solid stays at
+              the current width and the stripes extend it to projected. */}
           <div
             data-testid="borrow-health-bar-current"
             style={{
@@ -151,10 +155,18 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
               top: 0,
               left: 0,
               height: '100%',
-              width: `${wouldLiquidate ? 100 : currentBarPct}%`,
+              width: `${
+                wouldLiquidate
+                  ? 100
+                  : isImproving
+                    ? projectedBarPct
+                    : currentBarPct
+              }%`,
               backgroundColor: wouldLiquidate
                 ? '#EF4444'
-                : currentTierColors.fill,
+                : isImproving
+                  ? tierColors.fill
+                  : currentTierColors.fill,
               transition: 'width 200ms ease-in-out',
             }}
           />
