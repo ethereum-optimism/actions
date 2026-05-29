@@ -1,7 +1,7 @@
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 
-export type ActionType = 'lend' | 'swap' | 'borrow'
+export type ActionType = 'lend' | 'borrow' | 'swap'
 
 export interface ActionTabsProps {
   activeTab: ActionType
@@ -10,8 +10,8 @@ export interface ActionTabsProps {
 
 const TABS: { id: ActionType; label: string }[] = [
   { id: 'lend', label: 'Lend' },
-  { id: 'swap', label: 'Swap' },
   { id: 'borrow', label: 'Borrow' },
+  { id: 'swap', label: 'Swap' },
 ]
 
 const LEND_ACTIONS = new Set([
