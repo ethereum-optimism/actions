@@ -136,7 +136,7 @@ function MobileMenu({
         </div>
 
         <div style={{ padding: '8px 0' }}>
-          {(['lend', 'swap', 'borrow'] as const).map((tab) => (
+          {(['lend', 'borrow', 'swap'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
