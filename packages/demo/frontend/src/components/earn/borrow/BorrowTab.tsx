@@ -150,7 +150,7 @@ function LendPositionSelector({
       placeholder="Select a lend position"
       singleOptionMessage={
         <>
-          Add another{' '}
+          Open another{' '}
           <button
             type="button"
             onClick={() => setActiveTab('lend')}
