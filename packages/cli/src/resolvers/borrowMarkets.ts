@@ -5,14 +5,7 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
-
-function normalize(value: string): string {
-  // Strip whitespace, hyphens, and slashes. Diverges from `resolveMarket`'s
-  // `[\s-]` because borrow market names commonly contain a `/` separator
-  // between collateral and borrow assets (e.g. "Demo dUSDC / OP") and the
-  // acceptance criteria require `demo-dusdc-op` to resolve to that market.
-  return value.toLowerCase().replace(/[\s/-]/g, '')
-}
+import { normalizeMarketName } from '@/resolvers/normalize.js'
 
 /**
  * @description Returns every borrow market allowlisted across the configured borrow providers. The SDK does not ship a `getBorrowMarketAllowlist` helper, so the CLI flattens `config.borrow` itself by iterating `BORROW_PROVIDER_NAMES`. This keeps the resolver provider-agnostic when new borrow providers join the SDK constant. Mirrors `configuredMarkets` in `resolvers/markets.ts` so call sites read symmetrically.
@@ -38,8 +31,8 @@ export function resolveBorrowMarket(
   name: string,
   allow: readonly BorrowMarketConfig[],
 ): BorrowMarketConfig {
-  const target = normalize(name)
-  const matches = allow.filter((m) => normalize(m.name) === target)
+  const target = normalizeMarketName(name)
+  const matches = allow.filter((m) => normalizeMarketName(m.name) === target)
   if (matches.length === 0) {
     throw new CliError('validation', `Unknown borrow market: ${name}`, {
       market: name,
