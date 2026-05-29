@@ -79,7 +79,7 @@ function DesktopTable({
         // center column shrinks to fit the APY value. `column-gap` is
         // the visual divider between the three sub-tables.
         gridTemplateColumns: '1fr auto 1fr',
-        columnGap: '24px',
+        columnGap: '48px',
         alignItems: 'stretch',
       }}
     >
