@@ -17,12 +17,17 @@ import { Fragment } from 'react'
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { colors } from '@/constants/colors'
 import { marketIdKey } from '@/utils/marketId'
-import { BorrowApyHeaderLabel } from './BorrowApyHeaderLabel'
+import { InfoTooltip } from '../InfoTooltip'
 import {
   AssetAmount,
   UsdValue,
   deriveBorrowRowDisplay,
 } from './BorrowPositionsCells'
+
+const BORROW_APY_TOOLTIP =
+  'The annualized interest rate paid on your borrowed amount. Interest ' +
+  "accrues to your debt continuously, and the rate adjusts as the market's " +
+  'utilization changes.'
 
 export function DesktopTable({
   positions,
@@ -48,7 +53,7 @@ export function DesktopTable({
         <span>Value</span>
       </HeaderCell>
       <HeaderCell layout="center">
-        <BorrowApyHeaderLabel />
+        <InfoTooltip label="APY" text={BORROW_APY_TOOLTIP} />
       </HeaderCell>
       <HeaderCell layout="space-between">
         <span>Borrowed</span>

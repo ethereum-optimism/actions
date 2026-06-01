@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import InfoIcon from '@/components/icons/InfoIcon'
 
 /**
- * Info icon that reveals a small popover on hover. The popover is
- * fixed-positioned above the icon and centered on it.
+ * Info icon (optionally preceded by a `label`) that reveals a small
+ * popover on hover. The popover is fixed-positioned above the trigger and
+ * centered on it.
  */
 export function InfoTooltip({
   text,
+  label,
   size = 12,
 }: {
   text: string
+  label?: ReactNode
   size?: number
 }) {
   const [show, setShow] = useState(false)
@@ -29,8 +32,14 @@ export function InfoTooltip({
         ref={ref}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        style={{ display: 'inline-flex', alignItems: 'center', cursor: 'help' }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: label ? '4px' : 0,
+          cursor: 'help',
+        }}
       >
+        {label}
         <InfoIcon width={size} height={size} />
       </span>
       {show && (
