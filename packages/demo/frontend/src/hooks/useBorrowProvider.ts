@@ -13,7 +13,7 @@
  * and mutations will fail without auth.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Address } from 'viem'
 import type {
@@ -123,29 +123,25 @@ export function useBorrowProvider(
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Load markets once at mount.
+  // Load markets exactly once. The `operations` identity can churn when the
+  // wallet object re-renders, so guard with a ref (mirrors useLendProvider)
+  // rather than letting the effect re-run, which would re-log the read-only
+  // activity and reset its status back to pending.
+  const hasLoadedMarkets = useRef(false)
   useEffect(() => {
-    let cancelled = false
+    if (hasLoadedMarkets.current) return
+    hasLoadedMarkets.current = true
     const activity = logActivity('getBorrowMarkets')
     setIsLoadingMarkets(true)
     operations
       .getMarkets()
       .then((m) => {
-        if (cancelled) return
         setMarkets(m)
-        if (!selectedMarket && m.length > 0) setSelectedMarket(m[0])
+        setSelectedMarket((current) => current ?? (m.length > 0 ? m[0] : null))
         activity?.confirm()
       })
       .catch(() => activity?.error())
-      .finally(() => {
-        if (!cancelled) setIsLoadingMarkets(false)
-      })
-    return () => {
-      cancelled = true
-    }
-    // selectedMarket intentionally omitted from deps: we only default-pick
-    // on first load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .finally(() => setIsLoadingMarkets(false))
   }, [operations, logActivity])
 
   const fetchPositions = useCallback(
@@ -200,17 +196,26 @@ export function useBorrowProvider(
     [logActivity, markets, operations],
   )
 
-  // Refetch positions whenever the active wallet changes. The cancelled
-  // closure guards against late-resolving fetches from a previous wallet
-  // overwriting the current wallet's state.
+  // Always invoke the latest fetcher via a ref so the refetch effect below
+  // doesn't list `fetchPositions` as a dependency — its identity churns with
+  // `operations`/`markets` and would otherwise re-run (and re-log) on every
+  // wallet re-render.
+  const fetchPositionsRef = useRef(fetchPositions)
+  useEffect(() => {
+    fetchPositionsRef.current = fetchPositions
+  }, [fetchPositions])
+
+  // Refetch positions when the active wallet changes or once markets load.
+  // The cancelled closure guards against late-resolving fetches from a
+  // previous wallet overwriting the current wallet's state.
   useEffect(() => {
     setIsInitialLoad(true)
     let cancelled = false
-    void fetchPositions(walletAddress, () => cancelled)
+    void fetchPositionsRef.current(walletAddress, () => cancelled)
     return () => {
       cancelled = true
     }
-  }, [walletAddress, fetchPositions])
+  }, [walletAddress, markets])
 
   const handleMarketSelect = useCallback((market: BorrowMarket) => {
     setSelectedMarket(market)
@@ -304,7 +309,7 @@ export function useBorrowProvider(
 
   useEffect(() => {
     const handlePositionsChanged = () => {
-      void fetchPositions(walletAddress)
+      void fetchPositionsRef.current(walletAddress)
     }
     window.addEventListener(
       EARN_POSITIONS_CHANGED_EVENT,
@@ -316,7 +321,7 @@ export function useBorrowProvider(
         handlePositionsChanged,
       )
     }
-  }, [fetchPositions, walletAddress])
+  }, [walletAddress])
 
   return {
     markets,
