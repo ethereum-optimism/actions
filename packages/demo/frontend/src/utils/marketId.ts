@@ -1,18 +1,19 @@
 import type { BorrowMarketId } from '@eth-optimism/actions-sdk'
 
-/** True when two borrow market IDs refer to the same market. */
+/**
+ * True when two borrow market IDs refer to the same market. Variant-agnostic:
+ * every `BorrowMarketId` kind (morpho-blue, aave-v3, ...) is identified by the
+ * same `(kind, chainId, marketId)` triple, so this works for all providers.
+ */
 export function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
-  if (a.kind !== b.kind || a.chainId !== b.chainId) return false
-  if (a.kind === 'morpho-blue' && b.kind === 'morpho-blue') {
-    return a.marketId === b.marketId
-  }
-  return false
+  return (
+    a.kind === b.kind &&
+    a.chainId === b.chainId &&
+    a.marketId.toLowerCase() === b.marketId.toLowerCase()
+  )
 }
 
-/** Stable React key for a borrow market id. */
+/** Stable React key for a borrow market id, across every provider variant. */
 export function marketIdKey(id: BorrowMarketId): string {
-  if (id.kind === 'morpho-blue') {
-    return `${id.kind}-${id.marketId}-${id.chainId}`
-  }
-  return `unknown-${id.chainId}`
+  return `${id.kind}-${id.marketId}-${id.chainId}`
 }

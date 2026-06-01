@@ -92,11 +92,10 @@ export function deserializeReceipt(
   }
 }
 
+// Variant-agnostic: every borrow marketId (morpho-blue, aave-v3, ...) keys on
+// the same chainId + hex pair, so the wallet-position path is built uniformly.
 export function marketIdPath(marketId: BorrowMarketId): string {
-  if (marketId.kind === 'morpho-blue') {
-    return `${marketId.chainId}/${encodeURIComponent(marketId.marketId)}`
-  }
-  throw new Error(`Unsupported borrow marketId.kind: ${marketId.kind}`)
+  return `${marketId.chainId}/${encodeURIComponent(marketId.marketId)}`
 }
 
 /**
