@@ -127,6 +127,11 @@ export class BaseBorrowNamespace extends BaseNamespace<
       if (morpho) return morpho
     }
 
+    if (marketId.kind === 'aave-v3') {
+      const aave = this.providers.aave
+      if (aave) return aave
+    }
+
     throw new ProviderNotConfiguredError({
       provider: marketId.marketId,
       details: `No borrow provider configured for market on chain ${marketId.chainId}`,

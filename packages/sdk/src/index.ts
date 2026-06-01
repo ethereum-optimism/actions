@@ -1,5 +1,9 @@
 export type { Actions } from '@/actions.js'
-export { BorrowProvider, MorphoBorrowProvider } from '@/actions/borrow/index.js'
+export {
+  AaveBorrowProvider,
+  BorrowProvider,
+  MorphoBorrowProvider,
+} from '@/actions/borrow/index.js'
 export {
   computeMorphoMarketId,
   verifyMorphoMarketId,

@@ -92,6 +92,8 @@ export interface BorrowSettings {
 export type BorrowConfig = RequireAtLeastOne<{
   /** Morpho Blue borrow provider configuration */
   morpho?: BorrowProviderConfig
+  /** Aave V3 borrow provider configuration */
+  aave?: BorrowProviderConfig
 }> & {
   /** Shared settings applied across all borrow providers */
   settings?: BorrowSettings

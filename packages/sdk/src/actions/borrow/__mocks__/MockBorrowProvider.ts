@@ -27,6 +27,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
+import type { BorrowProviderName } from '@/types/providers.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 export interface MockBorrowProviderConfig {
@@ -35,6 +36,8 @@ export interface MockBorrowProviderConfig {
   defaultLiquidationBonus: number
   defaultMaxLtv: number
   defaultMockBalance: bigint
+  /** Provider name stamped on mock quotes (e.g. `'morpho'` or `'aave'`). */
+  provider: BorrowProviderName
 }
 
 /**
@@ -90,6 +93,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       defaultLiquidationBonus: mockConfig?.defaultLiquidationBonus ?? 0.05,
       defaultMaxLtv: mockConfig?.defaultMaxLtv ?? 0.86,
       defaultMockBalance: mockConfig?.defaultMockBalance ?? 0n,
+      provider: mockConfig?.provider ?? 'morpho',
     }
 
     this.openPosition = vi
@@ -220,7 +224,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       },
       safeCeilingLtv: this.mockConfig.defaultMaxLtv * 0.95,
       execution: { transactions: [] },
-      provider: 'morpho',
+      provider: this.mockConfig.provider,
       quotedAt: now,
       expiresAt: now + this.quoteExpirationSeconds,
     })
