@@ -1,7 +1,7 @@
-import InfoIcon from '@/components/icons/InfoIcon'
 import { displaySymbol, formatUsd } from '@/utils/tokenDisplay'
 import { AmountInput } from '../AmountInput'
 import { MaxButton } from '../CtaButton'
+import { InfoTooltip } from '../InfoTooltip'
 
 export function SectionHeader() {
   return (
@@ -16,7 +16,10 @@ export function SectionHeader() {
       }}
     >
       Select Asset
-      <InfoIcon />
+      <InfoTooltip
+        size={14}
+        text="Choose the asset to borrow against your selected lend position as collateral."
+      />
     </div>
   )
 }
