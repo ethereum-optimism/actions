@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type {
-  Asset,
   BorrowMarket,
   BorrowMarketPosition,
   SupportedChainId,
@@ -12,6 +11,8 @@ import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import {
   buildBorrowMarketPosition,
   makeBorrowContextWrapper,
+  opAsset,
+  usdcAsset,
 } from '@/test-utils/borrowFixtures'
 
 // Mock dependencies
@@ -24,23 +25,8 @@ vi.mock('@/utils/analytics', () => ({
 }))
 
 const CHAIN_ID = 84532 as SupportedChainId
-const USDC_ADDRESS = '0xa0b86a33e6427e8e7c3e8a8b3a8e3b6a0b86a33e' as Address
-const BORROW_ASSET_ADDRESS =
-  '0x4200000000000000000000000000000000000042' as Address
 const MARKET_ID =
   '0x1111111111111111111111111111111111111111111111111111111111111111' as Address
-
-const usdcAsset: Asset = {
-  type: 'erc20',
-  address: { [CHAIN_ID]: USDC_ADDRESS },
-  metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
-}
-
-const opAsset: Asset = {
-  type: 'erc20',
-  address: { [CHAIN_ID]: BORROW_ASSET_ADDRESS },
-  metadata: { decimals: 18, name: 'Optimism', symbol: 'OP' },
-}
 
 const borrowMarketId = {
   kind: 'morpho-blue' as const,

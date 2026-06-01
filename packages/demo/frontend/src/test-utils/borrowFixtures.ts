@@ -3,13 +3,13 @@ import type { Asset, BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 
-const DEFAULT_COLLATERAL: Asset = {
+export const usdcAsset: Asset = {
   type: 'erc20',
   address: { 84532: '0xcccccccccccccccccccccccccccccccccccccccc' },
   metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
 }
 
-const DEFAULT_BORROW: Asset = {
+export const opAsset: Asset = {
   type: 'erc20',
   address: { 84532: '0x4200000000000000000000000000000000000042' },
   metadata: { decimals: 18, name: 'Optimism', symbol: 'OP' },
@@ -21,8 +21,8 @@ const DEFAULT_POSITION = {
     marketId: '0x4444444444444444444444444444444444444444',
     chainId: 84532,
   },
-  collateralAsset: DEFAULT_COLLATERAL,
-  borrowAsset: DEFAULT_BORROW,
+  collateralAsset: usdcAsset,
+  borrowAsset: opAsset,
   collateralAmount: 100n,
   collateralAmountFormatted: '100',
   collateralShares: 100n,
