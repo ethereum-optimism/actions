@@ -17,6 +17,7 @@ import { useLendProviderContext } from '@/contexts/LendProviderContext'
 import type { MarketPosition } from '@/types/market'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
+import { displaySymbol, formatUsd } from '@/utils/tokenDisplay'
 import InfoIcon from '@/components/icons/InfoIcon'
 import { Dropdown } from '../Dropdown'
 import { BorrowAction } from './BorrowAction'
@@ -174,8 +175,9 @@ function LendPositionSelector({
 }
 
 function LendPositionRow({ position }: { position: MarketPosition }) {
-  const formattedUsd = formatUsd(position.depositedAmount)
-  const symbol = position.asset.metadata.symbol.replace('_DEMO', '')
+  const formattedUsd =
+    formatUsd(parseFloat(position.depositedAmount || '0')) ?? '$0.00'
+  const symbol = displaySymbol(position.asset.metadata.symbol)
   return (
     <div className="flex items-center gap-2 w-full" style={{ minWidth: 0 }}>
       {/* Asset logo with market logo as a small overlay badge — same
@@ -241,13 +243,6 @@ function LendPositionRow({ position }: { position: MarketPosition }) {
       </span>
     </div>
   )
-}
-
-function formatUsd(deposited: string | null): string {
-  if (!deposited) return '$0.00'
-  const num = parseFloat(deposited)
-  if (!Number.isFinite(num)) return '$0.00'
-  return `$${num.toFixed(2)}`
 }
 
 function NoCollateralBanner() {

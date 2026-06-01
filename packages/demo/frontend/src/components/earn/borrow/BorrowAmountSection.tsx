@@ -1,4 +1,5 @@
 import InfoIcon from '@/components/icons/InfoIcon'
+import { displaySymbol } from '@/utils/tokenDisplay'
 import { AmountInput } from '../AmountInput'
 import { MaxButton } from '../CtaButton'
 
@@ -37,8 +38,9 @@ export function AmountSection({
   activeAsset: { metadata: { symbol: string } } | null
   onTokenClick?: () => void
 }) {
-  const symbol =
-    activeAsset?.metadata.symbol.replace('_DEMO', '') ?? 'Select token'
+  const symbol = activeAsset
+    ? displaySymbol(activeAsset.metadata.symbol)
+    : 'Select token'
   const inputProps = {
     value: amount,
     onChange: onAmountChange,

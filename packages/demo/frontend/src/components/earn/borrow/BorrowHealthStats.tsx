@@ -4,6 +4,7 @@
  */
 
 import type { Asset } from '@eth-optimism/actions-sdk'
+import { displaySymbol } from '@/utils/tokenDisplay'
 import { InfoTooltip } from '../InfoTooltip'
 
 export function BorrowHealthStats({
@@ -51,7 +52,7 @@ export function BorrowHealthStats({
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <span style={{ color: '#9195A6', fontSize: '13px' }}>
-              {collateralAsset.metadata.symbol.replace('_DEMO', '')}
+              {displaySymbol(collateralAsset.metadata.symbol)}
             </span>
             <span style={{ color: '#1a1b1e' }}>
               ${collateralValueUsd.toFixed(2)}

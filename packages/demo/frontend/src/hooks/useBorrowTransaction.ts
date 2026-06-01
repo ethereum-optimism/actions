@@ -7,6 +7,7 @@
 import { useRef, useState } from 'react'
 import type { Asset, BorrowMarket } from '@eth-optimism/actions-sdk'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
+import { displaySymbol } from '@/utils/tokenDisplay'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import type { MarketPosition } from '@/types/market'
@@ -59,7 +60,7 @@ export function useBorrowTransaction() {
   }: RunTransactionArgs) => {
     if (executingRef.current) return
     executingRef.current = true
-    const symbol = activeAsset.metadata.symbol.replace('_DEMO', '')
+    const symbol = displaySymbol(activeAsset.metadata.symbol)
     const activity = logActivity(mode, {
       amount: amountNum.toString(),
       assetSymbol: symbol,

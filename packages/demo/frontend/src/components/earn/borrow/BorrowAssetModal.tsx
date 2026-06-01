@@ -8,6 +8,7 @@
 
 import { createPortal } from 'react-dom'
 import type { BorrowMarket } from '@eth-optimism/actions-sdk'
+import { displaySymbol } from '@/utils/tokenDisplay'
 import { Modal, ModalHeader } from '../../Modal'
 
 export interface BorrowAssetModalProps {
@@ -95,7 +96,7 @@ export function BorrowAssetModal({
 }
 
 function AssetCell({ market }: { market: BorrowMarket }) {
-  const symbol = market.borrowAsset.metadata.symbol.replace('_DEMO', '')
+  const symbol = displaySymbol(market.borrowAsset.metadata.symbol)
   const name = market.borrowAsset.metadata.name
   return (
     <span
@@ -151,7 +152,7 @@ function LiquidityCell({ market }: { market: BorrowMarket }) {
   const available = market.totalCollateral - market.totalBorrowed
   const decimals = market.borrowAsset.metadata.decimals
   const human = Number(available) / 10 ** decimals
-  const symbol = market.borrowAsset.metadata.symbol.replace('_DEMO', '')
+  const symbol = displaySymbol(market.borrowAsset.metadata.symbol)
   return (
     <span
       style={{

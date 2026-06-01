@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
-import { formatAmountParts } from '@/utils/tokenDisplay'
+import { displaySymbol, formatAmountParts } from '@/utils/tokenDisplay'
 import { isEthSymbol } from '@/utils/assetUtils'
 import Shimmer from './Shimmer'
 import { PositionsTable } from './PositionsTable'
@@ -119,7 +119,7 @@ function LentBalance({
                   fontFamily: 'Inter',
                 }}
               >
-                {market.asset.metadata.symbol.replace('_DEMO', '')}
+                {displaySymbol(market.asset.metadata.symbol)}
               </span>
               <span
                 style={{
@@ -390,7 +390,7 @@ function LentBalance({
                     fontFamily: 'Inter',
                   }}
                 >
-                  {market.asset.metadata.symbol.replace('_DEMO', '')}
+                  {displaySymbol(market.asset.metadata.symbol)}
                 </span>
               </div>
             </td>
