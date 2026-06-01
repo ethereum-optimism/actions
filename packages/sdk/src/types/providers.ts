@@ -28,7 +28,7 @@ export type LendProviders = {
  * `BorrowProviderName` type union and any consumer (CLI, validators) that
  * needs to enumerate provider names at runtime.
  */
-export const BORROW_PROVIDER_NAMES = ['morpho'] as const
+export const BORROW_PROVIDER_NAMES = ['morpho', 'aave'] as const
 
 /** Names of available borrow providers. */
 export type BorrowProviderName = (typeof BORROW_PROVIDER_NAMES)[number]
