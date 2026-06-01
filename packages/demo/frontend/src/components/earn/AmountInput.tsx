@@ -1,3 +1,5 @@
+import CaretDownIcon from '@/components/icons/CaretDownIcon'
+
 interface BaseProps {
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -17,35 +19,24 @@ interface SelectorChipProps extends BaseProps {
 
 export type AmountInputProps = StaticChipProps | SelectorChipProps
 
-function CaretDownIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M3 4.5L6 7.5L9 4.5"
-        stroke="#1a1b1e"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
+// Layout shared by the static and clickable token chips; the divider lives
+// on the left edge so the chip reads as a segment of the input row.
+const tokenChipStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  paddingLeft: '12px',
+  borderLeft: '1px solid #E0E2EB',
+} as const
 
-export function AmountInput({
-  value,
-  onChange,
-  disabled,
+function TokenChip({
   displaySymbol,
   tokenLogo,
   onTokenClick,
-}: AmountInputProps) {
-  const chipContent = (
+}: Pick<BaseProps, 'displaySymbol' | 'tokenLogo'> & {
+  onTokenClick?: () => void
+}) {
+  const tokenContent = (
     <>
       {tokenLogo && (
         <img
@@ -68,6 +59,32 @@ export function AmountInput({
     </>
   )
 
+  if (!onTokenClick) return <div style={tokenChipStyle}>{tokenContent}</div>
+  return (
+    <button
+      type="button"
+      onClick={onTokenClick}
+      style={{
+        ...tokenChipStyle,
+        border: 'none',
+        borderLeft: '1px solid #E0E2EB',
+        background: 'transparent',
+        cursor: 'pointer',
+      }}
+    >
+      {tokenContent}
+    </button>
+  )
+}
+
+export function AmountInput({
+  value,
+  onChange,
+  disabled,
+  displaySymbol,
+  tokenLogo,
+  onTokenClick,
+}: AmountInputProps) {
   return (
     <div
       style={{
@@ -97,42 +114,11 @@ export function AmountInput({
           cursor: disabled ? 'not-allowed' : 'text',
         }}
       />
-      {onTokenClick ? (
-        <button
-          type="button"
-          onClick={onTokenClick}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            paddingLeft: '12px',
-            marginLeft: '0',
-            borderLeft: '1px solid #E0E2EB',
-            border: 'none',
-            borderRadius: '0',
-            borderLeftStyle: 'solid',
-            borderLeftWidth: '1px',
-            borderLeftColor: '#E0E2EB',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: '0 0 0 12px',
-          }}
-        >
-          {chipContent}
-        </button>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            paddingLeft: '12px',
-            borderLeft: '1px solid #E0E2EB',
-          }}
-        >
-          {chipContent}
-        </div>
-      )}
+      <TokenChip
+        displaySymbol={displaySymbol}
+        tokenLogo={tokenLogo}
+        onTokenClick={onTokenClick}
+      />
     </div>
   )
 }
