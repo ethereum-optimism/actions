@@ -8,7 +8,7 @@ import {
 } from '@/actions/shared/aave/abis/pool.js'
 import {
   getAaveAddresses,
-  getPoolAddress,
+  requireAavePoolAddress,
 } from '@/actions/shared/aave/addresses.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
@@ -19,12 +19,6 @@ import {
   type AaveReservePrices,
   decodeReserveConfig,
 } from './presentation.js'
-
-function requirePoolAddress(chainId: number): Address {
-  const pool = getPoolAddress(chainId)
-  if (!pool) throw new ChainNotSupportedError({ chainId })
-  return pool
-}
 
 /**
  * `getReserveData` returns a flat tuple. Pull out the fields the borrow
@@ -57,7 +51,7 @@ export async function fetchAaveMarketState(
   client: PublicClient,
   config: AaveBorrowMarketConfig,
 ): Promise<AaveMarketState> {
-  const pool = requirePoolAddress(config.chainId)
+  const pool = requireAavePoolAddress(config.chainId)
   const [debtReserveRaw, collateralReserveRaw] = await client.multicall({
     allowFailure: false,
     contracts: [
@@ -117,7 +111,7 @@ export async function fetchAavePositionState(
   config: AaveBorrowMarketConfig,
   user: Address,
 ): Promise<AavePositionState> {
-  const pool = requirePoolAddress(config.chainId)
+  const pool = requireAavePoolAddress(config.chainId)
   const [debtReserveRaw, collateralReserveRaw, accountData] =
     await client.multicall({
       allowFailure: false,
@@ -190,7 +184,7 @@ export async function fetchAaveReserveTokens(
   client: PublicClient,
   config: AaveBorrowMarketConfig,
 ): Promise<{ aToken: Address; variableDebtToken: Address }> {
-  const pool = requirePoolAddress(config.chainId)
+  const pool = requireAavePoolAddress(config.chainId)
   const [debtReserveRaw, collateralReserveRaw] = await client.multicall({
     allowFailure: false,
     contracts: [

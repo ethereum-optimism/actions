@@ -9,7 +9,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AaveBorrowProvider } from '@/actions/borrow/providers/aave/AaveBorrowProvider.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
-import { POOL_ABI } from '@/actions/shared/aave/abis/pool.js'
+import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
+import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
@@ -53,6 +54,18 @@ const market: AaveBorrowMarketConfig = {
   },
 }
 
+const WBTC = '0x1111111111111111111111111111111111111111' as Address
+
+// ERC-20 collateral variant (no WETH gateway), e.g. a WBTC collateral reserve.
+const erc20Market: AaveBorrowMarketConfig = {
+  ...market,
+  aave: {
+    debtReserve: USDC,
+    collateralReserve: WBTC,
+    collateralUsesWethGateway: false,
+  },
+}
+
 const CONFIG_BITMAP = 8000n | (8250n << 16n) | (10500n << 32n) | (18n << 48n)
 
 function reserveData(opts: {
@@ -89,6 +102,7 @@ function makeProvider(opts: {
   collateral: bigint
   debt: bigint
   allowance: bigint
+  market?: AaveBorrowMarketConfig
 }) {
   const ORACLE = '0x00000000000000000000000000000000000orAc1' as Address
   const client: Partial<PublicClient> = {
@@ -127,7 +141,10 @@ function makeProvider(opts: {
     getPublicClient: vi.fn().mockReturnValue(client),
     getSupportedChains: vi.fn().mockReturnValue([OPS]),
   } as unknown as ChainManager
-  return new AaveBorrowProvider({ marketAllowlist: [market] }, cm)
+  return new AaveBorrowProvider(
+    { marketAllowlist: [opts.market ?? market] },
+    cm,
+  )
 }
 
 describe('AaveBorrowProvider write layer', () => {
@@ -215,5 +232,134 @@ describe('AaveBorrowProvider write layer', () => {
     const poolBound = quote.execution.transactions[0].to.toLowerCase()
     expect(poolBound).not.toBe(USDC.toLowerCase())
     expect(quote.action).toBe('withdrawCollateral')
+  })
+
+  it('prepends an aToken->gateway approval for a native withdraw with no allowance', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: 0n,
+    })
+    const quote = await provider.withdrawCollateral({
+      market,
+      walletAddress: WALLET,
+      amount: { amountRaw: 5n * 10n ** 17n },
+    })
+    expect(quote.execution.transactions).toHaveLength(2)
+    expect(quote.execution.approvalsSkipped).toBe(false)
+    const withdraw = decodeFunctionData({
+      abi: WETH_GATEWAY_ABI,
+      data: quote.execution.transactions[1].data,
+    })
+    expect(withdraw.functionName).toBe('withdrawETH')
+  })
+
+  it('throws EmptyPositionError on max withdraw with zero collateral', async () => {
+    const provider = makeProvider({ collateral: 0n, debt: 0n, allowance: 0n })
+    await expect(
+      provider.withdrawCollateral({
+        market,
+        walletAddress: WALLET,
+        amount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(EmptyPositionError)
+  })
+
+  it('throws EmptyPositionError on max repay with no debt', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 0n,
+      allowance: maxUint256,
+    })
+    await expect(
+      provider.repay({ market, walletAddress: WALLET, amount: { max: true } }),
+    ).rejects.toBeInstanceOf(EmptyPositionError)
+  })
+
+  it('deposits native-ETH collateral through the gateway with msg.value', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 0n,
+      allowance: 0n,
+    })
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress: WALLET,
+      amount: { amountRaw: 5n * 10n ** 17n },
+    })
+    expect(quote.execution.transactions).toHaveLength(1)
+    const tx = quote.execution.transactions[0]
+    expect(tx.value).toBe(5n * 10n ** 17n)
+    expect(
+      decodeFunctionData({ abi: WETH_GATEWAY_ABI, data: tx.data }).functionName,
+    ).toBe('depositETH')
+  })
+
+  it('deposits ERC-20 collateral via approval + Pool.supply (no gateway)', async () => {
+    const provider = makeProvider({
+      collateral: 0n,
+      debt: 0n,
+      allowance: 0n,
+      market: erc20Market,
+    })
+    const quote = await provider.depositCollateral({
+      market: erc20Market,
+      walletAddress: WALLET,
+      amount: { amountRaw: 10n ** 8n },
+    })
+    expect(quote.execution.transactions).toHaveLength(2)
+    expect(quote.execution.approvalsSkipped).toBe(false)
+    const supply = decodeFunctionData({
+      abi: POOL_ABI,
+      data: quote.execution.transactions[1].data,
+    })
+    expect(supply.functionName).toBe('supply')
+    expect(supply.args[0]).toBe(WBTC)
+  })
+
+  it('closes a position: approval, repay, then collateral withdraw', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: maxUint256,
+    })
+    const quote = await provider.closePosition({
+      market,
+      walletAddress: WALLET,
+      borrowAmount: { max: true },
+      collateralAmount: { max: true },
+    })
+    expect(quote.action).toBe('close')
+    const fns = quote.execution.transactions.map((t) => {
+      try {
+        return decodeFunctionData({ abi: POOL_ABI, data: t.data }).functionName
+      } catch {
+        return decodeFunctionData({ abi: WETH_GATEWAY_ABI, data: t.data })
+          .functionName
+      }
+    })
+    expect(fns).toContain('repay')
+    expect(fns).toContain('withdrawETH')
+    expect(quote.positionAfter.borrowAmount).toBe(0n)
+  })
+
+  it('omits the collateral withdraw when closePosition has no collateralAmount', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: maxUint256,
+    })
+    const quote = await provider.closePosition({
+      market,
+      walletAddress: WALLET,
+      borrowAmount: { amountRaw: 1_000_000_000n },
+    })
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(
+      decodeFunctionData({
+        abi: POOL_ABI,
+        data: quote.execution.transactions[0].data,
+      }).functionName,
+    ).toBe('repay')
   })
 })

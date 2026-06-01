@@ -1,11 +1,10 @@
-import { type Address, encodeFunctionData, maxUint256 } from 'viem'
+import { type Address, encodeFunctionData } from 'viem'
 
 import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
 import {
-  getPoolAddress,
-  getWETHGatewayAddress,
+  requireAavePoolAddress,
+  requireAaveWethGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
-import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -18,9 +17,7 @@ import {
 const VARIABLE_RATE_MODE = 2n
 
 function requirePool(config: AaveBorrowMarketConfig): Address {
-  const pool = getPoolAddress(config.chainId)
-  if (!pool) throw new ChainNotSupportedError({ chainId: config.chainId })
-  return pool
+  return requireAavePoolAddress(config.chainId)
 }
 
 /** `Pool.borrow(debtAsset, amount, 2, 0, onBehalfOf)`. */
@@ -106,8 +103,7 @@ export function encodeAaveDepositETH(
   amount: bigint,
   onBehalfOf: Address,
 ): TransactionData {
-  const gateway = getWETHGatewayAddress(config.chainId)
-  if (!gateway) throw new ChainNotSupportedError({ chainId: config.chainId })
+  const gateway = requireAaveWethGatewayAddress(config.chainId)
   const pool = requirePool(config)
   return {
     to: gateway,
@@ -126,8 +122,7 @@ export function encodeAaveWithdrawETH(
   amount: bigint,
   to: Address,
 ): TransactionData {
-  const gateway = getWETHGatewayAddress(config.chainId)
-  if (!gateway) throw new ChainNotSupportedError({ chainId: config.chainId })
+  const gateway = requireAaveWethGatewayAddress(config.chainId)
   const pool = requirePool(config)
   return {
     to: gateway,
@@ -159,5 +154,3 @@ export function buildAavePoolApproval(
     amount: resolveErc20ApprovalAmount(approvalMode, amount),
   })
 }
-
-export { maxUint256 }

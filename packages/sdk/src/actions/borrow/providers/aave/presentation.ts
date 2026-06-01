@@ -22,6 +22,15 @@ export function bpsToFraction(bps: bigint): number {
   return Number(bps) / Number(BPS)
 }
 
+/**
+ * Liquidation bonus as a decimal (e.g. 10500 bps -> 0.05). Aave encodes the
+ * bonus as a multiplier over 100%, so subtract one whole unit. Clamped at 0
+ * for a misconfigured or frozen reserve that reports a sub-100% (or zero) bonus.
+ */
+export function liquidationBonusFraction(bonusBps: bigint): number {
+  return bonusBps > BPS ? bpsToFraction(bonusBps - BPS) : 0
+}
+
 /** Convert a 1e18-scaled value (Aave health factor) to a decimal fraction. */
 export function wad18ToNumber(wad: bigint): number {
   return Number((wad * 1_000_000n) / 10n ** 18n) / 1_000_000
@@ -30,7 +39,7 @@ export function wad18ToNumber(wad: bigint): number {
 /**
  * Decode the packed Aave reserve `configuration.data` bitmap.
  * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
- * bonus, 48-55 decimals — all in basis points except decimals. Kept here next
+ * bonus, 48-55 decimals; all in basis points except decimals. Kept here next
  * to its only consumers; promote to a shared module if a second caller appears.
  */
 export function decodeReserveConfig(data: bigint): {
@@ -117,7 +126,7 @@ export interface AaveReservePrices {
 /**
  * Project the position that results from a borrow action by adjusting the
  * collateral/debt amounts and recomputing the base-currency aggregates and
- * health factor from oracle prices. Pure — does not read on-chain state.
+ * health factor from oracle prices. Pure function; does not read on-chain state.
  * Deltas are signed (borrow/deposit positive, repay/withdraw negative) and
  * clamped at zero.
  */
@@ -170,7 +179,7 @@ export function adaptAaveBorrowMarket(
     collateralAsset: config.collateralAsset,
     borrowAsset: config.borrowAsset,
     borrowApy: rayToFraction(state.variableBorrowRateRay),
-    liquidationBonus: bpsToFraction(state.liquidationBonusBps - BPS),
+    liquidationBonus: liquidationBonusFraction(state.liquidationBonusBps),
     maxLtv: bpsToFraction(state.liquidationThresholdBps),
     healthBufferPct,
     totalBorrowed: state.totalBorrowed,
@@ -225,7 +234,7 @@ export function adaptAaveBorrowPosition(
       config.borrowAsset.metadata.decimals,
     ),
     borrowApy: rayToFraction(state.variableBorrowRateRay),
-    liquidationBonus: bpsToFraction(state.liquidationBonusBps - BPS),
+    liquidationBonus: liquidationBonusFraction(state.liquidationBonusBps),
     ltv,
     maxLtv: bpsToFraction(state.liquidationThresholdBps),
   }

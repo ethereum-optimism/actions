@@ -1,4 +1,5 @@
 import type { Address, PublicClient } from 'viem'
+import { maxUint256 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
@@ -9,7 +10,6 @@ import {
   encodeAaveSupply,
   encodeAaveWithdraw,
   encodeAaveWithdrawETH,
-  maxUint256,
 } from '@/actions/borrow/providers/aave/calldata.js'
 import {
   type AavePositionState,
@@ -23,16 +23,27 @@ import {
   fetchAaveMarketState,
   fetchAavePositionState,
   fetchAavePrices,
+  fetchAaveReserveTokens,
 } from '@/actions/borrow/providers/aave/state.js'
 import {
   getPoolAddress,
   getSupportedChainIds as getAaveSupportedChainIds,
+  requireAavePoolAddress,
+  requireAaveWethGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
-import { EmptyPositionError } from '@/core/error/errors.js'
+import {
+  ChainNotSupportedError,
+  EmptyPositionError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
+import type {
+  ApprovalMode,
+  BorrowProviderConfig,
+  BorrowSettings,
+} from '@/types/actions.js'
 import type {
   AaveBorrowMarketConfig,
+  AmountWeiOrMax,
   BorrowAction,
   BorrowClosePositionInternalParams,
   BorrowDepositCollateralInternalParams,
@@ -46,14 +57,18 @@ import type {
   GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import { checkTokenAllowance } from '@/utils/approve.js'
+import {
+  buildErc20ApprovalTx,
+  checkTokenAllowance,
+  resolveErc20ApprovalAmount,
+} from '@/utils/approve.js'
 
 /**
  * Aave V3 borrow provider.
  * @description Concrete `BorrowProvider` for Aave V3. Reads reserve and
  * position state via viem multicall against the shared Aave Pool, and models
  * a borrow "market" as the synthetic (collateral, debt) reserve pair carried
- * on the `aave-v3` config. Holds zero demo or mirror logic — it is an honest
+ * on the `aave-v3` config. Holds zero demo or mirror logic; it is an honest
  * real-Aave integration reusable outside the demo. Variable-rate debt only.
  */
 export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
@@ -68,9 +83,10 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     for (const market of config.marketAllowlist ?? []) {
       if (market.kind !== 'aave-v3') continue
       if (!getPoolAddress(market.chainId)) {
-        throw new Error(
-          `AaveBorrowProvider: no Aave Pool configured for chain ${market.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: market.chainId,
+          supportedChainIds: getAaveSupportedChainIds(),
+        })
       }
     }
   }
@@ -180,18 +196,24 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.amount,
       current.debtAmount,
     )
+    if (isMax && current.debtAmount === 0n) {
+      throw new EmptyPositionError({ operation: 'repay' })
+    }
     const onChainAmount = isMax ? maxUint256 : repayAmount
 
     const allowance = await checkTokenAllowance({
       publicClient: client,
       token: market.aave.debtReserve,
       owner: params.walletAddress,
-      spender: getPoolAddress(market.chainId)!,
+      spender: this.poolAddress(market),
     })
+    // Approve against the on-chain amount: a max repay sends maxUint256 so
+    // Aave clears principal plus interest accrued after the quote, which would
+    // exceed an exact-debt approval and revert.
     const approvalTx = buildAavePoolApproval(
       market,
       market.aave.debtReserve,
-      repayAmount,
+      onChainAmount,
       allowance,
       params.approvalMode,
     )
@@ -262,10 +284,13 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     if (isMax && current.collateralAmount === 0n) {
       throw new EmptyPositionError({ operation: 'withdrawCollateral' })
     }
-    const onChainAmount = isMax ? maxUint256 : amount
-    const tx = market.aave.collateralUsesWethGateway
-      ? encodeAaveWithdrawETH(market, onChainAmount, params.walletAddress)
-      : encodeAaveWithdraw(market, onChainAmount, params.walletAddress)
+    const txs = await this.buildCollateralWithdraw(
+      market,
+      amount,
+      isMax,
+      params.walletAddress,
+      params.approvalMode,
+    )
 
     const after = projectAavePositionState(
       current,
@@ -278,11 +303,11 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       before: current,
       after,
-      transactions: [tx],
+      transactions: txs,
+      // The native-ETH path prepends an aToken approval to the gateway; the
+      // direct Pool.withdraw path needs none.
+      approvalsSkipped: txs.length === 1,
       quoteAmounts: { collateralAmountRaw: amount },
-      // Pool.withdraw needs no approval; the gateway path is handled by the
-      // demo's lend withdraw flow, so no approval is prepended here.
-      approvalsSkipped: true,
     })
   }
 
@@ -300,18 +325,21 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.borrowAmount,
       current.debtAmount,
     )
+    if (repayIsMax && current.debtAmount === 0n) {
+      throw new EmptyPositionError({ operation: 'repay' })
+    }
     const onChainRepay = repayIsMax ? maxUint256 : repayAmount
 
     const allowance = await checkTokenAllowance({
       publicClient: client,
       token: market.aave.debtReserve,
       owner: params.walletAddress,
-      spender: getPoolAddress(market.chainId)!,
+      spender: this.poolAddress(market),
     })
     const approvalTx = buildAavePoolApproval(
       market,
       market.aave.debtReserve,
-      repayAmount,
+      onChainRepay,
       allowance,
       params.approvalMode,
     )
@@ -324,12 +352,14 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       const { amount: withdrawAmount, isMax: withdrawIsMax } =
         this.resolveAmount(params.collateralAmount, current.collateralAmount)
       collateralDelta = -withdrawAmount
-      const onChainWithdraw = withdrawIsMax ? maxUint256 : withdrawAmount
-      txs.push(
-        market.aave.collateralUsesWethGateway
-          ? encodeAaveWithdrawETH(market, onChainWithdraw, params.walletAddress)
-          : encodeAaveWithdraw(market, onChainWithdraw, params.walletAddress),
+      const withdrawTxs = await this.buildCollateralWithdraw(
+        market,
+        withdrawAmount,
+        withdrawIsMax,
+        params.walletAddress,
+        params.approvalMode,
       )
+      txs.push(...withdrawTxs)
     }
 
     const after = projectAavePositionState(
@@ -361,7 +391,7 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
    * call separately uses `maxUint256` so Aave clears dust precisely.
    */
   private resolveAmount(
-    amount: BorrowRepayInternalParams['amount'],
+    amount: AmountWeiOrMax,
     fallbackMax: bigint,
   ): { amount: bigint; isMax: boolean } {
     if ('max' in amount) return { amount: fallbackMax, isMax: true }
@@ -381,6 +411,49 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private client(config: AaveBorrowMarketConfig): PublicClient {
     return this.chainManager.getPublicClient(config.chainId)
+  }
+
+  private poolAddress(config: AaveBorrowMarketConfig): Address {
+    return requireAavePoolAddress(config.chainId)
+  }
+
+  /**
+   * Build the collateral-withdraw transactions. The native-ETH path withdraws
+   * through the WETH gateway, which pulls the user's aToken, so it must be
+   * preceded by an aToken approval to the gateway when the allowance is
+   * insufficient. The direct Pool.withdraw path needs no approval.
+   */
+  private async buildCollateralWithdraw(
+    config: AaveBorrowMarketConfig,
+    amount: bigint,
+    isMax: boolean,
+    user: Address,
+    approvalMode: ApprovalMode,
+  ): Promise<TransactionData[]> {
+    const onChainAmount = isMax ? maxUint256 : amount
+    if (!config.aave.collateralUsesWethGateway) {
+      return [encodeAaveWithdraw(config, onChainAmount, user)]
+    }
+    const gateway = requireAaveWethGatewayAddress(config.chainId)
+    const { aToken } = await fetchAaveReserveTokens(this.client(config), config)
+    const allowance = await checkTokenAllowance({
+      publicClient: this.client(config),
+      token: aToken,
+      owner: user,
+      spender: gateway,
+    })
+    const txs: TransactionData[] = []
+    if (allowance < onChainAmount) {
+      txs.push(
+        buildErc20ApprovalTx({
+          assetAddress: aToken,
+          spender: gateway,
+          amount: resolveErc20ApprovalAmount(approvalMode, onChainAmount),
+        }),
+      )
+    }
+    txs.push(encodeAaveWithdrawETH(config, onChainAmount, user))
+    return txs
   }
 
   private decimals(config: AaveBorrowMarketConfig): {
@@ -426,7 +499,7 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       publicClient: this.client(config),
       token: config.aave.collateralReserve,
       owner: user,
-      spender: getPoolAddress(config.chainId)!,
+      spender: this.poolAddress(config),
     })
     const approvalTx = buildAavePoolApproval(
       config,

@@ -9,6 +9,8 @@ import {
   bpsToFraction,
   decodeReserveConfig,
   deriveLiquidationPrice,
+  liquidationBonusFraction,
+  projectAavePositionState,
   rayToFraction,
 } from '@/actions/borrow/providers/aave/presentation.js'
 import type { Asset } from '@/types/asset.js'
@@ -131,6 +133,61 @@ describe('aave presentation conversions', () => {
     expect(position.healthFactor).toBeCloseTo(1.5, 6)
     expect(position.ltv).toBeCloseTo(1000 / 3000, 6)
     expect(position.liquidationPrice).toBeGreaterThan(0n)
+  })
+
+  it('clamps liquidation bonus to zero for a sub-100% (frozen) reserve', () => {
+    expect(liquidationBonusFraction(10500n)).toBeCloseTo(0.05, 6)
+    expect(liquidationBonusFraction(0n)).toBe(0)
+    expect(liquidationBonusFraction(9000n)).toBe(0)
+  })
+
+  it('projects a repay (negative debt delta) as a higher health factor', () => {
+    const current = {
+      collateralAmount: 10n ** 18n,
+      debtAmount: 1_000_000_000n,
+      healthFactorWad: 1_500_000_000_000_000_000n,
+      liquidationThresholdBps: 8250n,
+      liquidationBonusBps: 10500n,
+      variableBorrowRateRay: 0n,
+      totalCollateralBase: 3000n,
+      totalDebtBase: 1000n,
+    }
+    const prices = {
+      collateralPrice: 300_000_000_000n,
+      debtPrice: 100_000_000n,
+    }
+    const after = projectAavePositionState(
+      current,
+      prices,
+      { collateralDelta: 0n, debtDelta: -500_000_000n },
+      { collateral: 18, debt: 6 },
+    )
+    expect(after.debtAmount).toBe(500_000_000n)
+    expect(after.healthFactorWad).toBeGreaterThan(current.healthFactorWad)
+  })
+
+  it('clamps a withdraw below zero collateral to zero', () => {
+    const current = {
+      collateralAmount: 10n ** 17n,
+      debtAmount: 0n,
+      healthFactorWad: 0n,
+      liquidationThresholdBps: 8250n,
+      liquidationBonusBps: 10500n,
+      variableBorrowRateRay: 0n,
+      totalCollateralBase: 300n,
+      totalDebtBase: 0n,
+    }
+    const prices = {
+      collateralPrice: 300_000_000_000n,
+      debtPrice: 100_000_000n,
+    }
+    const after = projectAavePositionState(
+      current,
+      prices,
+      { collateralDelta: -(10n ** 18n), debtDelta: 0n },
+      { collateral: 18, debt: 6 },
+    )
+    expect(after.collateralAmount).toBe(0n)
   })
 
   it('adapts a debtless position: null hf and ltv, zero liq price', () => {

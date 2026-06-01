@@ -4,6 +4,7 @@ export {
   BorrowProvider,
   MorphoBorrowProvider,
 } from '@/actions/borrow/index.js'
+export { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 export {
   computeMorphoMarketId,
   verifyMorphoMarketId,
@@ -87,6 +88,8 @@ export {
   resolveAddress,
 } from '@/services/nameservices/ens/utils.js'
 export type {
+  AaveBorrowMarketConfig,
+  AaveBorrowMarketParams,
   ActionsConfig,
   Amount,
   AmountOrMax,
