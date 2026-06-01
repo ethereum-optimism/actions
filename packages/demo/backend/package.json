@@ -55,7 +55,7 @@
     "@types/node": "22.14.0",
     "typescript": "^5.2.2",
     "undici": "^6.24.0",
-    "vitest": "^1.6.1"
+    "vitest": "^4.1.0"
   },
   "peerDependencies": {
     "pino": "^9.6.0",
