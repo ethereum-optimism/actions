@@ -14,6 +14,11 @@ vi.mock('./wallet.js', () => ({
   getWallet: vi.fn(),
 }))
 
+vi.mock('./mirror.js', () => ({
+  mintMirrorUsdc: vi.fn(),
+  removeMirrorUsdc: vi.fn(),
+}))
+
 vi.mock('../utils/explorers.js', () => ({
   getBlockExplorerUrls: vi.fn(() => []),
 }))
@@ -372,6 +377,82 @@ describe('Borrow Service', () => {
           amount: { amount: 1 },
         }),
       )
+    })
+  })
+
+  describe('aave mirror integration', () => {
+    const aaveMarketId = {
+      kind: 'aave-v3' as const,
+      marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+      chainId: 11155420 as never,
+    }
+
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('mints USDC_DEMO after an aave borrow, with the realized amount', async () => {
+      const { mintMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.openPosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.openPosition({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        borrowAmount: { amount: 1 },
+      })
+      expect(mintMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        1_000_000n,
+        '0xreal',
+      )
+    })
+
+    it('removes USDC_DEMO after an aave repay', async () => {
+      const { removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.repay.mockResolvedValue({
+        borrowAmount: 500_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.repay({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        amount: { amount: 0.5 },
+      })
+      expect(removeMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        500_000n,
+        '0xreal',
+      )
+    })
+
+    it('does NOT mirror a morpho borrow or repay (regression)', async () => {
+      const { mintMirrorUsdc, removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.openPosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+      mockWalletBorrow.repay.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.openPosition({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 1 },
+      })
+      await borrowService.repay({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        amount: { amount: 1 },
+      })
+      expect(mintMirrorUsdc).not.toHaveBeenCalled()
+      expect(removeMirrorUsdc).not.toHaveBeenCalled()
     })
   })
 })

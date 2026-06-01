@@ -22,8 +22,22 @@ import {
 import { getActions } from '@/config/actions.js'
 import { AaveUSDCBorrowDemo, MorphoUSDCBorrowDemo } from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
+import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
 import { getWallet } from '@/services/wallet.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
+
+// The Aave borrow demo mirrors the real OP-Sepolia borrow as USDC_DEMO on Base
+// Sepolia (see services/mirror.ts). Only aave-v3 markets mirror; the Morpho
+// demo market is self-contained and must run untouched.
+function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
+  return market.kind === 'aave-v3'
+}
+
+// Realized borrow/repay amount from a receipt, used as the mirror mint/remove
+// amount so the demo USDC_DEMO ledger tracks the real Aave debt principal.
+function realizedAmount(receipt: BorrowReceipt): bigint | undefined {
+  return receipt.borrowAmount
+}
 
 const BORROW_MARKETS: BorrowMarketConfig[] = [
   MorphoUSDCBorrowDemo,
@@ -171,6 +185,13 @@ export async function openPosition(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.openPosition({ ...rest, market })
+  // Mirror the borrowed USDC as USDC_DEMO once the real Aave tx confirms.
+  // Best-effort and silent: not awaited, so the response is bounded by the
+  // real borrow, not the mirror mint (Aave demo only).
+  const minted = realizedAmount(receipt)
+  if (isAaveMirrorMarket(market) && minted !== undefined && minted > 0n) {
+    void mintMirrorUsdc(wallet, minted, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }
 
@@ -188,6 +209,11 @@ export async function closePosition(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.closePosition({ ...rest, market })
+  // Close repays the debt, so mirror the repaid amount as a removal.
+  const removed = realizedAmount(receipt)
+  if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
+    void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }
 
@@ -239,5 +265,12 @@ export async function repay(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.repay({ ...rest, market })
+  // Remove the repaid amount of USDC_DEMO after the real Aave repay confirms.
+  // Best-effort: if the user spent their USDC_DEMO down the transfer reverts
+  // and is logged, leaving the deferred reconciliation to repair drift.
+  const removed = realizedAmount(receipt)
+  if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
+    void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }
