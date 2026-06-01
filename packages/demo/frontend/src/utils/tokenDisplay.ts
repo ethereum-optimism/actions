@@ -6,6 +6,15 @@ export function displaySymbol(symbol: string): string {
 }
 
 /**
+ * Truncate (not round) a number to `decimals` places. Used for Max-button
+ * prefills so the filled amount never exceeds the available balance.
+ */
+export function floorToFixed(value: number, decimals: number): string {
+  const factor = 10 ** decimals
+  return (Math.floor(value * factor) / factor).toFixed(decimals)
+}
+
+/**
  * Check if a token is a stablecoin (currently only USDC)
  */
 export function isStablecoin(symbol: string): boolean {

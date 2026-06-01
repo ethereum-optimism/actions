@@ -1,10 +1,6 @@
+import { floorToFixed } from '@/utils/tokenDisplay'
 import Shimmer from './Shimmer'
 import { MaxButton } from './CtaButton'
-
-function floorToFixed(value: number, decimals: number): string {
-  const factor = 10 ** decimals
-  return (Math.floor(value * factor) / factor).toFixed(decimals)
-}
 
 export function AmountLabel({
   mode,

@@ -1,5 +1,5 @@
 import InfoIcon from '@/components/icons/InfoIcon'
-import { displaySymbol } from '@/utils/tokenDisplay'
+import { displaySymbol, formatUsd } from '@/utils/tokenDisplay'
 import { AmountInput } from '../AmountInput'
 import { MaxButton } from '../CtaButton'
 
@@ -63,7 +63,7 @@ export function AmountSection({
           color: '#9195A6',
         }}
       >
-        <span>${amountUsd.toFixed(2)}</span>
+        <span>{formatUsd(amountUsd) ?? '$0.00'}</span>
         <span
           style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
         >

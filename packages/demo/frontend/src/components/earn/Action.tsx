@@ -8,6 +8,11 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
+import {
+  displaySymbol as toDisplaySymbol,
+  floorToFixed,
+  formatUsd,
+} from '@/utils/tokenDisplay'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
@@ -21,11 +26,6 @@ import { AmountLabel } from './AmountLabel'
 import { AmountInput } from './AmountInput'
 import { IlliquidMarketNotice } from './IlliquidMarketNotice'
 import Shimmer from './Shimmer'
-
-function floorToFixed(value: number, decimals: number): string {
-  const factor = 10 ** decimals
-  return (Math.floor(value * factor) / factor).toFixed(decimals)
-}
 
 interface ActionProps {
   assetBalance: string
@@ -106,7 +106,7 @@ export function Action({
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
-  const displaySymbol = assetSymbol.replace('_DEMO', '')
+  const displaySymbol = toDisplaySymbol(assetSymbol)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -429,11 +429,10 @@ export function Action({
           isExecuting={isLoading}
           flow="withdraw"
           amount={{ main: amount || '0' }}
-          amountUsd={
-            (parseFloat(amount) || 0) > 0
-              ? `$${((parseFloat(amount) || 0) * stubPriceUsd(asset.metadata.symbol)).toFixed(2)}`
-              : null
-          }
+          amountUsd={formatUsd(
+            parseFloat(amount) || 0,
+            stubPriceUsd(asset.metadata.symbol),
+          )}
           asset={asset}
           currentLtv={collateralProjection.currentLtv}
           projectedLtv={projectedLtv}
