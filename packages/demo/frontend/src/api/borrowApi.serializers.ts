@@ -46,9 +46,9 @@ export function buildQuoteBody(
 export function deserializeMarket(m: Serialized<BorrowMarket>): BorrowMarket {
   return {
     ...m,
-    totalBorrowed: BigInt(m.totalBorrowed as unknown as string),
-    totalCollateral: BigInt(m.totalCollateral as unknown as string),
-  } as BorrowMarket
+    totalBorrowed: BigInt(m.totalBorrowed),
+    totalCollateral: BigInt(m.totalCollateral),
+  }
 }
 
 export function deserializePosition(
@@ -56,39 +56,26 @@ export function deserializePosition(
 ): BorrowMarketPosition {
   return {
     ...p,
-    collateralShares: BigInt(p.collateralShares as unknown as string),
-    collateralAmount: BigInt(p.collateralAmount as unknown as string),
-    borrowAmount: BigInt(p.borrowAmount as unknown as string),
-    liquidationPrice: BigInt(p.liquidationPrice as unknown as string),
-  } as BorrowMarketPosition
+    collateralShares: BigInt(p.collateralShares),
+    collateralAmount: BigInt(p.collateralAmount),
+    borrowAmount: BigInt(p.borrowAmount),
+    liquidationPrice: BigInt(p.liquidationPrice),
+  }
 }
 
 export function deserializeQuote(q: Serialized<BorrowQuote>): BorrowQuote {
-  const positionBefore = q.positionBefore
-    ? deserializePosition(
-        q.positionBefore as unknown as Serialized<BorrowMarketPosition>,
-      )
-    : null
-  const positionAfter = deserializePosition(
-    q.positionAfter as unknown as Serialized<BorrowMarketPosition>,
-  )
   return {
     ...q,
-    positionBefore,
-    positionAfter,
+    positionBefore: q.positionBefore
+      ? deserializePosition(q.positionBefore)
+      : null,
+    positionAfter: deserializePosition(q.positionAfter),
     borrowAmountRaw:
-      q.borrowAmountRaw != null
-        ? BigInt(q.borrowAmountRaw as unknown as string)
-        : undefined,
+      q.borrowAmountRaw != null ? BigInt(q.borrowAmountRaw) : undefined,
     collateralAmountRaw:
-      q.collateralAmountRaw != null
-        ? BigInt(q.collateralAmountRaw as unknown as string)
-        : undefined,
-    gasEstimate:
-      q.gasEstimate != null
-        ? BigInt(q.gasEstimate as unknown as string)
-        : undefined,
-  } as BorrowQuote
+      q.collateralAmountRaw != null ? BigInt(q.collateralAmountRaw) : undefined,
+    gasEstimate: q.gasEstimate != null ? BigInt(q.gasEstimate) : undefined,
+  }
 }
 
 export function deserializeReceipt(
@@ -96,20 +83,13 @@ export function deserializeReceipt(
 ): BorrowReceipt {
   return {
     ...r,
-    borrowAmount:
-      r.borrowAmount != null
-        ? BigInt(r.borrowAmount as unknown as string)
-        : undefined,
+    borrowAmount: r.borrowAmount != null ? BigInt(r.borrowAmount) : undefined,
     collateralAmount:
-      r.collateralAmount != null
-        ? BigInt(r.collateralAmount as unknown as string)
-        : undefined,
+      r.collateralAmount != null ? BigInt(r.collateralAmount) : undefined,
     positionAfter: r.positionAfter
-      ? deserializePosition(
-          r.positionAfter as unknown as Serialized<BorrowMarketPosition>,
-        )
+      ? deserializePosition(r.positionAfter)
       : undefined,
-  } as BorrowReceipt
+  }
 }
 
 export function marketIdPath(marketId: BorrowMarketId): string {
