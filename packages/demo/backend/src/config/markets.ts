@@ -1,5 +1,6 @@
 import {
   type BorrowMarketConfig,
+  computeAaveBorrowMarketId,
   ETH,
   type LendMarketConfig,
   USDC,
@@ -35,6 +36,34 @@ export const AaveETH: LendMarketConfig = {
 }
 
 // ---------- Borrow markets ----------
+
+// Real Aave V3 borrow market on OP Sepolia: real ETH collateral, real USDC
+// debt. The demo mirrors the borrowed USDC as USDC_DEMO on Base Sepolia in the
+// backend (see services/mirror.ts); the SDK provider itself only touches real
+// Aave. Synthetic market id derived from the (chain, WETH, USDC) triple.
+const AAVE_OP_SEPOLIA_WETH = WETH.address[optimismSepolia.id] as Address
+const AAVE_OP_SEPOLIA_USDC = USDC.address[optimismSepolia.id] as Address
+
+export const AaveUSDCBorrowDemo: BorrowMarketConfig = {
+  kind: 'aave-v3',
+  marketId: computeAaveBorrowMarketId({
+    chainId: optimismSepolia.id,
+    collateralAddress: AAVE_OP_SEPOLIA_WETH,
+    debtAddress: AAVE_OP_SEPOLIA_USDC,
+  }),
+  chainId: optimismSepolia.id,
+  name: 'Aave ETH / USDC',
+  collateralAsset: ETH,
+  borrowAsset: USDC,
+  borrowProvider: 'aave',
+  lendProvider: 'aave',
+  aave: {
+    debtReserve: AAVE_OP_SEPOLIA_USDC,
+    collateralReserve: AAVE_OP_SEPOLIA_WETH,
+    collateralUsesWethGateway: true,
+  },
+}
+
 export const MorphoUSDCBorrowDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId:

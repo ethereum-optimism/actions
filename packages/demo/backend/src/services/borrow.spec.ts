@@ -40,6 +40,21 @@ vi.mock('../config/markets.js', async () => {
         lltv: 0n,
       },
     },
+    AaveUSDCBorrowDemo: {
+      kind: 'aave-v3' as const,
+      marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+      chainId: 11155420 as never,
+      name: 'Aave ETH / USDC',
+      collateralAsset: { metadata: { symbol: 'ETH' } },
+      borrowAsset: { metadata: { symbol: 'USDC' } },
+      borrowProvider: 'aave',
+      lendProvider: 'aave',
+      aave: {
+        debtReserve: '0x0',
+        collateralReserve: '0x0',
+        collateralUsesWethGateway: true,
+      },
+    },
   }
 })
 
@@ -155,6 +170,26 @@ describe('Borrow Service', () => {
         borrowService.resolveMarketConfig({
           ...baseMarketId,
           marketId: ('0x' + 'b'.repeat(64)) as `0x${string}`,
+        }),
+      ).toThrow()
+    })
+
+    it('resolves the aave-v3 market by kind + id', () => {
+      const result = borrowService.resolveMarketConfig({
+        kind: 'aave-v3',
+        marketId: ('0x' + 'C'.repeat(64)) as `0x${string}`,
+        chainId: 11155420 as never,
+      })
+      expect(result.kind).toBe('aave-v3')
+      expect(result.borrowProvider).toBe('aave')
+    })
+
+    it('does not cross-match an aave id against a morpho-blue kind', () => {
+      expect(() =>
+        borrowService.resolveMarketConfig({
+          kind: 'morpho-blue',
+          marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+          chainId: 11155420 as never,
         }),
       ).toThrow()
     })
