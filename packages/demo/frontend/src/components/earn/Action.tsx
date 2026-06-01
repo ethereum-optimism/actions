@@ -8,10 +8,16 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
+import {
+  displaySymbol as toDisplaySymbol,
+  floorToFixed,
+  formatUsd,
+} from '@/utils/tokenDisplay'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
 import { computeProjection } from '@/utils/borrowMath'
+import { sameMarketId } from '@/utils/marketId'
 import { BorrowHealthCard } from './borrow/BorrowHealthCard'
 import { ReviewBorrowHealthModal } from './borrow/ReviewBorrowHealthModal'
 import { CtaButton } from './CtaButton'
@@ -20,11 +26,6 @@ import { AmountLabel } from './AmountLabel'
 import { AmountInput } from './AmountInput'
 import { IlliquidMarketNotice } from './IlliquidMarketNotice'
 import Shimmer from './Shimmer'
-
-function floorToFixed(value: number, decimals: number): string {
-  const factor = 10 ** decimals
-  return (Math.floor(value * factor) / factor).toFixed(decimals)
-}
 
 interface ActionProps {
   assetBalance: string
@@ -105,7 +106,7 @@ export function Action({
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
-  const displaySymbol = assetSymbol.replace('_DEMO', '')
+  const displaySymbol = toDisplaySymbol(assetSymbol)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -123,13 +124,8 @@ export function Action({
   const borrowCtx = useContext(BorrowProviderContext)
   const borrowMarkets = borrowCtx?.markets ?? []
   const pledgedMarket = pledgedPosition
-    ? (borrowMarkets.find(
-        (m) =>
-          m.marketId.kind === pledgedPosition.marketId.kind &&
-          m.marketId.chainId === pledgedPosition.marketId.chainId &&
-          pledgedPosition.marketId.kind === 'morpho-blue' &&
-          m.marketId.kind === 'morpho-blue' &&
-          m.marketId.marketId === pledgedPosition.marketId.marketId,
+    ? (borrowMarkets.find((m) =>
+        sameMarketId(m.marketId, pledgedPosition.marketId),
       ) ?? null)
     : null
   const [toast, setToast] = useState<{
@@ -149,8 +145,7 @@ export function Action({
   const balanceValue = parseFloat(assetBalance || '0')
   const needsMint = balanceValue <= 0 && mode === 'lend'
   const amountValue = parseFloat(effectiveAmount) || 0
-  const rawMaxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-  const maxAmount = rawMaxAmount
+  const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
   const isHighlighted =
@@ -183,7 +178,6 @@ export function Action({
       borrowApy: pledgedPosition.borrowApy,
       collValueUsd,
       projection,
-      borrSymbol: pledgedPosition.borrowAsset.metadata.symbol,
     }
   }, [amount, asset, pledgedPosition, pledgedMarket, showHealthCard])
 
@@ -435,11 +429,10 @@ export function Action({
           isExecuting={isLoading}
           flow="withdraw"
           amount={{ main: amount || '0' }}
-          amountUsd={
-            (parseFloat(amount) || 0) > 0
-              ? `$${((parseFloat(amount) || 0) * stubPriceUsd(asset.metadata.symbol)).toFixed(2)}`
-              : null
-          }
+          amountUsd={formatUsd(
+            parseFloat(amount) || 0,
+            stubPriceUsd(asset.metadata.symbol),
+          )}
           asset={asset}
           currentLtv={collateralProjection.currentLtv}
           projectedLtv={projectedLtv}

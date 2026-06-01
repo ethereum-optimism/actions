@@ -202,3 +202,19 @@ export function liquidationBonusFromIncentive(factor: bigint): number {
   if (factor <= 10n ** 18n) return 0
   return morphoWadToNumber(factor - 10n ** 18n)
 }
+
+/**
+ * True when the market's `collateralToken` differs from the configured
+ * collateral asset address — i.e. collateral is a vault share wrapping the
+ * underlying. ERC-4626 reads like `convertToAssets` are valid only then.
+ */
+export function isVaultWrappedCollateral(
+  config: MorphoBorrowMarketConfig,
+): boolean {
+  const assetAddress = config.collateralAsset.address[config.chainId]
+  if (assetAddress === undefined) return false
+  return (
+    assetAddress.toLowerCase() !==
+    config.marketParams.collateralToken.toLowerCase()
+  )
+}

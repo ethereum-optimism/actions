@@ -1,26 +1,25 @@
 /**
  * Borrow tab form.
  *
- * Composes ModeToggle (Borrow / Repay) + AmountInput (with optional
+ * Composes ModeToggle (Borrow / Repay) + AmountSection (with optional
  * token-chip selector) + BorrowHealthCard (with live projection) +
  * CtaButton + Asset modal + Review modal + TransactionModal + Toast.
  *
  * The projection (LTV, HF, would-liquidate) is sourced from
- * `borrowApi.getQuote` with a 250 ms debounce on amount/mode/market
- * changes. Local stub-price math is kept only for the synchronous Max
- * button prefill and for current-position USD display.
+ * `borrowApi.getQuote` via `useBorrowQuotePreview`, with a local
+ * stub-price fallback in `useBorrowProjection`. Local stub-price math is
+ * also kept for the synchronous Max button prefill.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import type { BorrowMarket, BorrowQuote } from '@eth-optimism/actions-sdk'
+import { useMemo, useState } from 'react'
+import type { BorrowMarket } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
-import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
-import { useActivityLogger } from '@/hooks/useActivityLogger'
+import { useBorrowQuotePreview } from '@/hooks/useBorrowQuotePreview'
+import { useBorrowProjection } from '@/hooks/useBorrowProjection'
+import { useBorrowTransaction } from '@/hooks/useBorrowTransaction'
 import {
   computeMaxBorrowSafeUsd,
-  computeProjection,
   computeSafeCeilingLtv,
 } from '@/utils/borrowMath'
 import {
@@ -28,16 +27,16 @@ import {
   lendPositionUsd,
   positionUsd,
 } from '@/utils/borrowValuation'
+import { sameMarketId } from '@/utils/marketId'
 import type { MarketPosition } from '@/types/market'
-import { AmountInput } from '../AmountInput'
-import { CtaButton, MaxButton } from '../CtaButton'
+import { CtaButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
-import TransactionModal from '../TransactionModal'
-import { Toast } from '../Toast'
-import InfoIcon from '@/components/icons/InfoIcon'
-import { BorrowAssetModal } from './BorrowAssetModal'
 import { BorrowHealthCard } from './BorrowHealthCard'
-import { ReviewBorrowHealthModal } from './ReviewBorrowHealthModal'
+import { AmountSection, SectionHeader } from './BorrowAmountSection'
+import {
+  BorrowActionModals,
+  type BorrowHealthProps,
+} from './BorrowActionModals'
 
 const MODE_OPTIONS = [
   { value: 'borrow' as const, label: 'Borrow' },
@@ -46,13 +45,6 @@ const MODE_OPTIONS = [
 
 export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
-}
-
-function marketProviderDisplayName(kind: string): string {
-  if (kind === 'morpho-blue') return 'Morpho'
-  // Fallback: capitalize the provider prefix (e.g. `aave-v3` -> `Aave`).
-  const head = kind.split('-')[0] ?? kind
-  return head.charAt(0).toUpperCase() + head.slice(1)
 }
 
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
@@ -64,21 +56,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     handleTransaction,
     getQuote,
   } = useBorrowProviderContext()
-  const { logActivity } = useActivityLogger()
+  const { isExecuting, runTransaction, txModal, toast } = useBorrowTransaction()
 
   const [mode, setMode] = useState<'borrow' | 'repay'>('borrow')
   const [amount, setAmount] = useState('')
   const [assetModalOpen, setAssetModalOpen] = useState(false)
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
-  const [txModalOpen, setTxModalOpen] = useState(false)
-  const [txStatus, setTxStatus] = useState<'loading' | 'error'>('loading')
-  const [txError, setTxError] = useState<string | undefined>()
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [toast, setToast] = useState<{
-    visible: boolean
-    title: string
-    description: string
-  }>({ visible: false, title: '', description: '' })
 
   // Markets the user can pick from in borrow mode: those whose collateral
   // matches the chosen lend asset.
@@ -103,13 +86,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // existing borrow).
   const activeMarket: BorrowMarket | null =
     mode === 'repay' && selectedMarketPosition
-      ? (markets.find(
-          (m) =>
-            m.marketId.kind === selectedMarketPosition.marketId.kind &&
-            m.marketId.chainId === selectedMarketPosition.marketId.chainId &&
-            selectedMarketPosition.marketId.kind === 'morpho-blue' &&
-            m.marketId.kind === 'morpho-blue' &&
-            m.marketId.marketId === selectedMarketPosition.marketId.marketId,
+      ? (markets.find((m) =>
+          sameMarketId(m.marketId, selectedMarketPosition.marketId),
         ) ?? null)
       : selectedMarket
 
@@ -144,126 +122,28 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const amountUsd = amountNum * amountAssetPriceUsd
 
-  // Local fallback projection: used while the debounced backend
-  // preview is in flight, and for instant feedback as the user types.
-  const localProjection = useMemo(() => {
-    if (!activeMarket || !activeAsset || amountNum <= 0) return null
-    return computeProjection(
-      {
-        borrowValueUsd: currentBorrUsd,
-        collateralValueUsd: projectionCollateralUsd,
-      },
-      {
-        kind: mode === 'borrow' ? 'borrow' : 'repay',
-        deltaValueUsd: amountUsd,
-      },
-      maxLtv,
-    )
-  }, [
+  const { livePreview, isPreviewLoading } = useBorrowQuotePreview({
     activeMarket,
-    activeAsset,
     amountNum,
-    amountUsd,
-    currentBorrUsd,
-    projectionCollateralUsd,
     mode,
-    maxLtv,
-  ])
-
-  // Backend-driven preview from `/borrow/price`. Debounced and
-  // race-safe: outdated responses are discarded on cancel.
-  const [livePreview, setLivePreview] = useState<BorrowQuote | null>(null)
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
-  useEffect(() => {
-    if (!activeMarket || amountNum <= 0) {
-      setLivePreview(null)
-      setIsPreviewLoading(false)
-      return
-    }
-    let cancelled = false
-    setIsPreviewLoading(true)
-    const handle = setTimeout(async () => {
-      try {
-        const lendCollateralSharesRaw = selectedLendPosition.depositedSharesRaw
-        const directCollateralSharesRaw =
-          selectedLendPosition.directDepositedSharesRaw
-        const params =
-          mode === 'borrow'
-            ? ({
-                action: 'open' as const,
-                marketId: activeMarket.marketId,
-                borrowAmount: { amount: amountNum },
-                // Fresh-open: pledge the user's full vault-share balance.
-                // Existing position: pledge only newly added direct lend shares.
-                ...((currentCollUsd === 0 &&
-                  lendCollateralSharesRaw !== null &&
-                  lendCollateralSharesRaw > 0n) ||
-                (currentCollUsd > 0 &&
-                  directCollateralSharesRaw !== null &&
-                  directCollateralSharesRaw > 0n)
-                  ? {
-                      collateralAmount: {
-                        amountRaw:
-                          currentCollUsd === 0
-                            ? lendCollateralSharesRaw!
-                            : directCollateralSharesRaw!,
-                      },
-                    }
-                  : {}),
-              } as const)
-            : ({
-                action: 'repay' as const,
-                marketId: activeMarket.marketId,
-                amount: { amount: amountNum },
-              } as const)
-        const quote = await getQuote(params)
-        if (!cancelled) setLivePreview(quote)
-      } catch {
-        // Network / 4xx: fall back to the local projection.
-        if (!cancelled) setLivePreview(null)
-      } finally {
-        if (!cancelled) setIsPreviewLoading(false)
-      }
-    }, 250)
-    return () => {
-      cancelled = true
-      clearTimeout(handle)
-    }
-  }, [
-    activeMarket,
-    amountNum,
     currentCollUsd,
-    mode,
     selectedLendPosition,
     getQuote,
-  ])
+  })
 
-  const backendLtv = livePreview?.positionAfter.ltv ?? null
-  const backendHf = livePreview?.positionAfter.healthFactor ?? null
-
-  // Baseline LTV reflects the user's *current* on-chain position, not
-  // the post-projection collateral aggregate, so the "before" reading
-  // in the review modal matches reality (and the projected delta starts
-  // from the right baseline).
-  const currentLtv = currentCollUsd > 0 ? currentBorrUsd / currentCollUsd : 0
-  const projectedLtv =
-    backendLtv !== null
-      ? backendLtv
-      : localProjection && localProjection.kind === 'projected'
-        ? localProjection.ltv
-        : currentLtv
-  // Backend doesn't surface a discrete "would liquidate" flag; treat a
-  // projected LTV at or above maxLtv as the sentinel.
-  const wouldLiquidate =
-    backendLtv !== null
-      ? backendLtv >= maxLtv
-      : localProjection?.kind === 'wouldLiquidate'
-  const projectedHealthFactor =
-    backendHf !== null
-      ? backendHf
-      : localProjection && localProjection.kind === 'projected'
-        ? localProjection.healthFactor
-        : Number.POSITIVE_INFINITY
+  const { currentLtv, projectedLtv, wouldLiquidate, projectedHealthFactor } =
+    useBorrowProjection({
+      activeMarket,
+      activeAsset,
+      amountNum,
+      amountUsd,
+      mode,
+      maxLtv,
+      currentBorrUsd,
+      currentCollUsd,
+      projectionCollateralUsd,
+      livePreview,
+    })
 
   // Max button: in borrow mode, prefill to the safe ceiling;
   // in repay mode, prefill the current borrowed amount.
@@ -301,15 +181,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   }
 
   // Disable the CTA if the projected position enters the buffer zone
-  // (past safe ceiling, before liquidation). Users can lower the amount
-  // or use Max (which prefills to the safe ceiling) to re-enable. Repay
-  // mode is exempt since it only reduces LTV.
+  // (past safe ceiling, before liquidation). Repay mode is exempt since it
+  // only reduces LTV.
   const inBufferZone =
     mode === 'borrow' && projectedLtv > safeCeilingLtv && !wouldLiquidate
   // Gate the CTA on having a settled preview so the review modal never
-  // shows a stale local projection while a /borrow/price call is in
-  // flight. The local fallback covers the synchronous typing window and
-  // network-error fallback only, not user-initiated submit.
+  // shows a stale local projection while a /borrow/quote call is in flight.
   const canOpenReview =
     !!activeMarket &&
     !!activeAsset &&
@@ -318,89 +195,24 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     !inBufferZone &&
     !isPreviewLoading
 
-  // useRef-based reentry guard so a rapid double-tap of the Confirm
-  // button can't dispatch the same transaction twice before
-  // isExecuting state commits.
-  const executingRef = useRef(false)
-
   const handleCtaClick = () => {
     if (!canOpenReview) return
     setReviewModalOpen(true)
   }
 
-  const handleReviewConfirm = async () => {
-    if (executingRef.current) return
+  const handleReviewConfirm = () => {
     if (!activeMarket || !activeAsset) return
-    executingRef.current = true
-    const symbol = activeAsset.metadata.symbol.replace('_DEMO', '')
-    const activity = logActivity(mode, {
-      amount: amountNum.toString(),
-      assetSymbol: symbol,
-      // Provider display name (e.g. "Morpho"), derived from the market's
-      // discriminator. Used by the activity summary to render
-      // "Borrowed X OP from Morpho" instead of "Wallet: borrow".
-      marketName: marketProviderDisplayName(activeMarket.marketId.kind),
+    runTransaction({
+      mode,
+      activeMarket,
+      activeAsset,
+      amountNum,
+      selectedLendPosition,
+      currentCollUsd,
+      handleTransaction,
+      onReviewClose: () => setReviewModalOpen(false),
+      onSuccess: () => setAmount(''),
     })
-    setIsExecuting(true)
-    setReviewModalOpen(false)
-    setTxModalOpen(true)
-    setTxStatus('loading')
-    setTxError(undefined)
-    try {
-      let receipt
-      if (mode === 'borrow') {
-        const collateralSharesRaw = selectedLendPosition.depositedSharesRaw
-        const topUpCollateralSharesRaw =
-          currentCollUsd > 0
-            ? selectedLendPosition.directDepositedSharesRaw
-            : collateralSharesRaw
-        if (
-          currentCollUsd === 0 &&
-          (collateralSharesRaw === null || collateralSharesRaw <= 0n)
-        ) {
-          throw new Error(
-            'No collateral shares available for this lend position',
-          )
-        }
-        receipt = await handleTransaction('open', {
-          marketId: activeMarket.marketId,
-          borrowAmount: { amount: amountNum },
-          ...(topUpCollateralSharesRaw !== null && topUpCollateralSharesRaw > 0n
-            ? {
-                collateralAmount: {
-                  amountRaw: topUpCollateralSharesRaw,
-                },
-              }
-            : {}),
-          collateralAsset: undefined,
-        })
-      } else {
-        receipt = await handleTransaction('repay', {
-          marketId: activeMarket.marketId,
-          amount: { amount: amountNum },
-        })
-      }
-      const blockExplorerUrl = getBlockExplorerUrl(
-        activeMarket.marketId.chainId,
-        receipt,
-      )
-      activity?.confirm({ blockExplorerUrl })
-      setTxModalOpen(false)
-      setAmount('')
-      setToast({
-        visible: true,
-        title: mode === 'borrow' ? 'Borrowed' : 'Repaid',
-        description: `${amountNum} ${symbol}`,
-      })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Transaction failed'
-      activity?.error()
-      setTxStatus('error')
-      setTxError(msg)
-    } finally {
-      setIsExecuting(false)
-      executingRef.current = false
-    }
   }
 
   const ctaDisabled = !canOpenReview || isExecuting
@@ -409,6 +221,22 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : mode === 'borrow'
       ? 'Borrow'
       : 'Repay'
+
+  // Health readings shared by the inline card and the review modal.
+  const health: BorrowHealthProps | null =
+    activeMarket && activeAsset
+      ? {
+          currentLtv,
+          projectedLtv,
+          maxLtv,
+          bufferPct,
+          borrowApy,
+          collateralAsset: activeMarket.collateralAsset,
+          collateralValueUsd: projectionCollateralUsd,
+          projectedHealthFactor,
+          wouldLiquidate,
+        }
+      : null
 
   return (
     <div
@@ -443,151 +271,30 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           }
         />
 
-        {activeMarket && activeAsset && (
-          <BorrowHealthCard
-            currentLtv={currentLtv}
-            projectedLtv={projectedLtv}
-            maxLtv={maxLtv}
-            bufferPct={bufferPct}
-            borrowApy={borrowApy}
-            collateralAsset={activeMarket.collateralAsset}
-            collateralValueUsd={projectionCollateralUsd}
-            projectedHealthFactor={projectedHealthFactor}
-            wouldLiquidate={wouldLiquidate}
-          />
-        )}
+        {health && <BorrowHealthCard {...health} />}
 
         <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
           {ctaText}
         </CtaButton>
       </div>
 
-      <BorrowAssetModal
-        isOpen={assetModalOpen}
-        onClose={() => setAssetModalOpen(false)}
-        markets={eligibleMarkets}
-        onSelect={handleAssetSelect}
+      <BorrowActionModals
+        assetModalOpen={assetModalOpen}
+        onAssetModalClose={() => setAssetModalOpen(false)}
+        eligibleMarkets={eligibleMarkets}
+        onAssetSelect={handleAssetSelect}
+        reviewOpen={reviewModalOpen}
+        onReviewClose={() => setReviewModalOpen(false)}
+        onReviewConfirm={handleReviewConfirm}
+        isExecuting={isExecuting}
+        mode={mode}
+        amount={amount}
+        amountUsd={amountUsd}
+        activeAsset={activeAsset}
+        health={health}
+        txModal={txModal}
+        toast={toast}
       />
-
-      {activeMarket && activeAsset && (
-        <ReviewBorrowHealthModal
-          isOpen={reviewModalOpen}
-          onClose={() => setReviewModalOpen(false)}
-          onConfirm={handleReviewConfirm}
-          isExecuting={isExecuting}
-          flow={mode === 'borrow' ? 'borrow' : 'repay'}
-          amount={{ main: amount || '0' }}
-          amountUsd={amountUsd > 0 ? `$${amountUsd.toFixed(2)}` : null}
-          asset={activeAsset}
-          currentLtv={currentLtv}
-          projectedLtv={projectedLtv}
-          maxLtv={maxLtv}
-          bufferPct={bufferPct}
-          borrowApy={borrowApy}
-          collateralAsset={activeMarket.collateralAsset}
-          collateralValueUsd={projectionCollateralUsd}
-          projectedHealthFactor={projectedHealthFactor}
-          wouldLiquidate={wouldLiquidate}
-        />
-      )}
-
-      <TransactionModal
-        isOpen={txModalOpen}
-        status={txStatus}
-        errorMessage={txError}
-        onClose={() => {
-          setTxModalOpen(false)
-          setTxStatus('loading')
-          setTxError(undefined)
-        }}
-      />
-
-      {createPortal(
-        <Toast
-          isVisible={toast.visible}
-          onClose={() => setToast((t) => ({ ...t, visible: false }))}
-          title={toast.title}
-          description={toast.description}
-        />,
-        document.body,
-      )}
-    </div>
-  )
-}
-
-function SectionHeader() {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '16px',
-        fontWeight: 600,
-        color: '#1a1b1e',
-      }}
-    >
-      Select Asset
-      <InfoIcon />
-    </div>
-  )
-}
-
-function AmountSection({
-  mode,
-  amount,
-  onAmountChange,
-  onMaxClick,
-  amountUsd,
-  activeAsset,
-  onTokenClick,
-}: {
-  mode: 'borrow' | 'repay'
-  amount: string
-  onAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onMaxClick: () => void
-  amountUsd: number
-  activeAsset: { metadata: { symbol: string } } | null
-  onTokenClick?: () => void
-}) {
-  const symbol =
-    activeAsset?.metadata.symbol.replace('_DEMO', '') ?? 'Select token'
-  const inputProps = onTokenClick
-    ? {
-        value: amount,
-        onChange: onAmountChange,
-        disabled: false,
-        displaySymbol: symbol,
-        onTokenClick,
-      }
-    : {
-        value: amount,
-        onChange: onAmountChange,
-        disabled: false,
-        displaySymbol: symbol,
-      }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <span style={{ color: '#1a1b1e', fontSize: '14px' }}>
-        {mode === 'borrow' ? 'Borrow' : 'Repay'}
-      </span>
-      <AmountInput {...inputProps} />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '13px',
-          color: '#9195A6',
-        }}
-      >
-        <span>${amountUsd.toFixed(2)}</span>
-        <span
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-        >
-          <MaxButton onClick={onMaxClick} />
-        </span>
-      </div>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { type Address, erc20Abi, erc4626Abi, type PublicClient } from 'viem'
 
 import {
   buildMorphoBlueMarket,
+  isVaultWrappedCollateral,
   requireMorphoBlueAddress,
 } from '@/actions/borrow/providers/morpho/blue.js'
 import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
@@ -55,22 +56,6 @@ export async function fetchMorphoMarket(
  * non-vault branch ends up returning `shares` unchanged.
  */
 const SHARE_PRICE_IDENTITY = 10n ** 18n
-
-/**
- * True when the market's `collateralToken` differs from the configured
- * collateral asset address — i.e. collateral is a vault share that wraps
- * the underlying. Only ERC-4626-shaped collateral exposes `convertToAssets`,
- * so we gate that call on this check; calling it against a plain ERC-20
- * collateral would revert the entire multicall.
- */
-function hasVaultCollateral(config: MorphoBorrowMarketConfig): boolean {
-  const assetAddress = config.collateralAsset.address[config.chainId]
-  if (assetAddress === undefined) return false
-  return (
-    assetAddress.toLowerCase() !==
-    config.marketParams.collateralToken.toLowerCase()
-  )
-}
 
 /**
  * Reads the four contracts every borrow-position multicall needs (position,
@@ -126,7 +111,7 @@ export async function fetchMorphoPosition(
   user: Address,
 ): Promise<{ position: AccrualPosition; sharePrice: bigint }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
-  const isVaultWrapped = hasVaultCollateral(config)
+  const isVaultWrapped = isVaultWrappedCollateral(config)
   // `sharePrice` is the underlying-asset value of 1 whole vault share
   // (`convertToAssets(1e18)`). Folding it into the multicall avoids a
   // serial round-trip when the position is read. The result is used to
@@ -181,7 +166,7 @@ export async function fetchMorphoStateWithAllowance(
   allowance: bigint
 }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
-  const isVaultWrapped = hasVaultCollateral(config)
+  const isVaultWrapped = isVaultWrappedCollateral(config)
   const allowanceContract = {
     address: token,
     abi: erc20Abi,

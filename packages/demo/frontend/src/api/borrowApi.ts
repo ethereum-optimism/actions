@@ -2,10 +2,10 @@
  * Borrow API client.
  *
  * Thin HTTP layer over the demo backend's `/borrow/*` and
- * `/wallet/borrow/*` routes. Shape mirrors `ActionsApiClient`: a class
- * with a `request<T>` helper and per-method `headers?: HeadersInit` for
- * auth. Param shapes live in `./borrowApi.types`; body builders,
- * deserializers, and URL helpers live in `./borrowApi.serializers`.
+ * `/wallet/borrow/*` routes. Extends `BaseApiClient` for the shared
+ * timeout-aware `request<T>` helper; per method takes `headers?:
+ * HeadersInit` for auth. Param shapes live in `./borrowApi.types`; body
+ * builders, deserializers, and URL helpers live in `./borrowApi.serializers`.
  */
 
 import type { Address } from 'viem'
@@ -18,9 +18,8 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import { serializeBigInt } from '@eth-optimism/actions-sdk'
 
-import { env } from '../envVars.js'
 import type { Serialized } from '../util/serialize.js'
-import { ActionsApiError } from './actionsApi.js'
+import { BaseApiClient, MUTATION_TIMEOUT_MS } from './apiClient.js'
 import {
   buildQuoteBody,
   deserializeMarket,
@@ -46,49 +45,7 @@ export type {
   StubRepayParams,
 } from './borrowApi.types.js'
 
-// Reads use a short timeout so the UI never shows a stuck preview;
-// mutations get a longer ceiling to wait on transaction settlement.
-const READ_TIMEOUT_MS = 8_000
-const MUTATION_TIMEOUT_MS = 30_000
-
-export class BorrowApiClient {
-  private baseUrl = env.VITE_ACTIONS_API_URL
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit & { timeoutMs?: number } = {},
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
-    const { headers, timeoutMs = READ_TIMEOUT_MS, signal, ...rest } = options
-
-    const timeoutSignal = AbortSignal.timeout(timeoutMs)
-    const combinedSignal = signal
-      ? AbortSignal.any([signal, timeoutSignal])
-      : timeoutSignal
-
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      ...rest,
-      signal: combinedSignal,
-    })
-
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorData.message || errorMessage
-      } catch {
-        // body wasn't JSON; keep the status-line message
-      }
-      throw new ActionsApiError(errorMessage, response.status)
-    }
-
-    return (await response.json()) as T
-  }
-
+export class BorrowApiClient extends BaseApiClient {
   async getMarkets(
     headers: HeadersInit = {},
   ): Promise<readonly BorrowMarket[]> {

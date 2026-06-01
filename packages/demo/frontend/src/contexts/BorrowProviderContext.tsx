@@ -6,10 +6,8 @@ import {
   type UseBorrowProviderReturn,
 } from '@/hooks/useBorrowProvider'
 
-export type BorrowProviderContextValue = UseBorrowProviderReturn
-
 export const BorrowProviderContext =
-  createContext<BorrowProviderContextValue | null>(null)
+  createContext<UseBorrowProviderReturn | null>(null)
 
 export function BorrowProviderContextProvider({
   walletAddress,
@@ -28,7 +26,7 @@ export function BorrowProviderContextProvider({
   )
 }
 
-export function useBorrowProviderContext(): BorrowProviderContextValue {
+export function useBorrowProviderContext(): UseBorrowProviderReturn {
   const ctx = useContext(BorrowProviderContext)
   if (!ctx) {
     throw new Error(

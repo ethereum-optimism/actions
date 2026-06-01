@@ -4,6 +4,8 @@ import { computeMorphoMarketId } from '@/actions/borrow/providers/morpho/marketP
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
+  BorrowMarketConfig,
+  BorrowQuote,
   MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
@@ -54,4 +56,50 @@ export const otherMarket: MorphoBorrowMarketConfig = {
   marketId: computeMorphoMarketId(otherMarketParams),
   name: 'Second test market',
   marketParams: otherMarketParams,
+}
+
+/**
+ * Builds a `BorrowQuote` for the given market (defaults to `market`).
+ * Pass `overrides` to tweak top-level fields (action, execution, timestamps).
+ */
+export function makeBorrowQuote(
+  overrides: Partial<BorrowQuote> = {},
+  marketConfig: BorrowMarketConfig = market,
+): BorrowQuote {
+  const now = Math.floor(Date.now() / 1000)
+  const id = {
+    kind: marketConfig.kind,
+    marketId: marketConfig.marketId,
+    chainId: marketConfig.chainId,
+  }
+  return {
+    marketId: id,
+    action: 'open',
+    positionBefore: null,
+    positionAfter: {
+      marketId: id,
+      collateralAsset: marketConfig.collateralAsset,
+      collateralShares: 0n,
+      collateralSharesFormatted: '0',
+      collateralAmount: 0n,
+      collateralAmountFormatted: '0',
+      borrowAsset: marketConfig.borrowAsset,
+      borrowAmount: 0n,
+      borrowAmountFormatted: '0',
+      healthFactor: null,
+      liquidationPrice: 0n,
+      liquidationPriceFormatted: '0',
+      borrowApy: 0.05,
+      liquidationBonus: 0.05,
+      ltv: null,
+      maxLtv: 0.86,
+    },
+    fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
+    safeCeilingLtv: 0.86 * 0.95,
+    execution: { transactions: [] },
+    provider: 'morpho',
+    quotedAt: now,
+    expiresAt: now + 30,
+    ...overrides,
+  }
 }

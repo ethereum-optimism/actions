@@ -16,6 +16,7 @@ import { CtaButton } from '../CtaButton'
 import { BorrowHealthCard } from './BorrowHealthCard'
 import { AmountRow, DetailRow, FormattedAmount } from '../reviewModalParts'
 import { getAssetLogo } from '@/constants/logos'
+import { displaySymbol } from '@/utils/tokenDisplay'
 import type { Asset } from '@eth-optimism/actions-sdk'
 
 export type BorrowFlow = 'borrow' | 'repay' | 'withdraw'
@@ -86,7 +87,7 @@ export function ReviewBorrowHealthModal({
   wouldLiquidate = false,
   exceedsDeposit = false,
 }: ReviewBorrowHealthModalProps) {
-  const symbol = asset.metadata.symbol.replace('_DEMO', '')
+  const symbol = displaySymbol(asset.metadata.symbol)
   const assetLogo = getAssetLogo(asset.metadata.symbol)
 
   const isDanger =

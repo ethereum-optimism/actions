@@ -1,9 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
+import { displaySymbol, formatAmountParts } from '@/utils/tokenDisplay'
+import { isEthSymbol } from '@/utils/assetUtils'
 import Shimmer from './Shimmer'
 import { PositionsTable } from './PositionsTable'
+import { InfoTooltip } from './InfoTooltip'
+
+const APY_TOOLTIP =
+  'Annual Percentage Yield: the rate of return earned on an investment over one year'
 
 interface LentBalanceProps {
   marketPositions: MarketPosition[]
@@ -26,9 +31,6 @@ function LentBalance({
   getInterest,
 }: LentBalanceProps) {
   const { hoveredAction } = useActivityHighlight()
-  const [showApyTooltip, setShowApyTooltip] = useState(false)
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
-  const apyRef = useRef<HTMLDivElement>(null)
 
   const isSelectedMarket = (market: MarketPosition): boolean =>
     !!selectedMarketId &&
@@ -70,31 +72,6 @@ function LentBalance({
 
   const isEmpty = !isInitialLoad && marketsWithDeposits.length === 0
 
-  useEffect(() => {
-    if (showApyTooltip && apyRef.current) {
-      const rect = apyRef.current.getBoundingClientRect()
-      setTooltipPos({
-        top: rect.top - 8,
-        left: rect.left + rect.width / 2,
-      })
-    }
-  }, [showApyTooltip])
-
-  const formatDepositedAmount = (amount: string) => {
-    const num = parseFloat(amount)
-    if (isNaN(num)) return { main: '0.00', secondary: '00' }
-
-    const formatted = num.toFixed(4)
-    const parts = formatted.split('.')
-    const wholePart = parts[0]
-    const decimalPart = parts[1] || '0000'
-
-    return {
-      main: `${wholePart}.${decimalPart.substring(0, 2)}`,
-      secondary: decimalPart.substring(2, 4),
-    }
-  }
-
   const isCardHighlighted =
     hoveredAction === 'getMarket' || hoveredAction === 'getPosition'
 
@@ -132,7 +109,7 @@ function LentBalance({
                   fontFamily: 'Inter',
                 }}
               >
-                {market.asset.metadata.symbol.replace('_DEMO', '')}
+                {displaySymbol(market.asset.metadata.symbol)}
               </span>
               <span
                 style={{
@@ -169,7 +146,10 @@ function LentBalance({
                       <Shimmer width="60px" height="16px" variant="rectangle" />
                     </div>
                   )
-                const fmt = formatDepositedAmount(amount)
+                const fmt = formatAmountParts(
+                  amount,
+                  isEthSymbol(market.asset.metadata.symbol),
+                )
                 return (
                   <>
                     {market.asset.metadata.symbol !== 'ETH' && '$'}
@@ -277,14 +257,7 @@ function LentBalance({
               position: 'relative',
             }}
           >
-            <div
-              ref={apyRef}
-              onMouseEnter={() => setShowApyTooltip(true)}
-              onMouseLeave={() => setShowApyTooltip(false)}
-              style={{ display: 'inline-flex', cursor: 'pointer' }}
-            >
-              APY
-            </div>
+            <InfoTooltip label="APY" text={APY_TOOLTIP} />
           </th>
           <th
             style={{
@@ -400,7 +373,7 @@ function LentBalance({
                     fontFamily: 'Inter',
                   }}
                 >
-                  {market.asset.metadata.symbol.replace('_DEMO', '')}
+                  {displaySymbol(market.asset.metadata.symbol)}
                 </span>
               </div>
             </td>
@@ -493,7 +466,10 @@ function LentBalance({
                         />
                       </div>
                     )
-                  const fmt = formatDepositedAmount(amount)
+                  const fmt = formatAmountParts(
+                    amount,
+                    isEthSymbol(market.asset.metadata.symbol),
+                  )
                   return (
                     <>
                       {market.asset.metadata.symbol !== 'ETH' && '$'}
@@ -523,41 +499,6 @@ function LentBalance({
         mobileLayout={mobileLayout}
         isCardHighlighted={isCardHighlighted}
       />
-      {showApyTooltip && (
-        <div
-          style={{
-            position: 'fixed',
-            top: `${tooltipPos.top}px`,
-            left: `${tooltipPos.left}px`,
-            transform: 'translate(-50%, -100%)',
-            padding: '8px 12px',
-            backgroundColor: 'rgba(0, 0, 0, 0.56)',
-            color: '#FFFFFF',
-            fontSize: '12px',
-            borderRadius: '6px',
-            whiteSpace: 'nowrap',
-            zIndex: 9999,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            pointerEvents: 'none',
-          }}
-        >
-          Annual Percentage Yield: the rate of return earned on an investment
-          over one year
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 0,
-              height: 0,
-              borderLeft: '4px solid transparent',
-              borderRight: '4px solid transparent',
-              borderTop: '4px solid rgba(0, 0, 0, 0.56)',
-            }}
-          />
-        </div>
-      )}
     </>
   )
 }
