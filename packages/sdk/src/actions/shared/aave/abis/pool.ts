@@ -85,6 +85,19 @@ export const POOL_GET_RESERVE_DATA_ABI = [
 ] as const
 
 /**
+ * Aave PoolAddressesProvider + AaveOracle ABIs for USD-base price reads.
+ * `getPriceOracle()` resolves the oracle; `getAssetPrice(asset)` returns the
+ * asset price in the pool's base currency (USD, 8 decimals on Aave V3).
+ */
+export const ADDRESSES_PROVIDER_ABI = parseAbi([
+  'function getPriceOracle() view returns (address)',
+])
+
+export const ORACLE_ABI = parseAbi([
+  'function getAssetPrice(address asset) view returns (uint256)',
+])
+
+/**
  * Aave WrappedTokenGatewayV3 ABI - native ETH deposit, withdraw, borrow, repay.
  * `borrowETH` requires prior `approveDelegation` on the variable debt token;
  * `repayETH` sends the repayment as `msg.value`.

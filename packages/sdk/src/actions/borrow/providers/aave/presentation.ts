@@ -108,6 +108,53 @@ export interface AavePositionState {
   totalDebtBase: bigint
 }
 
+/** Base-currency prices (USD, oracle scale) for the pair's two reserves. */
+export interface AaveReservePrices {
+  collateralPrice: bigint
+  debtPrice: bigint
+}
+
+/**
+ * Project the position that results from a borrow action by adjusting the
+ * collateral/debt amounts and recomputing the base-currency aggregates and
+ * health factor from oracle prices. Pure — does not read on-chain state.
+ * Deltas are signed (borrow/deposit positive, repay/withdraw negative) and
+ * clamped at zero.
+ */
+export function projectAavePositionState(
+  current: AavePositionState,
+  prices: AaveReservePrices,
+  delta: { collateralDelta: bigint; debtDelta: bigint },
+  decimals: { collateral: number; debt: number },
+): AavePositionState {
+  const collateralAmount = max0(
+    current.collateralAmount + delta.collateralDelta,
+  )
+  const debtAmount = max0(current.debtAmount + delta.debtDelta)
+  const collateralBase =
+    (collateralAmount * prices.collateralPrice) /
+    10n ** BigInt(decimals.collateral)
+  const debtBase =
+    (debtAmount * prices.debtPrice) / 10n ** BigInt(decimals.debt)
+  const healthFactorWad =
+    debtBase > 0n
+      ? (collateralBase * current.liquidationThresholdBps * 10n ** 18n) /
+        (debtBase * BPS)
+      : 0n
+  return {
+    ...current,
+    collateralAmount,
+    debtAmount,
+    healthFactorWad,
+    totalCollateralBase: collateralBase,
+    totalDebtBase: debtBase,
+  }
+}
+
+function max0(value: bigint): bigint {
+  return value < 0n ? 0n : value
+}
+
 export function adaptAaveBorrowMarket(
   config: AaveBorrowMarketConfig,
   state: AaveMarketState,

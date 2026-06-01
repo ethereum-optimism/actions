@@ -1,16 +1,22 @@
 import { type Address, erc20Abi, type PublicClient } from 'viem'
 
 import {
+  ADDRESSES_PROVIDER_ABI,
+  ORACLE_ABI,
   POOL_ACCOUNT_ABI,
   POOL_GET_RESERVE_DATA_ABI,
 } from '@/actions/shared/aave/abis/pool.js'
-import { getPoolAddress } from '@/actions/shared/aave/addresses.js'
+import {
+  getAaveAddresses,
+  getPoolAddress,
+} from '@/actions/shared/aave/addresses.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 
 import {
   type AaveMarketState,
   type AavePositionState,
+  type AaveReservePrices,
   decodeReserveConfig,
 } from './presentation.js'
 
@@ -206,4 +212,43 @@ export async function fetchAaveReserveTokens(
     aToken: decodeReserveData(collateralReserveRaw).aToken,
     variableDebtToken: decodeReserveData(debtReserveRaw).variableDebtToken,
   }
+}
+
+/**
+ * Read base-currency (USD) oracle prices for the collateral and debt reserves.
+ * Resolves the oracle via the pool addresses provider, then reads both prices.
+ * Used by the write path to project the resulting position's health factor.
+ */
+export async function fetchAavePrices(
+  client: PublicClient,
+  config: AaveBorrowMarketConfig,
+): Promise<AaveReservePrices> {
+  const addresses = getAaveAddresses(config.chainId)
+  if (!addresses) throw new ChainNotSupportedError({ chainId: config.chainId })
+
+  const oracle = await client.readContract({
+    address: addresses.poolAddressesProvider,
+    abi: ADDRESSES_PROVIDER_ABI,
+    functionName: 'getPriceOracle',
+  })
+
+  const [collateralPrice, debtPrice] = await client.multicall({
+    allowFailure: false,
+    contracts: [
+      {
+        address: oracle,
+        abi: ORACLE_ABI,
+        functionName: 'getAssetPrice',
+        args: [config.aave.collateralReserve],
+      },
+      {
+        address: oracle,
+        abi: ORACLE_ABI,
+        functionName: 'getAssetPrice',
+        args: [config.aave.debtReserve],
+      },
+    ],
+  })
+
+  return { collateralPrice, debtPrice }
 }
