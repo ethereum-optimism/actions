@@ -1,7 +1,6 @@
 import { ActionsError, type Asset } from '@eth-optimism/actions-sdk'
-import { useContext, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { parseUnits } from 'viem'
 import TransactionModal from './TransactionModal'
 import { Toast } from './Toast'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
@@ -14,10 +13,7 @@ import {
   formatUsd,
 } from '@/utils/tokenDisplay'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
-import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
-import { useCollateralStatus } from '@/hooks/useCollateralStatus'
-import { computeProjection } from '@/utils/borrowMath'
-import { sameMarketId } from '@/utils/marketId'
+import { useWithdrawCollateral } from '@/hooks/useWithdrawCollateral'
 import { BorrowHealthCard } from './borrow/BorrowHealthCard'
 import { ReviewBorrowHealthModal } from './borrow/ReviewBorrowHealthModal'
 import { CtaButton } from './CtaButton'
@@ -113,21 +109,6 @@ export function Action({
   const [modalStatus, setModalStatus] = useState<'loading' | 'error'>('loading')
   const [modalMessage, setModalMessage] = useState<string | undefined>()
   const [reviewBorrowOpen, setReviewBorrowOpen] = useState(false)
-
-  // Collateral-aware withdraw: if the lent asset is currently securing a
-  // borrow position, we show a Health card showing projected health for
-  // the typed withdraw, and route the submit through ReviewBorrowHealthModal.
-  const collateralStatus = useCollateralStatus(asset ?? null)
-  const pledgedPosition = collateralStatus.positions[0] ?? null
-  // Same fallback pattern as useCollateralStatus: read via raw useContext
-  // so Lend tests don't need to wrap in <BorrowProviderContextProvider>.
-  const borrowCtx = useContext(BorrowProviderContext)
-  const borrowMarkets = borrowCtx?.markets ?? []
-  const pledgedMarket = pledgedPosition
-    ? (borrowMarkets.find((m) =>
-        sameMarketId(m.marketId, pledgedPosition.marketId),
-      ) ?? null)
-    : null
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
@@ -152,60 +133,24 @@ export function Action({
     (hoveredAction === 'deposit' && mode === 'lend') ||
     (hoveredAction === 'withdraw' && mode === 'withdraw')
 
-  // Withdraw-with-collateral projection
-  const showHealthCard = mode === 'withdraw' && !!pledgedPosition && !!asset
-  const collateralProjection = useMemo(() => {
-    if (!showHealthCard || !pledgedPosition || !asset) return null
-    const collPrice = stubPriceUsd(asset.metadata.symbol)
-    const borrPrice = stubPriceUsd(pledgedPosition.borrowAsset.metadata.symbol)
-    const collValueUsd =
-      parseFloat(pledgedPosition.collateralAmountFormatted || '0') * collPrice
-    const borrValueUsd =
-      parseFloat(pledgedPosition.borrowAmountFormatted || '0') * borrPrice
-    const withdrawValueUsd = (parseFloat(amount) || 0) * collPrice
-    const maxLtv = pledgedPosition.maxLtv ?? 0
-    const bufferPct = pledgedMarket?.healthBufferPct ?? 0
-    const currentLtv = collValueUsd > 0 ? borrValueUsd / collValueUsd : 0
-    const projection = computeProjection(
-      { borrowValueUsd: borrValueUsd, collateralValueUsd: collValueUsd },
-      { kind: 'withdrawCollateral', deltaValueUsd: withdrawValueUsd },
-      maxLtv,
-    )
-    return {
-      currentLtv,
-      maxLtv,
-      bufferPct,
-      borrowApy: pledgedPosition.borrowApy,
-      collValueUsd,
-      projection,
-    }
-  }, [amount, asset, pledgedPosition, pledgedMarket, showHealthCard])
-
-  const projectedLtv =
-    collateralProjection && collateralProjection.projection.kind === 'projected'
-      ? collateralProjection.projection.ltv
-      : (collateralProjection?.currentLtv ?? 0)
-  const projectedHealthFactor =
-    collateralProjection && collateralProjection.projection.kind === 'projected'
-      ? collateralProjection.projection.healthFactor
-      : Number.POSITIVE_INFINITY
-  const withdrawWouldLiquidate =
-    collateralProjection?.projection.kind === 'wouldLiquidate'
-  // The "would liquidate" sentinel also fires when the user types more than
-  // their available deposit (negative projected collateral). Surface that
-  // case separately so the Health card can label it as a data-entry issue
-  // ("Exceeds deposit") instead of a liquidation risk.
-  const exceedsDeposit =
-    mode === 'withdraw' && amountValue > parseFloat(maxAmount)
-
-  // Disable the withdraw CTA if the projected position enters the
-  // buffer zone (past safe ceiling, before liquidation), or would
-  // liquidate outright. Derived from collateralProjection so the
-  // gating math has one source of truth.
-  const withdrawIntoBuffer =
-    collateralProjection?.projection.kind === 'projected' &&
-    collateralProjection.projection.ltv >
-      collateralProjection.maxLtv * (1 - collateralProjection.bufferPct)
+  // Collateral-aware withdraw: when the lent asset secures a borrow
+  // position, this surfaces the projected-health card, gates the CTA, and
+  // computes the collateral shares to release.
+  const {
+    pledgedPosition,
+    showHealthCard,
+    withdrawIntoBuffer,
+    withdrawWouldLiquidate,
+    releaseCollateralAmountRaw,
+    health,
+  } = useWithdrawCollateral({
+    asset,
+    mode,
+    amount,
+    amountValue,
+    maxAmount,
+    directDepositedAmount,
+  })
 
   const isActionDisabled = needsMint
     ? false
@@ -216,33 +161,6 @@ export function Action({
       (isLockedWithdrawAmount && !hasDeposit) ||
       withdrawIntoBuffer ||
       withdrawWouldLiquidate
-
-  const directDepositedValue = parseFloat(directDepositedAmount || '0')
-
-  const releaseCollateralAmountRaw = useMemo(() => {
-    if (
-      mode !== 'withdraw' ||
-      !pledgedPosition ||
-      !asset ||
-      amountValue <= directDepositedValue
-    ) {
-      return null
-    }
-
-    const collateralAmountRaw = parseUnits(
-      (amountValue - directDepositedValue).toFixed(asset.metadata.decimals),
-      asset.metadata.decimals,
-    )
-    if (collateralAmountRaw <= 0n || pledgedPosition.collateralAmount <= 0n) {
-      return null
-    }
-
-    const numerator =
-      collateralAmountRaw * pledgedPosition.collateralShares +
-      pledgedPosition.collateralAmount -
-      1n
-    return numerator / pledgedPosition.collateralAmount
-  }, [amountValue, asset, directDepositedValue, mode, pledgedPosition])
 
   const handleMaxClick = () => {
     let value = parseFloat(maxAmount)
@@ -310,9 +228,9 @@ export function Action({
     }
     if (isActionDisabled) return
 
-    // If withdrawing against pledged collateral, route through the
-    // review modal so the user sees the projected health impact.
-    if (showHealthCard && pledgedPosition) {
+    // Withdrawing against pledged collateral routes through the review
+    // modal so the user sees the projected health impact first.
+    if (showHealthCard) {
       setReviewBorrowOpen(true)
       return
     }
@@ -390,20 +308,7 @@ export function Action({
             displaySymbol={displaySymbol}
           />
 
-          {showHealthCard && collateralProjection && pledgedPosition && (
-            <BorrowHealthCard
-              currentLtv={collateralProjection.currentLtv}
-              projectedLtv={projectedLtv}
-              maxLtv={collateralProjection.maxLtv}
-              bufferPct={collateralProjection.bufferPct}
-              borrowApy={collateralProjection.borrowApy}
-              collateralAsset={pledgedPosition.collateralAsset}
-              collateralValueUsd={collateralProjection.collValueUsd}
-              projectedHealthFactor={projectedHealthFactor}
-              wouldLiquidate={withdrawWouldLiquidate || exceedsDeposit}
-              exceedsDeposit={exceedsDeposit}
-            />
-          )}
+          {showHealthCard && health && <BorrowHealthCard {...health} />}
 
           {isLoadingBalance && !isMintingAsset ? (
             <div data-testid="shimmer">
@@ -421,7 +326,7 @@ export function Action({
         </div>
       </div>
 
-      {showHealthCard && collateralProjection && pledgedPosition && asset && (
+      {showHealthCard && health && asset && (
         <ReviewBorrowHealthModal
           isOpen={reviewBorrowOpen}
           onClose={() => setReviewBorrowOpen(false)}
@@ -434,16 +339,7 @@ export function Action({
             stubPriceUsd(asset.metadata.symbol),
           )}
           asset={asset}
-          currentLtv={collateralProjection.currentLtv}
-          projectedLtv={projectedLtv}
-          maxLtv={collateralProjection.maxLtv}
-          bufferPct={collateralProjection.bufferPct}
-          borrowApy={collateralProjection.borrowApy}
-          collateralAsset={pledgedPosition.collateralAsset}
-          collateralValueUsd={collateralProjection.collValueUsd}
-          projectedHealthFactor={projectedHealthFactor}
-          wouldLiquidate={withdrawWouldLiquidate || exceedsDeposit}
-          exceedsDeposit={exceedsDeposit}
+          {...health}
         />
       )}
 
