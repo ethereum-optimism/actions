@@ -45,7 +45,3 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
     lltv: 860000000000000000n,
   },
 }
-
-export const ALL_BORROW_MARKETS: readonly BorrowMarketConfig[] = [
-  MorphoBorrowDemo,
-]
