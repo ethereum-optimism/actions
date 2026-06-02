@@ -140,10 +140,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
-        market,
-        params.walletAddress,
-        market.marketParams.collateralToken,
-      )
+      market,
+      params.walletAddress,
+      market.marketParams.collateralToken,
+    )
     const after = computeOpen(params, current)
     const { txs, approvalTx } = buildOpenTransactions(params, allowance)
     return this.assembleQuote({
@@ -165,10 +165,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
-        market,
-        params.walletAddress,
-        market.marketParams.loanToken,
-      )
+      market,
+      params.walletAddress,
+      market.marketParams.loanToken,
+    )
     const plan = computeClose(params, current)
     const { txs, approvalTx } = buildCloseTransactions(params, plan, allowance)
     return this.assembleQuote({
@@ -196,10 +196,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
-        market,
-        params.walletAddress,
-        market.marketParams.collateralToken,
-      )
+      market,
+      params.walletAddress,
+      market.marketParams.collateralToken,
+    )
     const after = current.supplyCollateral(params.amountWei)
 
     const txs: TransactionData[] = []
@@ -272,10 +272,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
-        market,
-        params.walletAddress,
-        market.marketParams.loanToken,
-      )
+      market,
+      params.walletAddress,
+      market.marketParams.loanToken,
+    )
 
     const repay = computeRepay(params.amount, current, 'repay')
     const approvalTx = buildRepayApproval(
