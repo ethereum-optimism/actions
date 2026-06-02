@@ -95,11 +95,13 @@ export function useBorrowTransaction() {
             : {}),
           collateralAsset: undefined,
         })
-      } else {
+      } else if (mode === 'repay') {
         receipt = await handleTransaction('repay', {
           marketId: activeMarket.marketId,
           amount: { amount: amountNum },
         })
+      } else {
+        throw new Error(`Unsupported transaction mode: ${mode}`)
       }
       const blockExplorerUrl = getBlockExplorerUrl(
         activeMarket.marketId.chainId,
