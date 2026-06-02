@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type {
   Asset,
-  BorrowQuote,
   BorrowReceipt,
   SupportedChainId,
   SwapQuote,
@@ -13,6 +12,7 @@ import {
   buildFrontendBorrowOperations,
   buildFrontendWalletOperations,
 } from './frontendWalletOperations'
+import { buildBorrowQuote } from '@/test-utils/borrowFixtures'
 import { MorphoBorrowDemo } from '@/constants/markets'
 
 const CHAIN_ID = 84532 as SupportedChainId
@@ -120,35 +120,7 @@ describe('buildFrontendWalletOperations', () => {
   })
 
   it('routes borrow pricing and execution through the SDK namespaces for frontend wallets', async () => {
-    const quote = {
-      marketId: borrowMarketId,
-      action: 'open',
-      positionBefore: null,
-      positionAfter: {
-        marketId: borrowMarketId,
-        collateralAsset: assetIn,
-        collateralAmount: 10_000_000n,
-        collateralAmountFormatted: '10',
-        collateralShares: 10_000_000n,
-        collateralSharesFormatted: '10',
-        borrowAsset: assetOut,
-        borrowAmount: 5_000_000_000_000_000_000n,
-        borrowAmountFormatted: '5',
-        healthFactor: 1.8,
-        liquidationPrice: 1_000_000n,
-        liquidationPriceFormatted: '1',
-        borrowApy: 0.05,
-        liquidationBonus: 0.05,
-        ltv: 0.5,
-        maxLtv: 0.86,
-      },
-      fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
-      safeCeilingLtv: 0.81,
-      execution: { transactions: [] },
-      provider: 'morpho',
-      quotedAt: 1_700_000_000,
-      expiresAt: 1_700_000_060,
-    } satisfies BorrowQuote
+    const quote = buildBorrowQuote()
     const receipt = {
       action: 'open',
       marketId: borrowMarketId,

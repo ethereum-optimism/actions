@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
-import type { MarketPosition } from '@/types/market'
-import { buildBorrowMarketPosition } from '@/test-utils/borrowFixtures'
+import {
+  buildBorrowMarketPosition,
+  buildMarketPosition,
+  usdcAsset,
+} from '@/test-utils/borrowFixtures'
 import { buildEffectiveLendPositions } from './effectiveLendPositions'
 
 const market: MarketInfo = {
@@ -9,12 +12,7 @@ const market: MarketInfo = {
   logo: 'market.svg',
   networkName: 'Base Sepolia',
   networkLogo: 'base.svg',
-  // @ts-expect-error test fixture
-  asset: {
-    metadata: { symbol: 'USDC_DEMO', name: 'Demo USDC', decimals: 6 },
-    type: 'erc20',
-    address: { 84532: '0x1' },
-  },
+  asset: usdcAsset,
   assetLogo: 'usdc.svg',
   apy: 0.04,
   isLoadingApy: false,
@@ -22,12 +20,11 @@ const market: MarketInfo = {
   provider: 'morpho',
 }
 
-const directPosition: MarketPosition = {
+const directPosition = buildMarketPosition({
   marketName: market.name,
   marketLogo: market.logo,
   networkName: market.networkName,
   networkLogo: market.networkLogo,
-  asset: market.asset,
   assetLogo: market.assetLogo,
   apy: market.apy,
   depositedAmount: '25.00',
@@ -36,16 +33,12 @@ const directPosition: MarketPosition = {
   depositedSharesRaw: 25n,
   directDepositedShares: '25.00',
   directDepositedSharesRaw: 25n,
-  pledgedCollateralAmount: null,
-  isLoadingApy: false,
-  isLoadingPosition: false,
   marketId: market.marketId,
   provider: market.provider,
-}
+})
 
 const pledgedPosition = buildBorrowMarketPosition({
   marketId: { kind: 'morpho-blue', marketId: '0xborrow', chainId: 84532 },
-  collateralAsset: market.asset,
   collateralShares: 75n,
   collateralSharesFormatted: '75',
   collateralAmount: 75_000000n,

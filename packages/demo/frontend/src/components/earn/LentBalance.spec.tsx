@@ -1,45 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import LentBalance from './LentBalance'
-import type { MarketPosition } from '@/types/market'
+import { buildMarketPosition as buildPosition } from '@/test-utils/borrowFixtures'
 
 vi.mock('../../contexts/ActivityHighlightContext', () => ({
   useActivityHighlight: () => ({ hoveredAction: null }),
 }))
-
-function buildPosition(
-  overrides: Partial<MarketPosition> = {},
-): MarketPosition {
-  return {
-    marketName: 'Gauntlet USDC',
-    marketLogo: 'https://example.test/gauntlet.svg',
-    networkName: 'Base Sepolia',
-    networkLogo: 'https://example.test/base.svg',
-    // @ts-expect-error - simplified Asset for test fixtures
-    asset: {
-      metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-      type: 'erc20',
-      address: { 84532: '0x0000000000000000000000000000000000000001' },
-    },
-    assetLogo: 'https://example.test/usdc.svg',
-    apy: 0.045,
-    depositedAmount: '100.00',
-    directDepositedAmount: '100.00',
-    depositedShares: '100.00',
-    depositedSharesRaw: 100000000n,
-    directDepositedShares: '100.00',
-    directDepositedSharesRaw: 100000000n,
-    pledgedCollateralAmount: null,
-    isLoadingApy: false,
-    isLoadingPosition: false,
-    marketId: {
-      address: '0x0000000000000000000000000000000000000001',
-      chainId: 84532,
-    },
-    provider: 'morpho',
-    ...overrides,
-  }
-}
 
 describe('LentBalance', () => {
   it('renders the empty-state copy when no positions have deposits', () => {
