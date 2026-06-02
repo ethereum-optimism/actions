@@ -5,7 +5,7 @@
  */
 
 import { Fragment } from 'react'
-import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
+import type { BorrowPosition } from '@/types/market'
 import { colors } from '@/constants/colors'
 import { marketIdKey } from '@/utils/marketId'
 import { AssetAmount, deriveBorrowRowDisplay } from './BorrowPositionsCells'
@@ -18,7 +18,7 @@ export function MobileCards({
   positions,
   hoveredAction,
 }: {
-  positions: readonly BorrowMarketPosition[]
+  positions: readonly BorrowPosition[]
   hoveredAction: string | null
 }) {
   return (

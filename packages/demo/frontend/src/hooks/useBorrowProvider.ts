@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { Address } from 'viem'
+import { type Address, formatUnits } from 'viem'
 import type {
   BorrowAction,
   BorrowMarket,
@@ -24,11 +24,42 @@ import type {
 } from '@/api/borrowApi'
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
 import { sameMarketId } from '@/utils/marketId'
+import { fetchCollateralUnderlying } from '@/utils/vaultCollateral'
+import type { BorrowPosition } from '@/types/market'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
   dispatchEarnPositionsChanged,
   EARN_POSITIONS_CHANGED_EVENT,
 } from '@/utils/earnSync'
+
+/**
+ * Enriches a raw SDK position with the underlying-collateral amount the demo
+ * derives from the vault's `convertToAssets`. Falls back to zero on a read
+ * failure so one market's RPC hiccup can't break the positions list.
+ */
+async function enrichPosition(
+  position: BorrowMarketPosition,
+  market: BorrowMarket,
+): Promise<BorrowPosition> {
+  let collateralAmount = 0n
+  try {
+    collateralAmount = await fetchCollateralUnderlying(
+      market.collateralToken,
+      position.collateralShares,
+      market.marketId.chainId,
+    )
+  } catch (e) {
+    console.warn('Failed to convert collateral shares to underlying', e)
+  }
+  return {
+    ...position,
+    collateralAmount,
+    collateralAmountFormatted: formatUnits(
+      collateralAmount,
+      position.collateralAsset.metadata.decimals,
+    ),
+  }
+}
 
 interface BorrowOperationParams {
   open: StubOpenParams
@@ -73,8 +104,8 @@ export interface UseBorrowProviderReturn {
   handleMarketSelect: (market: BorrowMarket) => void
   isLoadingMarkets: boolean
 
-  borrowPositions: readonly BorrowMarketPosition[]
-  selectedMarketPosition: BorrowMarketPosition | null
+  borrowPositions: readonly BorrowPosition[]
+  selectedMarketPosition: BorrowPosition | null
   isLoadingPositions: boolean
   isInitialLoad: boolean
 
@@ -108,7 +139,7 @@ export function useBorrowProvider(
     null,
   )
   const [borrowPositions, setBorrowPositions] = useState<
-    readonly BorrowMarketPosition[]
+    readonly BorrowPosition[]
   >([])
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
@@ -148,12 +179,16 @@ export function useBorrowProvider(
       try {
         // allSettled so one failing market doesn't collapse the whole list to a "no borrow" state.
         const settled = await Promise.allSettled(
-          markets.map((market) =>
-            operations.getPosition(address, market.marketId),
-          ),
+          markets.map(async (market) => {
+            const position = await operations.getPosition(
+              address,
+              market.marketId,
+            )
+            return position === null ? null : enrichPosition(position, market)
+          }),
         )
         if (isCancelled()) return
-        const positions: BorrowMarketPosition[] = []
+        const positions: BorrowPosition[] = []
         let hadFailure = false
         for (const result of settled) {
           if (result.status === 'fulfilled') {
@@ -248,13 +283,19 @@ export function useBorrowProvider(
       // Optimistic local update from the receipt so the table reflects the
       // new position before the backend refetch completes.
       if (receipt.positionAfter) {
-        const next = receipt.positionAfter
-        setBorrowPositions((current) => {
-          const filtered = current.filter(
-            (p) => !sameMarketId(p.marketId, next.marketId),
-          )
-          return isEmptyPosition(next) ? filtered : [...filtered, next]
-        })
+        const raw = receipt.positionAfter
+        const market = markets.find((m) =>
+          sameMarketId(m.marketId, raw.marketId),
+        )
+        if (market) {
+          const next = await enrichPosition(raw, market)
+          setBorrowPositions((current) => {
+            const filtered = current.filter(
+              (p) => !sameMarketId(p.marketId, next.marketId),
+            )
+            return isEmptyPosition(next) ? filtered : [...filtered, next]
+          })
+        }
       }
       // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager refetch returns pre-tx state and clobbers the optimistic update.
       window.setTimeout(() => {
@@ -263,7 +304,7 @@ export function useBorrowProvider(
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       return receipt
     },
-    [walletAddress, operations, queryClient],
+    [walletAddress, operations, queryClient, markets],
   )
 
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(

@@ -54,7 +54,6 @@ export function deserializePosition(
   return {
     ...p,
     collateralShares: BigInt(p.collateralShares),
-    collateralAmount: BigInt(p.collateralAmount),
     borrowAmount: BigInt(p.borrowAmount),
     liquidationPrice: BigInt(p.liquidationPrice),
   }
@@ -102,5 +101,5 @@ export function marketIdPath(marketId: BorrowMarketId): string {
  * expects `null` in that case so empty positions don't render.
  */
 export function isEmptyPosition(p: BorrowMarketPosition): boolean {
-  return p.collateralAmount === 0n && p.borrowAmount === 0n
+  return p.collateralShares === 0n && p.borrowAmount === 0n
 }

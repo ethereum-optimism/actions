@@ -7,8 +7,9 @@
 
 import { useContext, useMemo } from 'react'
 import { parseUnits } from 'viem'
-import type { Asset, BorrowMarketPosition } from '@eth-optimism/actions-sdk'
+import type { Asset } from '@eth-optimism/actions-sdk'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
+import type { BorrowPosition } from '@/types/market'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
 import { computeProjection } from '@/utils/borrowMath'
 import { sameMarketId } from '@/utils/marketId'
@@ -17,7 +18,7 @@ import type { BorrowHealthCardProps } from '@/components/earn/borrow/BorrowHealt
 
 export interface WithdrawCollateralState {
   /** The borrow position (if any) the lent asset is securing. */
-  pledgedPosition: BorrowMarketPosition | null
+  pledgedPosition: BorrowPosition | null
   /** True when the withdraw should surface the projected-health card. */
   showHealthCard: boolean
   /** Projected position lands in the buffer zone (gate the CTA). */

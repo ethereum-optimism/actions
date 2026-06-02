@@ -4,9 +4,8 @@
  * shows the user's full balance even after part of it became borrow collateral.
  */
 
-import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
-import type { MarketPosition } from '@/types/market'
+import type { BorrowPosition, MarketPosition } from '@/types/market'
 
 function toAmount(value: string | null | undefined): number {
   if (!value) return 0
@@ -16,8 +15,8 @@ function toAmount(value: string | null | undefined): number {
 
 function findPledgedPosition(
   market: Pick<MarketPosition, 'asset'>,
-  borrowPositions: readonly BorrowMarketPosition[],
-): BorrowMarketPosition | null {
+  borrowPositions: readonly BorrowPosition[],
+): BorrowPosition | null {
   return (
     borrowPositions.find(
       (position) =>
@@ -30,7 +29,7 @@ function findPledgedPosition(
 export function buildEffectiveLendPositions(
   markets: readonly MarketInfo[],
   directPositions: readonly MarketPosition[],
-  borrowPositions: readonly BorrowMarketPosition[],
+  borrowPositions: readonly BorrowPosition[],
 ): MarketPosition[] {
   return markets
     .map((market) => {

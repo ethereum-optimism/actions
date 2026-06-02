@@ -1,13 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type {
-  BorrowMarket,
-  BorrowMarketPosition,
-  SupportedChainId,
-} from '@eth-optimism/actions-sdk'
+import type { BorrowMarket, SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { Action } from './Action'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
+import type { BorrowPosition } from '@/types/market'
 import {
   buildBorrowMarketPosition,
   makeBorrowContextWrapper,
@@ -34,7 +31,7 @@ const borrowMarketId = {
   chainId: CHAIN_ID,
 }
 
-function pledgedPosition(): BorrowMarketPosition {
+function pledgedPosition(): BorrowPosition {
   return buildBorrowMarketPosition({
     marketId: borrowMarketId,
     collateralAsset: usdcAsset,
@@ -42,7 +39,6 @@ function pledgedPosition(): BorrowMarketPosition {
     collateralAmount: 100_000_000n,
     collateralAmountFormatted: '100',
     collateralShares: 100_000_000n,
-    collateralSharesFormatted: '100',
     borrowAmount: 100_000_000_000_000_000_000n,
     borrowAmountFormatted: '100',
     healthFactor: 8.6,
@@ -68,7 +64,7 @@ function borrowMarketFixture(): BorrowMarket {
 }
 
 function withBorrowCtx(
-  positions: readonly BorrowMarketPosition[],
+  positions: readonly BorrowPosition[],
   markets: readonly BorrowMarket[] = [borrowMarketFixture()],
 ) {
   const ctx = {

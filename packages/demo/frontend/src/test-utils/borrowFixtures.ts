@@ -1,12 +1,8 @@
 import { createElement, type ReactNode } from 'react'
-import type {
-  Asset,
-  BorrowMarketPosition,
-  BorrowQuote,
-} from '@eth-optimism/actions-sdk'
+import type { Asset, BorrowQuote } from '@eth-optimism/actions-sdk'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
-import type { MarketPosition } from '@/types/market'
+import type { BorrowPosition, MarketPosition } from '@/types/market'
 
 export const usdcAsset: Asset = {
   type: 'erc20',
@@ -31,7 +27,6 @@ const DEFAULT_POSITION = {
   collateralAmount: 100n,
   collateralAmountFormatted: '100',
   collateralShares: 100n,
-  collateralSharesFormatted: '100',
   borrowAmount: 0n,
   borrowAmountFormatted: '0',
   healthFactor: Number.POSITIVE_INFINITY,
@@ -41,13 +36,16 @@ const DEFAULT_POSITION = {
   liquidationBonus: 0.01,
   ltv: null,
   maxLtv: 0.86,
-} as unknown as BorrowMarketPosition
+} as unknown as BorrowPosition
 
-/** A complete `BorrowMarketPosition`; pass only the fields a test asserts on. */
+/**
+ * A complete enriched `BorrowPosition` (SDK fields plus the frontend-derived
+ * collateral amount); pass only the fields a test asserts on.
+ */
 export function buildBorrowMarketPosition(
-  overrides: Partial<BorrowMarketPosition> = {},
-): BorrowMarketPosition {
-  return { ...DEFAULT_POSITION, ...overrides } as BorrowMarketPosition
+  overrides: Partial<BorrowPosition> = {},
+): BorrowPosition {
+  return { ...DEFAULT_POSITION, ...overrides } as BorrowPosition
 }
 
 const DEFAULT_LEND_POSITION = {

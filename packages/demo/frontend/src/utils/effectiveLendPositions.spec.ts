@@ -40,7 +40,6 @@ const directPosition = buildMarketPosition({
 const pledgedPosition = buildBorrowMarketPosition({
   marketId: { kind: 'morpho-blue', marketId: '0xborrow', chainId: 84532 },
   collateralShares: 75n,
-  collateralSharesFormatted: '75',
   collateralAmount: 75_000000n,
   collateralAmountFormatted: '75',
   borrowAsset: {
