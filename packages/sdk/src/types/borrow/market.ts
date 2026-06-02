@@ -123,14 +123,12 @@ export interface BorrowMarketPosition {
   marketId: BorrowMarketId
   /** Collateral asset metadata */
   collateralAsset: Asset
-  /** Raw collateral share balance held inside the borrow market */
+  /**
+   * Raw on-chain collateral balance held inside the borrow market. For
+   * vault-wrapped collateral these are ERC-4626 shares; callers convert to
+   * underlying-asset units via the vault when they need a display amount.
+   */
   collateralShares: bigint
-  /** Pre-formatted collateral share balance */
-  collateralSharesFormatted: string
-  /** Collateral balance in wei */
-  collateralAmount: bigint
-  /** Pre-formatted collateral balance */
-  collateralAmountFormatted: string
   /** Borrow asset metadata */
   borrowAsset: Asset
   /** Accrued debt in wei (loan asset units) */

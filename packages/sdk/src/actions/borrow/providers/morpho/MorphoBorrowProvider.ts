@@ -128,19 +128,18 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     market: BorrowMarketConfig
     walletAddress: Address
   }): Promise<BorrowMarketPosition> {
-    const { position, sharePrice } = await this.fetchPosition(
+    const { position } = await this.fetchPosition(
       params.market,
       params.walletAddress,
     )
-    return adaptMorphoBorrowPosition(params.market, position, sharePrice)
+    return adaptMorphoBorrowPosition(params.market, position)
   }
 
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const { current, sharePrice, allowance } =
-      await this.fetchStateWithAllowance(
+    const { current, allowance } = await this.fetchStateWithAllowance(
         market,
         params.walletAddress,
         market.marketParams.collateralToken,
@@ -152,7 +151,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       positionBefore: current,
       positionAfter: after,
-      sharePrice,
       transactions: txs,
       quoteAmounts: {
         borrowAmountRaw: params.borrowAmountWei,
@@ -166,8 +164,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const { current, sharePrice, allowance } =
-      await this.fetchStateWithAllowance(
+    const { current, allowance } = await this.fetchStateWithAllowance(
         market,
         params.walletAddress,
         market.marketParams.loanToken,
@@ -179,7 +176,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       positionBefore: current,
       positionAfter: plan.after,
-      sharePrice,
       transactions: txs,
       quoteAmounts: {
         borrowAmountRaw:
@@ -199,8 +195,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const { current, sharePrice, allowance } =
-      await this.fetchStateWithAllowance(
+    const { current, allowance } = await this.fetchStateWithAllowance(
         market,
         params.walletAddress,
         market.marketParams.collateralToken,
@@ -228,7 +223,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       positionBefore: current,
       positionAfter: after,
-      sharePrice,
       transactions: txs,
       quoteAmounts: { collateralAmountRaw: params.amountWei },
       approvalsSkipped: approvalTx === undefined,
@@ -239,7 +233,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const { position: current, sharePrice } = await this.fetchPosition(
+    const { position: current } = await this.fetchPosition(
       market,
       params.walletAddress,
     )
@@ -266,7 +260,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       positionBefore: current,
       positionAfter: after,
-      sharePrice,
       transactions: [tx],
       quoteAmounts: { collateralAmountRaw: amountWei },
       // No approval ever required for withdrawals.
@@ -278,8 +271,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const { current, sharePrice, allowance } =
-      await this.fetchStateWithAllowance(
+    const { current, allowance } = await this.fetchStateWithAllowance(
         market,
         params.walletAddress,
         market.marketParams.loanToken,
@@ -308,7 +300,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       positionBefore: current,
       positionAfter: repay.after,
-      sharePrice,
       transactions: txs,
       quoteAmounts: {
         borrowAmountRaw:
@@ -333,7 +324,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private fetchPosition(
     config: BorrowMarketConfig,
     user: Address,
-  ): Promise<{ position: AccrualPosition; sharePrice: bigint }> {
+  ): Promise<{ position: AccrualPosition }> {
     return fetchMorphoPosition(
       this.chainManager.getPublicClient(config.chainId),
       config,
@@ -347,7 +338,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     token: Address,
   ): Promise<{
     current: AccrualPosition
-    sharePrice: bigint
     allowance: bigint
   }> {
     return fetchMorphoStateWithAllowance(
@@ -372,7 +362,6 @@ interface AssembleMorphoQuoteArgs {
   market: BorrowMarketConfig
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
-  sharePrice: bigint
   transactions: TransactionData[]
   quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
   approvalsSkipped: boolean

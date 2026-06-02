@@ -171,7 +171,6 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       marketTuple(),
       1n, // any non-zero price
       0n, // rateAtTarget
-      10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
@@ -179,7 +178,6 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
     expect(position.collateralShares).toBe(collateralWad)
-    expect(position.collateralAmount).toBe(collateralWad)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
     expect(position.ltv).toBeNull()
@@ -192,7 +190,6 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       marketTuple(),
       1_000_000_000_000_000_000_000_000_000_000_000_000n, // mid price
       0n, // rateAtTarget
-      10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
@@ -200,7 +197,6 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
     expect(position.collateralShares).toBe(collateralWad)
-    expect(position.collateralAmount).toBe(collateralWad)
     expect(position.borrowAmount).toBeGreaterThan(0n)
     expect(position.healthFactor).not.toBeNull()
     expect(position.ltv).not.toBeNull()
@@ -217,10 +213,8 @@ function stateMulticallResult(
     allowance?: bigint
   } = {},
 ) {
-  // Test fixture's collateralAsset address matches marketParams.collateralToken,
-  // so the non-vault branch is exercised: state.ts skips the convertToAssets
-  // read and the multicall returns 5 entries (position, market, price,
-  // rateAtTarget, allowance) — no sharePrice slot.
+  // The state-with-allowance multicall returns 5 entries: position, market,
+  // price, rateAtTarget, allowance.
   return [
     positionTuple({
       collateral: opts.collateral ?? 0n,
