@@ -5,8 +5,6 @@
  * same rows without duplicating layout and styling.
  */
 
-import ArrowDownIcon from '@/components/icons/ArrowDownIcon'
-
 export function AmountRow({
   label,
   amount,
@@ -45,14 +43,6 @@ export function AmountRow({
         />
       </div>
       {usd && <span style={{ fontSize: '14px', color: '#9195A6' }}>{usd}</span>}
-    </div>
-  )
-}
-
-export function DownArrow() {
-  return (
-    <div style={{ padding: '8px 0' }}>
-      <ArrowDownIcon />
     </div>
   )
 }
