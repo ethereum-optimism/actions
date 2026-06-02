@@ -10,13 +10,18 @@ describe('borrowCollateralVault', () => {
 
   it('returns undefined for an unknown marketId', () => {
     expect(
-      borrowCollateralVault({ marketId: '0xdeadbeef', chainId: 84532 }),
+      borrowCollateralVault({
+        kind: 'morpho-blue',
+        marketId: '0xdeadbeef',
+        chainId: 84532,
+      }),
     ).toBeUndefined()
   })
 
   it('returns undefined when the chainId does not match', () => {
     expect(
       borrowCollateralVault({
+        kind: MorphoBorrowDemo.kind,
         marketId: MorphoBorrowDemo.marketId,
         chainId: 999999,
       }),
