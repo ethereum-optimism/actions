@@ -25,6 +25,7 @@ import type {
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
 import { sameMarketId } from '@/utils/marketId'
 import { fetchCollateralUnderlying } from '@/utils/vaultCollateral'
+import { borrowCollateralVault } from '@/constants/markets'
 import type { BorrowPosition } from '@/types/market'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
@@ -34,22 +35,26 @@ import {
 
 /**
  * Enriches a raw SDK position with the underlying-collateral amount the demo
- * derives from the vault's `convertToAssets`. Falls back to zero on a read
- * failure so one market's RPC hiccup can't break the positions list.
+ * derives from the vault's `convertToAssets`. Non-vault collateral is already
+ * in underlying units (shares == amount). On a read failure, falls back to
+ * zero so one market's RPC hiccup can't break the positions list.
  */
 async function enrichPosition(
   position: BorrowMarketPosition,
-  market: BorrowMarket,
 ): Promise<BorrowPosition> {
-  let collateralAmount = 0n
-  try {
-    collateralAmount = await fetchCollateralUnderlying(
-      market.collateralToken,
-      position.collateralShares,
-      market.marketId.chainId,
-    )
-  } catch (e) {
-    console.warn('Failed to convert collateral shares to underlying', e)
+  const vault = borrowCollateralVault(position.marketId)
+  let collateralAmount = position.collateralShares
+  if (vault) {
+    try {
+      collateralAmount = await fetchCollateralUnderlying(
+        vault,
+        position.collateralShares,
+        position.marketId.chainId,
+      )
+    } catch (e) {
+      console.warn('Failed to convert collateral shares to underlying', e)
+      collateralAmount = 0n
+    }
   }
   return {
     ...position,
@@ -184,7 +189,7 @@ export function useBorrowProvider(
               address,
               market.marketId,
             )
-            return position === null ? null : enrichPosition(position, market)
+            return position === null ? null : enrichPosition(position)
           }),
         )
         if (isCancelled()) return
@@ -283,19 +288,13 @@ export function useBorrowProvider(
       // Optimistic local update from the receipt so the table reflects the
       // new position before the backend refetch completes.
       if (receipt.positionAfter) {
-        const raw = receipt.positionAfter
-        const market = markets.find((m) =>
-          sameMarketId(m.marketId, raw.marketId),
-        )
-        if (market) {
-          const next = await enrichPosition(raw, market)
-          setBorrowPositions((current) => {
-            const filtered = current.filter(
-              (p) => !sameMarketId(p.marketId, next.marketId),
-            )
-            return isEmptyPosition(next) ? filtered : [...filtered, next]
-          })
-        }
+        const next = await enrichPosition(receipt.positionAfter)
+        setBorrowPositions((current) => {
+          const filtered = current.filter(
+            (p) => !sameMarketId(p.marketId, next.marketId),
+          )
+          return isEmptyPosition(next) ? filtered : [...filtered, next]
+        })
       }
       // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager refetch returns pre-tx state and clobbers the optimistic update.
       window.setTimeout(() => {
@@ -304,7 +303,7 @@ export function useBorrowProvider(
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       return receipt
     },
-    [walletAddress, operations, queryClient, markets],
+    [walletAddress, operations, queryClient],
   )
 
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(
