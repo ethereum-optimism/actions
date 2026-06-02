@@ -1,16 +1,8 @@
 /**
- * Desktop layout for the Borrow tab's Active Positions table.
- *
- * Splits into three visually independent sub-tables:
- * Collateral | Borrow APY | Borrowed. Each column has its own header
- * with its own underline, so the eye doesn't try to merge the inner
- * content cells across the divides. Implemented with CSS grid (three
- * columns, N+1 rows) so each "sub-table" stays vertically aligned with
- * the others without a shared <table> element.
- *
- * Each side cell uses `space-between` so the amount-and-asset cluster
- * sits on the inner edge (near the centered APY) and the USD value sits
- * on the outer edge, mirroring the lend-table rhythm.
+ * Desktop layout for the Borrow tab's Active Positions table. Splits into three
+ * visually independent sub-tables (Collateral | Borrow APY | Borrowed) via a
+ * CSS grid so columns stay aligned without a shared <table>. Side cells use
+ * `space-between` to push the asset cluster inward and the USD value outward.
  */
 
 import { Fragment } from 'react'
@@ -40,9 +32,7 @@ export function DesktopTable({
     <div
       style={{
         display: 'grid',
-        // Side columns take equal share of the remaining width; the
-        // center column shrinks to fit the APY value. `column-gap` is
-        // the visual divider between the three sub-tables.
+        // Side columns split remaining width; the center shrinks to the APY value, and `column-gap` divides the sub-tables.
         gridTemplateColumns: '1fr auto 1fr',
         columnGap: '48px',
         alignItems: 'stretch',

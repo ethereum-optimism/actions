@@ -1,9 +1,7 @@
 /**
- * Debounced, race-safe backend preview for the Borrow form.
- *
- * Calls `/borrow/quote` 250 ms after the amount/market/mode settle and
- * discards outdated responses on cancel. On network/4xx errors it returns
- * a null preview so the caller can fall back to its local projection.
+ * Debounced, race-safe backend preview for the Borrow form. Calls
+ * `/borrow/quote` 250 ms after inputs settle, discards stale responses, and
+ * returns a null preview on error so the caller falls back to its local projection.
  */
 
 import { useEffect, useState } from 'react'
@@ -48,8 +46,7 @@ export function useBorrowQuotePreview({
                 action: 'open' as const,
                 marketId: activeMarket.marketId,
                 borrowAmount: { amount: amountNum },
-                // Fresh-open: pledge the user's full vault-share balance.
-                // Existing position: pledge only newly added direct lend shares.
+                // Fresh-open pledges the full vault-share balance; an existing position pledges only newly added direct shares.
                 ...((currentCollUsd === 0 &&
                   lendCollateralSharesRaw !== null &&
                   lendCollateralSharesRaw > 0n) ||

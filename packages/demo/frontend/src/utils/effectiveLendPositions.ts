@@ -1,3 +1,9 @@
+/**
+ * Merges each lend market's direct (in-vault) deposit with any of its shares
+ * already pledged as collateral on an open borrow position, so the Lend tab
+ * shows the user's full balance even after part of it became borrow collateral.
+ */
+
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'

@@ -1,11 +1,8 @@
 /**
- * Collateral-aware withdraw derivation for the Lend tab.
- *
- * When the lent asset is securing an open Morpho borrow position, a
- * withdraw releases collateral. This hook owns that cross-market math —
- * the projected health for the typed withdraw, the CTA gating flags, and
- * the collateral shares to release — so `Action` stays focused on the
- * lend/withdraw form itself.
+ * Collateral-aware withdraw derivation for the Lend tab. When the lent asset
+ * secures an open borrow position, a withdraw releases collateral; this hook
+ * owns that cross-market math (projected health, CTA gating, shares to release)
+ * so `Action` stays focused on the form.
  */
 
 import { useContext, useMemo } from 'react'
@@ -52,8 +49,7 @@ export function useWithdrawCollateral({
 }): WithdrawCollateralState {
   const collateralStatus = useCollateralStatus(asset ?? null)
   const pledgedPosition = collateralStatus.positions[0] ?? null
-  // Same fallback pattern as useCollateralStatus: read via raw useContext
-  // so Lend tests don't need to wrap in <BorrowProviderContextProvider>.
+  // Read via raw useContext so Lend tests don't need a provider wrapper.
   const borrowCtx = useContext(BorrowProviderContext)
   const borrowMarkets = borrowCtx?.markets ?? []
   const pledgedMarket = pledgedPosition
@@ -101,9 +97,7 @@ export function useWithdrawCollateral({
       : Number.POSITIVE_INFINITY
   const withdrawWouldLiquidate =
     projection?.projection.kind === 'wouldLiquidate'
-  // The "would liquidate" sentinel also fires when the user types more than
-  // their available deposit; surface that separately so the Health card can
-  // label it "Exceeds deposit" rather than a liquidation risk.
+  // Surface over-deposit separately so the Health card labels it "Exceeds deposit".
   const exceedsDeposit =
     mode === 'withdraw' && amountValue > parseFloat(maxAmount)
   const withdrawIntoBuffer =

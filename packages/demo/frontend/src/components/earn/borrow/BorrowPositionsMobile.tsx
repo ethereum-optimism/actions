@@ -1,11 +1,7 @@
 /**
- * Mobile layout for the Borrow tab's Active Positions table.
- *
- * Mirrors the desktop grid's three separate sub-tables
- * (Collateral | APY | Borrowed) but compacts for narrow widths: the
- * column gap is tight and each side cell stacks the USD value beneath the
- * asset amount instead of spreading them apart. Active highlight is wired
- * to the `getBorrowPosition` activity action.
+ * Mobile layout for the Borrow tab's Active Positions table. Mirrors the
+ * desktop sub-tables (Collateral | APY | Borrowed) but compacts for narrow
+ * widths: each side cell stacks the USD value beneath the asset amount.
  */
 
 import { Fragment } from 'react'

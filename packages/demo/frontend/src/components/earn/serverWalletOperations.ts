@@ -1,9 +1,7 @@
 /**
- * Server-wallet (Privy) operation builders.
- *
- * Pure factories that adapt the demo backend's HTTP API + auth headers into
- * the `EarnOperations` / `BorrowOperations` shapes the providers consume.
- * Kept out of the component so `EarnWithServerWallet` is just React wiring.
+ * Server-wallet (Privy) operation builders: pure factories that adapt the demo
+ * backend's HTTP API + auth headers into the `EarnOperations` /
+ * `BorrowOperations` shapes the providers consume.
  */
 
 import type { Address } from 'viem'
@@ -95,8 +93,7 @@ export function buildMintOperation(
 export function buildBorrowOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): BorrowOperations {
-  // Borrow routes accept empty headers on public reads and require auth on
-  // the rest; fall back to {} so every call sends a valid HeadersInit.
+  // Fall back to {} so every borrow call sends a valid HeadersInit.
   const headers = async () => (await getAuthHeaders()) ?? {}
   return {
     getMarkets: async () => borrowApi.getMarkets(await headers()),

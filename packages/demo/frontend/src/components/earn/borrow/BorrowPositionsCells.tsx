@@ -1,7 +1,6 @@
 /**
- * Shared cell atoms and value derivation for the Borrow tab's Active
- * Positions table. Used by both the desktop grid and the mobile cards so
- * the two layouts stay visually in sync.
+ * Shared cell atoms and value derivation for the Borrow tab's Active Positions
+ * table, used by both the desktop grid and the mobile cards.
  */
 
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'

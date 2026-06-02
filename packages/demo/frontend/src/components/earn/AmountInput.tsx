@@ -19,8 +19,7 @@ interface SelectorChipProps extends BaseProps {
 
 export type AmountInputProps = StaticChipProps | SelectorChipProps
 
-// Layout shared by the static and clickable token chips; the divider lives
-// on the left edge so the chip reads as a segment of the input row.
+// Layout shared by the static and clickable token chips; the left divider makes the chip read as a segment of the input row.
 const tokenChipStyle = {
   display: 'flex',
   alignItems: 'center',

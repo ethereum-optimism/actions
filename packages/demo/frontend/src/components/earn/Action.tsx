@@ -133,9 +133,7 @@ export function Action({
     (hoveredAction === 'deposit' && mode === 'lend') ||
     (hoveredAction === 'withdraw' && mode === 'withdraw')
 
-  // Collateral-aware withdraw: when the lent asset secures a borrow
-  // position, this surfaces the projected-health card, gates the CTA, and
-  // computes the collateral shares to release.
+  // Collateral-aware withdraw: surfaces the projected-health card, gates the CTA, and computes the collateral to release.
   const {
     pledgedPosition,
     showHealthCard,
@@ -228,8 +226,7 @@ export function Action({
     }
     if (isActionDisabled) return
 
-    // Withdrawing against pledged collateral routes through the review
-    // modal so the user sees the projected health impact first.
+    // Withdrawing against pledged collateral routes through the review modal to show the projected health first.
     if (showHealthCard) {
       setReviewBorrowOpen(true)
       return

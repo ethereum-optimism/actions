@@ -1,7 +1,6 @@
 /**
- * Active Positions table for the Borrow tab.
- *
- * Delegates to a desktop grid layout and a mobile stacked-card layout.
+ * Active Positions table for the Borrow tab. Delegates to a desktop grid
+ * layout and a mobile stacked-card layout.
  */
 
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'

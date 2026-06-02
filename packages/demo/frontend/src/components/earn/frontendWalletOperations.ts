@@ -1,9 +1,7 @@
 /**
- * Frontend-wallet (Turnkey/Dynamic) operation builders.
- *
- * Pure factories that adapt an in-browser SDK `Wallet` + `actions` into the
- * `EarnOperations` / `BorrowOperations` shapes the providers consume. Kept
- * out of the component so `EarnWithFrontendWallet` is just React wiring.
+ * Frontend-wallet (Turnkey/Dynamic) operation builders: pure factories that
+ * adapt an in-browser SDK `Wallet` + `actions` into the `EarnOperations` /
+ * `BorrowOperations` shapes the providers consume.
  */
 
 import type {

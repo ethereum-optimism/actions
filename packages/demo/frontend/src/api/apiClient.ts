@@ -1,10 +1,7 @@
 /**
- * Shared HTTP foundation for the demo's API clients.
- *
- * `BaseApiClient.request` is a thin `fetch` wrapper that injects the JSON
- * content-type, applies a per-call timeout (combined with any caller
- * signal), unwraps the response, and raises `ActionsApiError` on non-2xx.
- * `ActionsApiClient` and `BorrowApiClient` extend it.
+ * Shared HTTP foundation for the demo's API clients. `BaseApiClient.request`
+ * is a `fetch` wrapper that adds the JSON content-type, applies a per-call
+ * timeout, and raises `ActionsApiError` on non-2xx.
  */
 
 import { env } from '../envVars.js'
@@ -19,8 +16,7 @@ export class ActionsApiError extends Error {
   }
 }
 
-// Reads use a short timeout so the UI never shows a stuck request;
-// mutations get a longer ceiling to wait on transaction settlement.
+// Reads get a short timeout; mutations get a longer ceiling for settlement.
 export const READ_TIMEOUT_MS = 8_000
 export const MUTATION_TIMEOUT_MS = 30_000
 

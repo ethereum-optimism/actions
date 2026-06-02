@@ -1,14 +1,8 @@
 /**
- * Borrow tab form.
- *
- * Composes ModeToggle (Borrow / Repay) + AmountSection (with optional
- * token-chip selector) + BorrowHealthCard (with live projection) +
- * CtaButton + Asset modal + Review modal + TransactionModal + Toast.
- *
- * The projection (LTV, HF, would-liquidate) is sourced from
- * `borrowApi.getQuote` via `useBorrowQuotePreview`, with a local
- * stub-price fallback in `useBorrowProjection`. Local stub-price math is
- * also kept for the synchronous Max button prefill.
+ * Borrow tab form. Composes the mode toggle, amount section, health card, CTA,
+ * and modals. The projection comes from `borrowApi.getQuote` via
+ * `useBorrowQuotePreview`, with a local stub-price fallback in
+ * `useBorrowProjection` (also used for the synchronous Max prefill).
  */
 
 import { useMemo, useState } from 'react'
@@ -63,8 +57,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const [assetModalOpen, setAssetModalOpen] = useState(false)
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
 
-  // Markets the user can pick from in borrow mode: those whose collateral
-  // matches the chosen lend asset.
+  // Borrow-mode markets: those whose collateral matches the chosen lend asset.
   const eligibleMarkets = useMemo(
     () =>
       markets.filter(
@@ -81,9 +74,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       ? selectedMarketPosition.borrowAsset
       : null
 
-  // Active market for the form: in borrow mode, the user-selected;
-  // in repay mode, the position's market (since repay applies to an
-  // existing borrow).
+  // Active market: user-selected in borrow mode, the position's market in repay mode.
   const activeMarket: BorrowMarket | null =
     mode === 'repay' && selectedMarketPosition
       ? (markets.find((m) =>
@@ -98,19 +89,14 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const safeCeilingLtv = computeSafeCeilingLtv(maxLtv, bufferPct)
   const borrowApy = activeMarket?.borrowApy ?? 0
 
-  // For the projection: if a position exists, use its USD aggregates;
-  // otherwise treat as a fresh open with the chosen lend position as
-  // future collateral.
+  // Projection inputs: an existing position's USD aggregates, or a fresh open against the chosen lend position.
   const { collateralValueUsd: currentCollUsd, borrowValueUsd: currentBorrUsd } =
     positionUsd(selectedMarketPosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
   const additionalLendCollateralUsd =
     directLendPositionUsd(selectedLendPosition)
 
-  // For a fresh open (no existing position), collateral value is the
-  // lend-position balance. After open, the user's dUSDC moves into the
-  // borrow market; the lend balance shrinks accordingly. The demo treats
-  // the full lend balance as the available collateral.
+  // For a fresh open, the demo treats the full lend balance as available collateral.
   const projectionCollateralUsd =
     currentCollUsd > 0
       ? currentCollUsd + additionalLendCollateralUsd
@@ -145,8 +131,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       livePreview,
     })
 
-  // Max button: in borrow mode, prefill to the safe ceiling;
-  // in repay mode, prefill the current borrowed amount.
+  // Max button: prefill the safe ceiling in borrow mode, the borrowed amount in repay mode.
   const handleMax = () => {
     if (!activeAsset) return
     if (mode === 'repay') {
@@ -180,13 +165,10 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     setAssetModalOpen(false)
   }
 
-  // Disable the CTA if the projected position enters the buffer zone
-  // (past safe ceiling, before liquidation). Repay mode is exempt since it
-  // only reduces LTV.
+  // Disable the CTA when the projection enters the buffer zone; repay is exempt since it only reduces LTV.
   const inBufferZone =
     mode === 'borrow' && projectedLtv > safeCeilingLtv && !wouldLiquidate
-  // Gate the CTA on having a settled preview so the review modal never
-  // shows a stale local projection while a /borrow/quote call is in flight.
+  // Gate the CTA on a settled preview so the review modal never shows a stale projection.
   const canOpenReview =
     !!activeMarket &&
     !!activeAsset &&

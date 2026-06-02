@@ -1,11 +1,8 @@
 /**
- * Serialization helpers for the borrow API boundary.
- *
- * `buildQuoteBody` shapes the discriminated quote body the backend
- * expects. `deserialize*` helpers parse the decimal-string bigints the
- * backend ships back into native `bigint` so the rest of the frontend
- * never deals with the wire shape. `marketIdPath` and `isEmptyPosition`
- * are small URL / null-sentinel utilities used by the client.
+ * Serialization helpers for the borrow API boundary. `buildQuoteBody` shapes
+ * the discriminated quote body; `deserialize*` parse the backend's decimal
+ * strings into native `bigint`. `marketIdPath` and `isEmptyPosition` are small
+ * URL / null-sentinel utilities.
  */
 
 import type {

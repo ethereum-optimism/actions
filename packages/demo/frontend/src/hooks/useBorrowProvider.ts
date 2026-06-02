@@ -1,16 +1,7 @@
 /**
- * Borrow provider hook.
- *
- * Owns market + position loading and the five borrow mutations against
- * the demo backend's `/borrow/*` HTTP routes. Mirrors `useLendProvider`'s
- * shape: a single hook returning read state + transaction handlers, wrapped
- * by `BorrowProviderContextProvider` so the rest of the tree consumes
- * via `useBorrowProviderContext()`.
- *
- * Auth headers are injected via `getAuthHeaders`. Pass `null` for paths
- * that don't have a server-wallet wired (Dynamic / Turnkey today); the
- * public `/borrow/markets` route still resolves, but `/borrow/quote`
- * and mutations will fail without auth.
+ * Borrow provider hook: owns market + position loading and the five borrow
+ * mutations, wrapped by `BorrowProviderContextProvider`. Mirrors
+ * `useLendProvider`'s shape (read state + transaction handlers).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -123,10 +114,7 @@ export function useBorrowProvider(
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Load markets exactly once. The `operations` identity can churn when the
-  // wallet object re-renders, so guard with a ref (mirrors useLendProvider)
-  // rather than letting the effect re-run, which would re-log the read-only
-  // activity and reset its status back to pending.
+  // Load markets once (ref-guarded) so wallet re-renders don't re-run and reset the read-only activity to pending.
   const hasLoadedMarkets = useRef(false)
   useEffect(() => {
     if (hasLoadedMarkets.current) return
@@ -151,19 +139,14 @@ export function useBorrowProvider(
     ) => {
       if (!address) {
         if (isCancelled()) return
-        // A null address means the wallet is still resolving (server-wallet
-        // path fetches it async), not that there are no positions. Leave
-        // isInitialLoad true so useCollateralStatus keeps failing safe until
-        // the real address arrives and positions load.
+        // Null address = wallet still resolving (server path), not "no positions"; keep isInitialLoad true so collateral status fails safe.
         setBorrowPositions([])
         return
       }
       const activity = logActivity('getBorrowPosition')
       setIsLoadingPositions(true)
       try {
-        // allSettled so one failing market doesn't blank out everything;
-        // partial outage is better surfaced as a missing entry than as a
-        // collapsed "no borrow" state in the Lend collateral check.
+        // allSettled so one failing market doesn't collapse the whole list to a "no borrow" state.
         const settled = await Promise.allSettled(
           markets.map((market) =>
             operations.getPosition(address, market.marketId),
@@ -196,10 +179,7 @@ export function useBorrowProvider(
     [logActivity, markets, operations],
   )
 
-  // Always invoke the latest fetcher via a ref so the refetch effect below
-  // doesn't list `fetchPositions` as a dependency — its identity churns with
-  // `operations`/`markets` and would otherwise re-run (and re-log) on every
-  // wallet re-render.
+  // Call the latest fetcher via a ref so the refetch effect doesn't depend on fetchPositions identity (which churns per render).
   const fetchPositionsRef = useRef(fetchPositions)
   useEffect(() => {
     fetchPositionsRef.current = fetchPositions
@@ -276,13 +256,7 @@ export function useBorrowProvider(
           return isEmptyPosition(next) ? filtered : [...filtered, next]
         })
       }
-      // Don't reconcile against the chain immediately. RPC propagation on
-      // Base Sepolia commonly takes 1-3s after tx confirmation, so an
-      // eager `fetchPositions` returns pre-tx state and clobbers the
-      // optimistic update — the user sees the position revert until a
-      // manual page refresh. Delay the reconciliation (and the cross-tab
-      // event that the lend hook listens for) so both reads happen after
-      // the new state has settled.
+      // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager refetch returns pre-tx state and clobbers the optimistic update.
       window.setTimeout(() => {
         dispatchEarnPositionsChanged()
       }, 3000)

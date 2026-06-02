@@ -1,7 +1,7 @@
 /**
- * The Borrow form's overlays: the asset picker, the review/confirm modal,
- * the transaction-status modal, and the success toast. Split out of
- * BorrowAction so the form component stays focused on state + derivation.
+ * The Borrow form's overlays: asset picker, review/confirm modal,
+ * transaction-status modal, and success toast. Split out of BorrowAction so the
+ * form stays focused on state + derivation.
  */
 
 import { createPortal } from 'react-dom'

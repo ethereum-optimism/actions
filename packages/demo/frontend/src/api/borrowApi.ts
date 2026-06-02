@@ -1,11 +1,7 @@
 /**
- * Borrow API client.
- *
- * Thin HTTP layer over the demo backend's `/borrow/*` and
- * `/wallet/borrow/*` routes. Extends `BaseApiClient` for the shared
- * timeout-aware `request<T>` helper; per method takes `headers?:
- * HeadersInit` for auth. Param shapes live in `./borrowApi.types`; body
- * builders, deserializers, and URL helpers live in `./borrowApi.serializers`.
+ * Borrow API client over the demo backend's `/borrow/*` and `/wallet/borrow/*`
+ * routes. Each method takes optional `headers` for auth. Param shapes live in
+ * `./borrowApi.types`; body builders and deserializers in `./borrowApi.serializers`.
  */
 
 import type { Address } from 'viem'
@@ -74,8 +70,7 @@ export class BorrowApiClient extends BaseApiClient {
     walletAddress: Address,
     headers: HeadersInit = {},
   ): Promise<readonly BorrowMarketPosition[]> {
-    // Backend has no list endpoint; fan out across known markets and
-    // drop the zero-position responses.
+    // Backend has no list endpoint; fan out across known markets and drop zeros.
     const markets = await this.getMarkets(headers)
     const positions = await Promise.all(
       markets.map((m) => this.getPosition(walletAddress, m.marketId, headers)),
