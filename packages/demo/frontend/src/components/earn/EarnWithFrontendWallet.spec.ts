@@ -12,7 +12,7 @@ import type { Address } from 'viem'
 import {
   buildFrontendBorrowOperations,
   buildFrontendWalletOperations,
-} from './EarnWithFrontendWallet'
+} from './frontendWalletOperations'
 import { MorphoBorrowDemo } from '@/constants/markets'
 
 const CHAIN_ID = 84532 as SupportedChainId
