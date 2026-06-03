@@ -109,6 +109,24 @@ describe('Action', () => {
     expect(screen.getByRole('button', { name: 'Get USDC' })).toBeInTheDocument()
   })
 
+  it('shows a success toast after the mint resolves', async () => {
+    const onMintAsset = vi.fn().mockResolvedValue(undefined)
+    render(<Action {...defaultProps} onMintAsset={onMintAsset} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Get USDC' }))
+    expect(onMintAsset).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('Minted')).toBeInTheDocument()
+  })
+
+  it('shows no toast when the mint fails', async () => {
+    const onMintAsset = vi.fn().mockRejectedValue(new Error('mint failed'))
+    render(<Action {...defaultProps} onMintAsset={onMintAsset} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Get USDC' }))
+    await Promise.resolve()
+    expect(screen.queryByText('Minted')).not.toBeInTheDocument()
+  })
+
   it('shows Minting... text and disables button when minting', () => {
     render(<Action {...defaultProps} isMintingAsset={true} />)
     const button = screen.getByRole('button', { name: 'Minting...' })
