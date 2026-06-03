@@ -95,7 +95,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubOpenParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/open', params, headers)
+    return this.postMutation('open', params, headers)
   }
 
   async closePosition(
@@ -103,7 +103,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCloseParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/close', params, headers)
+    return this.postMutation('close', params, headers)
   }
 
   async depositCollateral(
@@ -111,11 +111,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCollateralParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation(
-      '/borrow/position/deposit-collateral',
-      params,
-      headers,
-    )
+    return this.postMutation('deposit-collateral', params, headers)
   }
 
   async withdrawCollateral(
@@ -123,11 +119,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCollateralParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation(
-      '/borrow/position/withdraw-collateral',
-      params,
-      headers,
-    )
+    return this.postMutation('withdraw-collateral', params, headers)
   }
 
   async repay(
@@ -135,18 +127,23 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubRepayParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/repay', params, headers)
+    return this.postMutation('repay', params, headers)
   }
 
   private async postMutation(
-    endpoint: string,
+    action:
+      | 'open'
+      | 'close'
+      | 'deposit-collateral'
+      | 'withdraw-collateral'
+      | 'repay',
     params: object,
     headers: HeadersInit,
   ): Promise<BorrowReceipt> {
     const body = serializeBigInt(params)
     const { result } = await this.request<{
       result: Serialized<BorrowReceipt>
-    }>(endpoint, {
+    }>(`/borrow/position/${action}`, {
       method: 'POST',
       body: JSON.stringify(body),
       headers,
