@@ -15,6 +15,7 @@ import type {
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
+import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type {
   BorrowQuoteParams,
   StubCloseParams,
@@ -28,6 +29,7 @@ import { fetchCollateralUnderlying } from '@/utils/vaultCollateral'
 import { borrowCollateralVault } from '@/constants/markets'
 import type { BorrowPosition } from '@/types/market'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
+import { useTokenBalances } from '@/queries/useTokenBalances'
 import {
   dispatchEarnPositionsChanged,
   EARN_POSITIONS_CHANGED_EVENT,
@@ -75,6 +77,7 @@ interface BorrowOperationParams {
 }
 
 export interface BorrowOperations {
+  getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<readonly BorrowMarket[]>
   getPosition: (
     walletAddress: Address,
@@ -108,6 +111,9 @@ export interface UseBorrowProviderReturn {
   selectedMarket: BorrowMarket | null
   handleMarketSelect: (market: BorrowMarket) => void
   isLoadingMarkets: boolean
+
+  /** Wallet token balances, used to gate repay on the held debt-asset balance. */
+  tokenBalances: readonly TokenBalance[]
 
   borrowPositions: readonly BorrowPosition[]
   selectedMarketPosition: BorrowPosition | null
@@ -149,6 +155,14 @@ export function useBorrowProvider(
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Shares the lend provider's `['tokenBalances']` cache entry (same query key)
+  // so the repay gate reads the live USDC_DEMO balance. No activity logging here
+  // to avoid double-counting the lend side's getBalance entry.
+  const { data: tokenBalances } = useTokenBalances({
+    getTokenBalances: operations.getTokenBalances,
+    isReady: () => walletAddress !== null,
+  })
 
   // Load markets once (ref-guarded) so wallet re-renders don't re-run and reset the read-only activity to pending.
   const hasLoadedMarkets = useRef(false)
@@ -342,6 +356,7 @@ export function useBorrowProvider(
     selectedMarket,
     handleMarketSelect,
     isLoadingMarkets,
+    tokenBalances: tokenBalances ?? [],
     borrowPositions,
     selectedMarketPosition,
     isLoadingPositions,

@@ -130,6 +130,7 @@ export function buildFrontendBorrowOperations(
       | StubRepayParams,
   ) => buildWalletBorrowParams(params, wallet.address)
   return {
+    getTokenBalances: async () => wallet.getBalance(),
     getMarkets: async () => actions.borrow.getMarkets(),
     getPosition: async (_walletAddress, marketId) => {
       const position = await actions.borrow.getPosition({
