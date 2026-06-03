@@ -180,4 +180,25 @@ describe('runWalletBorrowClose', () => {
       expect((err as CliError).code).toBe('onchain')
     }
   })
+
+  it('preserves null ltv/healthFactor from a fully-repaid position', async () => {
+    mockWallet(async () => ({
+      action: 'close' as const,
+      marketId: { kind: 'morpho-blue', marketId: '0xff', chainId: 84532 },
+      receipt: successReceipt('0xclose'),
+      positionAfter: {
+        ltv: null,
+        healthFactor: null,
+        liquidationPriceFormatted: '0',
+      },
+    }))
+    await runWalletBorrowClose({
+      market: 'demo-dusdc-op',
+      borrowMax: true,
+      collateralMax: true,
+    })
+    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
+    expect(body.ltv).toBeNull()
+    expect(body.healthFactor).toBeNull()
+  })
 })

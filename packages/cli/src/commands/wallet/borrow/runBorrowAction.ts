@@ -163,8 +163,8 @@ export async function runBorrowAction(
       },
       ...args.envelopeAmounts,
       transactions: receipts,
-      ltv: borrowReceipt.positionAfter?.ltv ?? undefined,
-      healthFactor: borrowReceipt.positionAfter?.healthFactor ?? undefined,
+      ltv: borrowReceipt.positionAfter?.ltv,
+      healthFactor: borrowReceipt.positionAfter?.healthFactor,
       liquidationPriceFormatted:
         borrowReceipt.positionAfter?.liquidationPriceFormatted,
     })
