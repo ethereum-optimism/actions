@@ -1,11 +1,8 @@
 /**
- * Serialization helpers for the borrow API boundary.
- *
- * `buildQuoteBody` shapes the discriminated quote body the backend
- * expects. `deserialize*` helpers parse the decimal-string bigints the
- * backend ships back into native `bigint` so the rest of the frontend
- * never deals with the wire shape. `marketIdPath` and `isEmptyPosition`
- * are small URL / null-sentinel utilities used by the client.
+ * Serialization helpers for the borrow API boundary. `buildQuoteBody` shapes
+ * the discriminated quote body; `deserialize*` parse the backend's decimal
+ * strings into native `bigint`. `marketIdPath` and `isEmptyPosition` are small
+ * URL / null-sentinel utilities.
  */
 
 import type {
@@ -57,7 +54,6 @@ export function deserializePosition(
   return {
     ...p,
     collateralShares: BigInt(p.collateralShares),
-    collateralAmount: BigInt(p.collateralAmount),
     borrowAmount: BigInt(p.borrowAmount),
     liquidationPrice: BigInt(p.liquidationPrice),
   }
@@ -104,5 +100,5 @@ export function marketIdPath(marketId: BorrowMarketId): string {
  * expects `null` in that case so empty positions don't render.
  */
 export function isEmptyPosition(p: BorrowMarketPosition): boolean {
-  return p.collateralAmount === 0n && p.borrowAmount === 0n
+  return p.collateralShares === 0n && p.borrowAmount === 0n
 }

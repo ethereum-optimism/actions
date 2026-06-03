@@ -438,8 +438,7 @@ export function useLendProvider({
       })
 
       try {
-        // Two sequential txs; batching into a single sendBatch is tracked
-        // in #427.
+        // Two sequential txs; batching into a single sendBatch is tracked in #427.
         const collateralReceipt: BorrowReceipt =
           await borrowOperations.withdrawCollateral(walletAddress, {
             marketId: options.releaseCollateral.marketId,

@@ -86,13 +86,7 @@ export function BorrowHealthBar({
                   rgba(255, 255, 255, 0.55) 4px,
                   rgba(255, 255, 255, 0.55) 8px
                 )`,
-                // -45deg stripes with an 8px gradient cycle have a
-                // horizontal natural period of 8/√2 ≈ 11.3137px. The tile
-                // width must be an exact multiple of that period (and the
-                // animation distance must match the tile width) or the
-                // loop shows a visible seam where the pattern wraps. 20
-                // cycles = 226.274px is a round enough chunk that the
-                // animation reads smoothly.
+                // Tile width = 20 stripe cycles (226.274px) so the looping animation has no visible seam.
                 backgroundSize: '226.274px 100%',
                 animation: `${
                   isImproving

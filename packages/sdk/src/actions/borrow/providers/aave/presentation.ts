@@ -212,15 +212,6 @@ export function adaptAaveBorrowPosition(
     collateralAsset: config.collateralAsset,
     // Aave aTokens rebase 1:1 with the underlying, so shares == amount.
     collateralShares: state.collateralAmount,
-    collateralSharesFormatted: formatUnits(
-      state.collateralAmount,
-      config.collateralAsset.metadata.decimals,
-    ),
-    collateralAmount: state.collateralAmount,
-    collateralAmountFormatted: formatUnits(
-      state.collateralAmount,
-      config.collateralAsset.metadata.decimals,
-    ),
     borrowAsset: config.borrowAsset,
     borrowAmount: state.debtAmount,
     borrowAmountFormatted: formatUnits(

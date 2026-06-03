@@ -1,11 +1,7 @@
 /**
- * Borrow API client.
- *
- * Thin HTTP layer over the demo backend's `/borrow/*` and
- * `/wallet/borrow/*` routes. Extends `BaseApiClient` for the shared
- * timeout-aware `request<T>` helper; per method takes `headers?:
- * HeadersInit` for auth. Param shapes live in `./borrowApi.types`; body
- * builders, deserializers, and URL helpers live in `./borrowApi.serializers`.
+ * Borrow API client over the demo backend's `/borrow/*` and `/wallet/borrow/*`
+ * routes. Each method takes optional `headers` for auth. Param shapes live in
+ * `./borrowApi.types`; body builders and deserializers in `./borrowApi.serializers`.
  */
 
 import type { Address } from 'viem'
@@ -74,8 +70,7 @@ export class BorrowApiClient extends BaseApiClient {
     walletAddress: Address,
     headers: HeadersInit = {},
   ): Promise<readonly BorrowMarketPosition[]> {
-    // Backend has no list endpoint; fan out across known markets and
-    // drop the zero-position responses.
+    // Backend has no list endpoint; fan out across known markets and drop zeros.
     const markets = await this.getMarkets(headers)
     const positions = await Promise.all(
       markets.map((m) => this.getPosition(walletAddress, m.marketId, headers)),
@@ -100,7 +95,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubOpenParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/open', params, headers)
+    return this.postMutation('open', params, headers)
   }
 
   async closePosition(
@@ -108,7 +103,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCloseParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/close', params, headers)
+    return this.postMutation('close', params, headers)
   }
 
   async depositCollateral(
@@ -116,11 +111,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCollateralParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation(
-      '/borrow/position/deposit-collateral',
-      params,
-      headers,
-    )
+    return this.postMutation('deposit-collateral', params, headers)
   }
 
   async withdrawCollateral(
@@ -128,11 +119,7 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubCollateralParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation(
-      '/borrow/position/withdraw-collateral',
-      params,
-      headers,
-    )
+    return this.postMutation('withdraw-collateral', params, headers)
   }
 
   async repay(
@@ -140,18 +127,23 @@ export class BorrowApiClient extends BaseApiClient {
     params: StubRepayParams,
     headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    return this.postMutation('/borrow/position/repay', params, headers)
+    return this.postMutation('repay', params, headers)
   }
 
   private async postMutation(
-    endpoint: string,
+    action:
+      | 'open'
+      | 'close'
+      | 'deposit-collateral'
+      | 'withdraw-collateral'
+      | 'repay',
     params: object,
     headers: HeadersInit,
   ): Promise<BorrowReceipt> {
     const body = serializeBigInt(params)
     const { result } = await this.request<{
       result: Serialized<BorrowReceipt>
-    }>(endpoint, {
+    }>(`/borrow/position/${action}`, {
       method: 'POST',
       body: JSON.stringify(body),
       headers,

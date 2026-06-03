@@ -10,7 +10,7 @@ import {
   USDC_DEMO,
   GauntletUSDCDemo,
   AaveETH,
-  ALL_BORROW_MARKETS,
+  MorphoBorrowDemo,
 } from '@/constants/markets'
 
 // Helper to create Actions config matching backend structure
@@ -56,7 +56,7 @@ export function createActionsConfig<T extends ReactProviderTypes>(
     },
     borrow: {
       morpho: {
-        marketAllowlist: ALL_BORROW_MARKETS,
+        marketAllowlist: [MorphoBorrowDemo],
       },
     },
     chains: [

@@ -6,18 +6,15 @@
  * price-source agnostic.
  */
 
-import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
-import type { MarketPosition } from '@/types/market'
+import type { BorrowPosition, MarketPosition } from '@/types/market'
 
 export interface PositionUsd {
   collateralValueUsd: number
   borrowValueUsd: number
 }
 
-export function positionUsd(
-  position: BorrowMarketPosition | null,
-): PositionUsd {
+export function positionUsd(position: BorrowPosition | null): PositionUsd {
   if (!position) return { collateralValueUsd: 0, borrowValueUsd: 0 }
   const collPrice = stubPriceUsd(position.collateralAsset.metadata.symbol)
   const borrPrice = stubPriceUsd(position.borrowAsset.metadata.symbol)

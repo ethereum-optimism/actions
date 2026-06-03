@@ -129,7 +129,7 @@ describe('aave presentation conversions', () => {
       totalCollateralBase: 3000n,
       totalDebtBase: 1000n,
     })
-    expect(position.collateralShares).toBe(position.collateralAmount)
+    expect(position.collateralShares).toBe(10n ** 18n)
     expect(position.healthFactor).toBeCloseTo(1.5, 6)
     expect(position.ltv).toBeCloseTo(1000 / 3000, 6)
     expect(position.liquidationPrice).toBeGreaterThan(0n)

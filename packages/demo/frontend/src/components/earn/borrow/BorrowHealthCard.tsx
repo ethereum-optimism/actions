@@ -1,19 +1,8 @@
 /**
- * Borrow Health card.
- *
- * Renders the two-tone health bar (current solid + projected lighter
- * overlay), an info-icon tooltip, and the Liquidation / Borrow APY /
- * Buffer / Collateral rows beneath.
- *
- * Bar fill is `currentLtv / maxLtv` clamped to 1, so bar = 100%
- * coincides with the liquidation LTV (e.g. 86%). The numeric reading
- * shows the raw LTV % so users see the actual loan-to-value rather
- * than a normalized scale. Color tiers stay at 60/80% of bar fill
- * (proportional to liquidation).
- *
- * Used in three flows: Borrow input, Repay input, and Lend-tab withdraw
- * (when collateral is pledged). `healthFactor` is the SDK-canonical
- * Aave-style decimal (1.0 = liquidation, Infinity = no debt).
+ * Borrow Health card: the two-tone health bar, a tooltip, and the
+ * Liquidation / Borrow APY / Buffer / Collateral rows. Bar fill is
+ * `currentLtv / maxLtv` clamped to 1 (100% = liquidation LTV) while the numeric
+ * reading shows the raw LTV %. Used in Borrow, Repay, and Lend-tab withdraw.
  */
 
 import { memo } from 'react'
@@ -80,9 +69,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   const showProjection = projectedLtv !== currentLtv
   const isImproving = projectedBarPct < currentBarPct
 
-  // Numeric readings show RAW LTV % (not the normalized bar fill), so
-  // users see their actual loan-to-value. At bar=100% the reading
-  // equals `maxLtv * 100` (e.g. 86%).
+  // Numeric readings show raw LTV %; at bar=100% the reading equals `maxLtv * 100`.
   const currentLtvPct = currentLtv * 100
   const projectedLtvPct = Math.min(projectedLtv, maxLtv) * 100
 

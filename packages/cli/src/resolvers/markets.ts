@@ -5,10 +5,7 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
-
-function normalize(value: string): string {
-  return value.toLowerCase().replace(/[\s-]/g, '')
-}
+import { normalizeMarketName } from '@/resolvers/normalize.js'
 
 /**
  * @description Returns every market allowlisted across the configured lend providers. Thin wrapper around `getLendMarketAllowlist(config.lend)`; kept here so CLI call sites read `configuredMarkets(config)` symmetrically with `configuredAssets(config)` / `configuredChains(config)`.
@@ -32,8 +29,8 @@ export function resolveMarket(
   name: string,
   allow: readonly LendMarketConfig[],
 ): LendMarketConfig {
-  const target = normalize(name)
-  const matches = allow.filter((m) => normalize(m.name) === target)
+  const target = normalizeMarketName(name)
+  const matches = allow.filter((m) => normalizeMarketName(m.name) === target)
   if (matches.length === 0) {
     throw new CliError('validation', `Unknown market: ${name}`, {
       market: name,

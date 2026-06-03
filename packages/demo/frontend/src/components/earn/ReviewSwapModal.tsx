@@ -10,12 +10,8 @@ import {
 
 import { Modal, ModalHeader } from '../Modal'
 import { CtaButton } from './CtaButton'
-import {
-  AmountRow,
-  DetailRow,
-  DownArrow,
-  FormattedAmount,
-} from './reviewModalParts'
+import { AmountRow, DetailRow, FormattedAmount } from './reviewModalParts'
+import ArrowDownIcon from '@/components/icons/ArrowDownIcon'
 
 function SwapDetails({
   priceQuote,
@@ -152,7 +148,9 @@ export function ReviewSwapModal({
         usd={formatUsd(parsedIn, usdPerIn)}
       />
 
-      <DownArrow />
+      <div style={{ padding: '8px 0' }}>
+        <ArrowDownIcon />
+      </div>
 
       <div style={{ marginBottom: '24px' }}>
         <AmountRow
