@@ -1,7 +1,7 @@
 /**
- * Owns the Borrow form's transaction lifecycle: the execute/reentry guard,
- * the TransactionModal status, and the success toast. `runTransaction`
- * dispatches the open/repay call, logs activity, and surfaces errors.
+ * Owns the Borrow form's transaction lifecycle: the execute/reentry guard, the
+ * TransactionModal status, and the success toast. `runTransaction` dispatches
+ * the open/repay call, logs activity, and surfaces errors.
  */
 
 import { useRef, useState } from 'react'
@@ -43,8 +43,7 @@ export function useBorrowTransaction() {
     description: string
   }>({ visible: false, title: '', description: '' })
 
-  // useRef-based reentry guard so a rapid double-tap of the Confirm button
-  // can't dispatch the same transaction twice before isExecuting commits.
+  // Reentry guard so a double-tap of Confirm can't dispatch the same transaction twice.
   const executingRef = useRef(false)
 
   const runTransaction = async ({
@@ -64,9 +63,7 @@ export function useBorrowTransaction() {
     const activity = logActivity(mode, {
       amount: amountNum.toString(),
       assetSymbol: symbol,
-      // Provider display name (e.g. "Morpho"), derived from the market's
-      // discriminator, so the activity summary reads "Borrowed X OP from
-      // Morpho" instead of "Wallet: borrow".
+      // Provider display name (e.g. "Morpho") so the activity summary reads "Borrowed X OP from Morpho".
       marketName: marketProviderDisplayName(activeMarket.marketId.kind),
     })
     setIsExecuting(true)
@@ -98,11 +95,13 @@ export function useBorrowTransaction() {
             : {}),
           collateralAsset: undefined,
         })
-      } else {
+      } else if (mode === 'repay') {
         receipt = await handleTransaction('repay', {
           marketId: activeMarket.marketId,
           amount: { amount: amountNum },
         })
+      } else {
+        throw new Error(`Unsupported transaction mode: ${mode}`)
       }
       const blockExplorerUrl = getBlockExplorerUrl(
         activeMarket.marketId.chainId,

@@ -1,27 +1,17 @@
 /**
- * Neutral selector hook that returns the borrow positions (if any)
- * securing a given lend asset. Used by Lend's `Action.tsx` to know
- * whether to render `<BorrowHealthCard>` in withdraw mode, without
- * Lend's code importing the borrow context directly.
- *
- * Reads via `useContext` (not the throwing
- * `useBorrowProviderContext`) so Lend's component tree can render
- * outside a `<BorrowProviderContextProvider>` (e.g. in unit tests for
- * `Action.tsx`) and gracefully default to "no positions known".
- *
- * Match key is `(symbol, chainId)`. Returns referentially stable
- * values via `useMemo` so re-renders don't cascade through
- * `<BorrowHealthCard>`. Returns `EMPTY` while the borrow provider's
- * `isInitialLoad` is true so consumers fail safe ("not yet known"
- * rather than "no borrow").
+ * Selector hook returning the borrow positions (if any) securing a given lend
+ * asset, matched on `(symbol, chainId)`. Reads via raw `useContext` so Lend can
+ * render outside a `<BorrowProviderContextProvider>`. Returns `EMPTY` during
+ * `isInitialLoad` so consumers fail safe to "not yet known".
  */
 
 import { useContext, useMemo } from 'react'
-import type { Asset, BorrowMarketPosition } from '@eth-optimism/actions-sdk'
+import type { Asset } from '@eth-optimism/actions-sdk'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
+import type { BorrowPosition } from '@/types/market'
 
 export interface CollateralStatus {
-  readonly positions: readonly BorrowMarketPosition[]
+  readonly positions: readonly BorrowPosition[]
   readonly isPledged: boolean
 }
 

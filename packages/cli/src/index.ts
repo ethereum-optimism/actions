@@ -3,6 +3,7 @@ import { Command, Help } from 'commander'
 import pico from 'picocolors'
 
 import { runAssets } from '@/commands/actions/assets.js'
+import { borrowCommand } from '@/commands/actions/borrow/index.js'
 import { runChains } from '@/commands/actions/chains.js'
 import { lendCommand } from '@/commands/actions/lend/index.js'
 import { swapCommand } from '@/commands/actions/swap/index.js'
@@ -52,6 +53,7 @@ program
   .action(runChains)
 
 program.addCommand(lendCommand())
+program.addCommand(borrowCommand())
 program.addCommand(swapCommand())
 program.addCommand(walletCommand())
 

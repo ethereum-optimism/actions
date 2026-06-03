@@ -46,6 +46,22 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
   },
 }
 
-export const ALL_BORROW_MARKETS: readonly BorrowMarketConfig[] = [
-  MorphoBorrowDemo,
-]
+const BORROW_MARKET_CONFIGS: readonly BorrowMarketConfig[] = [MorphoBorrowDemo]
+
+/**
+ * On-chain ERC-4626 vault (the Morpho `collateralToken`) backing a borrow
+ * market's collateral, resolved from local config by marketId. The SDK's
+ * `BorrowMarket` read shape doesn't surface it, so the demo looks it up here.
+ */
+export function borrowCollateralVault(marketId: {
+  kind: string
+  marketId: string
+  chainId: number
+}): Address | undefined {
+  return BORROW_MARKET_CONFIGS.find(
+    (c) =>
+      c.kind === marketId.kind &&
+      c.marketId === marketId.marketId &&
+      c.chainId === marketId.chainId,
+  )?.marketParams.collateralToken
+}

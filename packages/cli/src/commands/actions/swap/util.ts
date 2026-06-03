@@ -1,6 +1,4 @@
 import {
-  APPROVAL_MODES,
-  type ApprovalMode,
   type Asset,
   type SupportedChainId,
   SWAP_PROVIDER_NAMES,
@@ -12,6 +10,7 @@ import { CliError } from '@/output/errors.js'
 import { resolveAsset } from '@/resolvers/assets.js'
 import { resolveChain } from '@/resolvers/chains.js'
 import { parseAmount } from '@/utils/parseAmount.js'
+import { parseApprovalMode } from '@/utils/parseApprovalMode.js'
 import { parseSlippage } from '@/utils/parseSlippage.js'
 
 /**
@@ -92,20 +91,6 @@ export type WalletExecuteFlags = QuoteFlags & {
   approvalMode?: string
   recipient?: string
   deadline?: string
-}
-
-export function parseApprovalMode(
-  raw: string | undefined,
-): ApprovalMode | undefined {
-  if (raw === undefined) return undefined
-  if ((APPROVAL_MODES as readonly string[]).includes(raw)) {
-    return raw as ApprovalMode
-  }
-  throw new CliError(
-    'validation',
-    `Invalid --approval-mode: ${raw} (expected exact or max)`,
-    { approvalMode: raw },
-  )
 }
 
 /**

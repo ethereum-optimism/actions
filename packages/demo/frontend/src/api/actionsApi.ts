@@ -106,12 +106,12 @@ class ActionsApiClient extends BaseApiClient {
   }
 
   private async lendMutation(
-    endpoint: string,
+    action: 'open' | 'close',
     { amount, asset, marketId }: LendExecutePositionParams,
     headers: HeadersInit,
   ): Promise<LendTransactionReceipt> {
     const { result } = await this.request<{ result: LendTransactionReceipt }>(
-      endpoint,
+      `/lend/position/${action}`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -130,14 +130,14 @@ class ActionsApiClient extends BaseApiClient {
     params: LendExecutePositionParams,
     headers: HeadersInit = {},
   ): Promise<LendTransactionReceipt> {
-    return this.lendMutation('/lend/position/open', params, headers)
+    return this.lendMutation('open', params, headers)
   }
 
   async closeLendPosition(
     params: LendExecutePositionParams,
     headers: HeadersInit = {},
   ): Promise<LendTransactionReceipt> {
-    return this.lendMutation('/lend/position/close', params, headers)
+    return this.lendMutation('close', params, headers)
   }
 
   async dripEthToWallet(

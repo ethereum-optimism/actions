@@ -47,22 +47,6 @@ export function AmountRow({
   )
 }
 
-export function DownArrow() {
-  return (
-    <div style={{ padding: '8px 0' }}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path
-          d="M8 3V13M8 13L4 9M8 13L12 9"
-          stroke="#9195A6"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-  )
-}
-
 export function DetailRow({
   label,
   value,

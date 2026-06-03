@@ -1,11 +1,8 @@
 /**
- * Top-level Borrow tab layout.
- *
- * Wires the lend-position selector (chooses the collateral source) to
- * the borrow provider context (selects the matching borrow market) and
- * mounts the borrow form when collateral is selected. Lend positions
- * with zero deposit are filtered out; if the user has no eligible
- * positions, the no-collateral banner is shown.
+ * Top-level Borrow tab layout. Wires the lend-position selector (the collateral
+ * source) to the borrow provider's selected market and mounts the borrow form
+ * once collateral is selected. Zero-deposit positions are filtered out; with
+ * none eligible, the no-collateral banner shows.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -55,10 +52,7 @@ export function BorrowTab() {
     }
   }, [positionsWithDeposits, selectedLendPosition])
 
-  // Refresh the snapshot to the latest entry in positionsWithDeposits when
-  // upstream data (depositedSharesRaw, pledged amounts, etc.) changes, so
-  // downstream /borrow/price calls pledge the current share count, not the
-  // snapshot captured at default-selection time.
+  // Refresh the selected snapshot when upstream data changes so borrow calls pledge the current share count.
   useEffect(() => {
     if (!selectedLendPosition) return
     const fresh = positionsWithDeposits.find(
@@ -72,8 +66,7 @@ export function BorrowTab() {
     }
   }, [positionsWithDeposits, selectedLendPosition])
 
-  // Sync the borrow context's selected market to whatever borrow market
-  // accepts the chosen lend asset as collateral.
+  // Sync the borrow context's selected market to the one accepting the chosen lend asset as collateral.
   useEffect(() => {
     if (!selectedLendPosition) return
     const matchingMarket = markets.find(

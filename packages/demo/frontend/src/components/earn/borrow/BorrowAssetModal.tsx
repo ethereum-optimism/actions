@@ -1,9 +1,7 @@
 /**
- * Asset-select modal for the Borrow tab.
- *
- * Single-select. List of borrowable assets with their per-asset Borrow
- * APY and Liquidity columns. Click closes the modal and bubbles the
- * selected asset up via `onSelect`.
+ * Single-select asset modal for the Borrow tab. Lists borrowable assets with
+ * their Borrow APY and Liquidity columns; a click closes the modal and bubbles
+ * the selected market up via `onSelect`.
  */
 
 import { createPortal } from 'react-dom'
@@ -146,9 +144,7 @@ function AssetCell({ market }: { market: BorrowMarket }) {
 }
 
 function LiquidityCell({ market }: { market: BorrowMarket }) {
-  // Available liquidity = totalCollateral - totalBorrowed in the borrow
-  // asset's wei units. For the stub we approximate with the difference;
-  // PR #4's backend returns this pre-derived if added.
+  // Available liquidity approximated as totalCollateral - totalBorrowed in the borrow asset's wei units.
   const available = market.totalCollateral - market.totalBorrowed
   const decimals = market.borrowAsset.metadata.decimals
   const human = Number(available) / 10 ** decimals
