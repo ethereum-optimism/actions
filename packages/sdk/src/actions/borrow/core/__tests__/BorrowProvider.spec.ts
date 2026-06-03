@@ -105,8 +105,7 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return {
       marketId: params.market,
       collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
+      collateralShares: 0n,
       borrowAsset,
       borrowAmount: 0n,
       borrowAmountFormatted: '0',
@@ -147,8 +146,7 @@ function makeStubQuote(
     positionAfter: {
       marketId,
       collateralAsset: marketId.collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
+      collateralShares: 0n,
       borrowAsset: marketId.borrowAsset,
       borrowAmount: 0n,
       borrowAmountFormatted: '0',

@@ -10,6 +10,7 @@ import {
   USDC_DEMO,
   GauntletUSDCDemo,
   AaveETH,
+  MorphoBorrowDemo,
 } from '@/constants/markets'
 
 // Helper to create Actions config matching backend structure
@@ -51,6 +52,11 @@ export function createActionsConfig<T extends ReactProviderTypes>(
       velodrome: {
         defaultSlippage: 0.005,
         marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
+      },
+    },
+    borrow: {
+      morpho: {
+        marketAllowlist: [MorphoBorrowDemo],
       },
     },
     chains: [

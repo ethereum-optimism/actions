@@ -1,14 +1,89 @@
+import CaretDownIcon from '@/components/icons/CaretDownIcon'
+
+interface BaseProps {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  disabled: boolean
+  displaySymbol: string
+  tokenLogo?: string
+}
+
+interface StaticChipProps extends BaseProps {
+  onTokenClick?: undefined
+}
+
+interface SelectorChipProps extends BaseProps {
+  /** When set, the token chip becomes a clickable selector with a dropdown caret. */
+  onTokenClick: () => void
+}
+
+export type AmountInputProps = StaticChipProps | SelectorChipProps
+
+// Layout shared by the static and clickable token chips; the left divider makes the chip read as a segment of the input row.
+const tokenChipStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  paddingLeft: '12px',
+  borderLeft: '1px solid #E0E2EB',
+} as const
+
+function TokenChip({
+  displaySymbol,
+  tokenLogo,
+  onTokenClick,
+}: Pick<BaseProps, 'displaySymbol' | 'tokenLogo'> & {
+  onTokenClick?: () => void
+}) {
+  const tokenContent = (
+    <>
+      {tokenLogo && (
+        <img
+          src={tokenLogo}
+          alt={displaySymbol}
+          style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+        />
+      )}
+      <span
+        style={{
+          color: '#9195A6',
+          fontSize: '14px',
+          fontWeight: 600,
+          fontFamily: 'Inter',
+        }}
+      >
+        {displaySymbol}
+      </span>
+      {onTokenClick && <CaretDownIcon />}
+    </>
+  )
+
+  if (!onTokenClick) return <div style={tokenChipStyle}>{tokenContent}</div>
+  return (
+    <button
+      type="button"
+      onClick={onTokenClick}
+      style={{
+        ...tokenChipStyle,
+        border: 'none',
+        borderLeft: '1px solid #E0E2EB',
+        background: 'transparent',
+        cursor: 'pointer',
+      }}
+    >
+      {tokenContent}
+    </button>
+  )
+}
+
 export function AmountInput({
   value,
   onChange,
   disabled,
   displaySymbol,
-}: {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  disabled: boolean
-  displaySymbol: string
-}) {
+  tokenLogo,
+  onTokenClick,
+}: AmountInputProps) {
   return (
     <div
       style={{
@@ -38,26 +113,11 @@ export function AmountInput({
           cursor: disabled ? 'not-allowed' : 'text',
         }}
       />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          paddingLeft: '12px',
-          borderLeft: '1px solid #E0E2EB',
-        }}
-      >
-        <span
-          style={{
-            color: '#9195A6',
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Inter',
-          }}
-        >
-          {displaySymbol}
-        </span>
-      </div>
+      <TokenChip
+        displaySymbol={displaySymbol}
+        tokenLogo={tokenLogo}
+        onTokenClick={onTokenClick}
+      />
     </div>
   )
 }

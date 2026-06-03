@@ -118,6 +118,7 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       return [
         marketTuple({ totalBorrowAssets: 1234n }),
         500_000_000_000_000_000_000_000_000_000_000_000n, // some price
+        0n, // rateAtTarget
       ]
     })
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -127,7 +128,7 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       chainId: market.chainId,
     })
     expect(calls).toHaveLength(1)
-    expect(calls[0]).toHaveLength(2)
+    expect(calls[0]).toHaveLength(3)
     expect(result.maxLtv).toBeCloseTo(0.86)
     expect(result.totalBorrowed).toBe(1234n)
     expect(result.collateralAsset).toBe(collateralAsset)
@@ -141,7 +142,11 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       if (callCount === 2) {
         throw new Error('oracle reverted')
       }
-      return [marketTuple(), 500_000_000_000_000_000_000_000_000_000_000_000n]
+      return [
+        marketTuple(),
+        500_000_000_000_000_000_000_000_000_000_000_000n,
+        0n,
+      ]
     })
     const provider = new MorphoBorrowProvider(
       { marketAllowlist: [market, otherMarket] },
@@ -165,13 +170,14 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       positionTuple({ collateral: collateralWad, borrowShares: 0n }),
       marketTuple(),
       1n, // any non-zero price
+      0n, // rateAtTarget
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
-    expect(position.collateralAmount).toBe(collateralWad)
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
     expect(position.ltv).toBeNull()
@@ -183,13 +189,14 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       positionTuple({ collateral: collateralWad, borrowShares }),
       marketTuple(),
       1_000_000_000_000_000_000_000_000_000_000_000_000n, // mid price
+      0n, // rateAtTarget
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
-    expect(position.collateralAmount).toBe(collateralWad)
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.borrowAmount).toBeGreaterThan(0n)
     expect(position.healthFactor).not.toBeNull()
     expect(position.ltv).not.toBeNull()
@@ -206,6 +213,8 @@ function stateMulticallResult(
     allowance?: bigint
   } = {},
 ) {
+  // The state-with-allowance multicall returns 5 entries: position, market,
+  // price, rateAtTarget, allowance.
   return [
     positionTuple({
       collateral: opts.collateral ?? 0n,
@@ -213,6 +222,7 @@ function stateMulticallResult(
     }),
     marketTuple(),
     1_000_000_000_000_000_000_000_000_000_000_000_000n,
+    0n, // rateAtTarget
     opts.allowance ?? 0n,
   ]
 }
@@ -268,7 +278,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     })
 
     expect(calls).toHaveLength(1)
-    expect(calls[0].contracts[3].address).toBe(
+    expect(calls[0].contracts[4].address).toBe(
       market.marketParams.collateralToken,
     )
     expect(quote.execution.transactions[0].to).toBe(

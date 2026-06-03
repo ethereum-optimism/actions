@@ -78,13 +78,13 @@ class ActionsApp extends App {
 }
 
 /**
- * Build a fully-wired Hono app: CORS, actions middleware, router, and
- * the borrow-scoped global error handler. Extracted so route tests can
- * exercise the real onError + middleware stack against the actual router.
+ * Build a fully-wired Hono app: CORS, actions middleware, router, and a
+ * global error handler. Extracted so route tests can exercise the real
+ * onError + middleware stack against the actual router.
  *
- * Lend / swap still own their per-route try/catch; the onError handler
- * is intentionally scoped to borrow path prefixes so non-borrow routes
- * fall through to a generic 500 unchanged.
+ * The error handler runs `mapSdkError` against every thrown SDK error so
+ * lend, swap, and borrow all surface the same structured status codes.
+ * Unmapped errors fall through to a generic 500.
  */
 export function createApp(): Hono {
   const app = new Hono()
@@ -125,12 +125,6 @@ export function createApp(): Hono {
   app.route('/', router)
 
   app.onError((err, c) => {
-    const path = c.req.path
-    const isBorrow =
-      path.startsWith('/borrow') || path.startsWith('/wallet/borrow')
-    if (!isBorrow) {
-      return c.json({ error: 'Internal server error' }, 500)
-    }
     const mapped = mapSdkError(err)
     return mapped
       ? errorResponse(c, mapped.message, mapped.status, err)

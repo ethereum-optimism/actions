@@ -1,4 +1,4 @@
-import { ActionsError } from '@eth-optimism/actions-sdk'
+import { ActionsError, type Asset } from '@eth-optimism/actions-sdk'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
@@ -7,27 +7,47 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
+import {
+  displaySymbol as toDisplaySymbol,
+  floorToFixed,
+  formatUsd,
+} from '@/utils/tokenDisplay'
+import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
+import { useWithdrawCollateral } from '@/hooks/useWithdrawCollateral'
+import { BorrowHealthCard } from './borrow/BorrowHealthCard'
+import { ReviewBorrowHealthModal } from './borrow/ReviewBorrowHealthModal'
 import { CtaButton } from './CtaButton'
 import { ModeToggle } from './ModeToggle'
 import { AmountLabel } from './AmountLabel'
 import { AmountInput } from './AmountInput'
 import { IlliquidMarketNotice } from './IlliquidMarketNotice'
-
-function floorToFixed(value: number, decimals: number): string {
-  const factor = 10 ** decimals
-  return (Math.floor(value * factor) / factor).toFixed(decimals)
-}
+import Shimmer from './Shimmer'
 
 interface ActionProps {
   assetBalance: string
   isLoadingBalance: boolean
   isMintingAsset: boolean
   depositedAmount: string | null
+  directDepositedAmount?: string | null
   assetSymbol: string
+  /** Full Asset object (when available). Required for the collateral-aware
+   * withdraw flow that shows a Health card when this asset is securing a
+   * borrow position. */
+  asset?: Asset | null
   onMintAsset?: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{
     transactionHash?: string
     blockExplorerUrl?: string
@@ -72,7 +92,9 @@ export function Action({
   isLoadingBalance,
   isMintingAsset,
   depositedAmount,
+  directDepositedAmount,
   assetSymbol,
+  asset,
   onMintAsset,
   onTransaction,
   marketId,
@@ -80,12 +102,13 @@ export function Action({
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
-  const displaySymbol = assetSymbol.replace('_DEMO', '')
+  const displaySymbol = toDisplaySymbol(assetSymbol)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<'loading' | 'error'>('loading')
   const [modalMessage, setModalMessage] = useState<string | undefined>()
+  const [reviewBorrowOpen, setReviewBorrowOpen] = useState(false)
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
@@ -106,17 +129,36 @@ export function Action({
   const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
+  const isHighlighted =
+    (hoveredAction === 'deposit' && mode === 'lend') ||
+    (hoveredAction === 'withdraw' && mode === 'withdraw')
+
+  // Collateral-aware withdraw: surfaces the projected-health card, gates the CTA, and computes the collateral to release.
+  const {
+    pledgedPosition,
+    showHealthCard,
+    withdrawIntoBuffer,
+    withdrawWouldLiquidate,
+    releaseCollateralAmountRaw,
+    health,
+  } = useWithdrawCollateral({
+    asset,
+    mode,
+    amount,
+    amountValue,
+    maxAmount,
+    directDepositedAmount,
+  })
+
   const isActionDisabled = needsMint
     ? false
     : isLoading ||
       !effectiveAmount ||
       amountValue <= 0 ||
       amountValue > parseFloat(maxAmount) ||
-      (isLockedWithdrawAmount && !hasDeposit)
-
-  const isHighlighted =
-    (hoveredAction === 'deposit' && mode === 'lend') ||
-    (hoveredAction === 'withdraw' && mode === 'withdraw')
+      (isLockedWithdrawAmount && !hasDeposit) ||
+      withdrawIntoBuffer ||
+      withdrawWouldLiquidate
 
   const handleMaxClick = () => {
     let value = parseFloat(maxAmount)
@@ -133,14 +175,7 @@ export function Action({
     }
   }
 
-  const handleCtaClick = async () => {
-    if (needsMint) {
-      trackEvent('mint_asset', { asset: assetSymbol })
-      onMintAsset?.()
-      return
-    }
-    if (isActionDisabled) return
-
+  const runTransaction = async () => {
     const eventData = {
       action: mode,
       asset: assetSymbol,
@@ -154,7 +189,16 @@ export function Action({
     setModalStatus('loading')
 
     try {
-      await onTransaction(mode, amountValue)
+      await onTransaction(mode, amountValue, {
+        ...(mode === 'withdraw' && releaseCollateralAmountRaw && pledgedPosition
+          ? {
+              releaseCollateral: {
+                marketId: pledgedPosition.marketId,
+                amountRaw: releaseCollateralAmountRaw,
+              },
+            }
+          : {}),
+      })
       setModalOpen(false)
       setToast({
         visible: true,
@@ -172,6 +216,28 @@ export function Action({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleCtaClick = async () => {
+    if (needsMint) {
+      trackEvent('mint_asset', { asset: assetSymbol })
+      onMintAsset?.()
+      return
+    }
+    if (isActionDisabled) return
+
+    // Withdrawing against pledged collateral routes through the review modal to show the projected health first.
+    if (showHealthCard) {
+      setReviewBorrowOpen(true)
+      return
+    }
+
+    await runTransaction()
+  }
+
+  const handleReviewConfirm = async () => {
+    setReviewBorrowOpen(false)
+    await runTransaction()
   }
 
   const ctaText = getCtaText(
@@ -198,7 +264,14 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        <ModeToggle mode={mode} onModeChange={setMode} />
+        <ModeToggle
+          mode={mode}
+          onModeChange={setMode}
+          options={[
+            { value: 'lend', label: 'Lend' },
+            { value: 'withdraw', label: 'Withdraw' },
+          ]}
+        />
 
         <div
           className="transition-all"
@@ -232,15 +305,40 @@ export function Action({
             displaySymbol={displaySymbol}
           />
 
-          <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
-            {ctaText}
-          </CtaButton>
+          {showHealthCard && health && <BorrowHealthCard {...health} />}
+
+          {isLoadingBalance && !isMintingAsset ? (
+            <div data-testid="shimmer">
+              <Shimmer width="100%" height="48px" variant="rectangle" />
+            </div>
+          ) : (
+            <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
+              {ctaText}
+            </CtaButton>
+          )}
 
           {isLockedWithdrawAmount && (
             <IlliquidMarketNotice maxWithdraw={AAVE_MAX_WITHDRAW} />
           )}
         </div>
       </div>
+
+      {showHealthCard && health && asset && (
+        <ReviewBorrowHealthModal
+          isOpen={reviewBorrowOpen}
+          onClose={() => setReviewBorrowOpen(false)}
+          onConfirm={handleReviewConfirm}
+          isExecuting={isLoading}
+          flow="withdraw"
+          amount={{ main: amount || '0' }}
+          amountUsd={formatUsd(
+            parseFloat(amount) || 0,
+            stubPriceUsd(asset.metadata.symbol),
+          )}
+          asset={asset}
+          {...health}
+        />
+      )}
 
       <TransactionModal
         isOpen={modalOpen}
