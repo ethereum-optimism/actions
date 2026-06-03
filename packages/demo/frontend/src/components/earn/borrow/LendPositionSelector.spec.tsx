@@ -29,7 +29,10 @@ function ethPosition(depositedAmount: string): MarketPosition {
     pledgedCollateralAmount: null,
     isLoadingApy: false,
     isLoadingPosition: false,
-    marketId: { address: '0x4200000000000000000000000000000000000006', chainId: 11155420 },
+    marketId: {
+      address: '0x4200000000000000000000000000000000000006',
+      chainId: 11155420,
+    },
     provider: 'aave',
   }
 }
