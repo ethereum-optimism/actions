@@ -1,7 +1,23 @@
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
-import type { LendMarketId } from '@eth-optimism/actions-sdk'
+import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { isEthSymbol } from './assetUtils'
+
+/**
+ * Numeric wallet balance for an asset, matched by symbol across chains. Returns
+ * the asset's total balance in human-readable units, or 0 when absent. The
+ * borrow repay gate uses this to cap repayment at the held debt-asset balance.
+ */
+export function assetBalanceAmount(
+  tokenBalances: readonly TokenBalance[] | undefined,
+  asset: Asset | null,
+): number {
+  if (!asset || !tokenBalances) return 0
+  const token = tokenBalances.find(
+    (t) => t.asset.metadata.symbol === asset.metadata.symbol,
+  )
+  return token?.totalBalance ?? 0
+}
 
 interface BalanceMatchingParams {
   allTokenBalances: TokenBalance[]

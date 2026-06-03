@@ -1,13 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import type {
   Asset,
   BorrowMarket,
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
+import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { makeBorrowContextWrapper } from '@/test-utils/borrowFixtures'
-import type { MarketPosition } from '@/types/market'
+import {
+  buildBorrowMarketPosition,
+  makeBorrowContextWrapper,
+} from '@/test-utils/borrowFixtures'
+import type { BorrowPosition, MarketPosition } from '@/types/market'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import { BorrowAction } from './BorrowAction'
 
@@ -96,15 +100,40 @@ const ethLendPosition = {
   provider: 'aave',
 } as unknown as MarketPosition
 
-function ctx(selectedMarket: BorrowMarket): UseBorrowProviderReturn {
+function ctx(
+  selectedMarket: BorrowMarket,
+  overrides: Partial<UseBorrowProviderReturn> = {},
+): UseBorrowProviderReturn {
   return {
     markets: [morphoMarket, aaveMarket],
     selectedMarket,
     borrowPositions: [],
+    tokenBalances: [],
     handleMarketSelect: vi.fn(),
     handleTransaction: vi.fn(),
     getQuote: vi.fn(),
+    ...overrides,
   } as unknown as UseBorrowProviderReturn
+}
+
+// An open Aave position: 100 USDC of debt against the ETH collateral.
+const aaveDebtPosition = buildBorrowMarketPosition({
+  marketId: aaveMarket.marketId,
+  collateralAsset: ETH,
+  borrowAsset: USDC,
+  borrowAmount: 100_000_000n,
+  borrowAmountFormatted: '100',
+  healthFactor: 1.5,
+}) as BorrowPosition
+
+function usdcBalance(amount: number): TokenBalance {
+  const raw = BigInt(Math.round(amount * 1e6))
+  return {
+    asset: USDC,
+    totalBalance: amount,
+    totalBalanceRaw: raw,
+    chains: { [OPS]: { balance: amount, balanceRaw: raw } },
+  } as unknown as TokenBalance
 }
 
 describe('BorrowAction market binding', () => {
@@ -116,5 +145,67 @@ describe('BorrowAction market binding', () => {
     })
     expect(screen.getByText('USDC')).toBeInTheDocument()
     expect(screen.queryByText('OP')).not.toBeInTheDocument()
+  })
+})
+
+describe('BorrowAction repay gating on debt-asset balance', () => {
+  function renderRepay(overrides: Partial<UseBorrowProviderReturn>) {
+    render(<BorrowAction selectedLendPosition={ethLendPosition} />, {
+      wrapper: makeBorrowContextWrapper(ctx(aaveMarket, overrides)),
+    })
+    fireEvent.click(screen.getByText('Repay'))
+  }
+
+  // The mode toggle and the CTA both read "Repay" in repay mode; the CTA is
+  // the last one in DOM order.
+  const repayCta = () => {
+    const buttons = screen.getAllByRole('button', { name: 'Repay' })
+    return buttons[buttons.length - 1]
+  }
+
+  it('blocks repay with a re-acquire notice when the USDC balance is zero', () => {
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [usdcBalance(0)],
+    })
+    expect(
+      screen.getByText(/need USDC to repay this loan/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /get USDC/i }),
+    ).toBeInTheDocument()
+    expect(repayCta()).toBeDisabled()
+  })
+
+  it('allows partial repay and prompts to acquire more when balance is below the debt', () => {
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [usdcBalance(40)],
+    })
+    expect(screen.getByText(/repay up to 40 USDC/i)).toBeInTheDocument()
+    // Max prefills the held balance (the cap), not the full 100 debt.
+    fireEvent.click(screen.getByRole('button', { name: /^max$/i }))
+    expect(screen.getByPlaceholderText('0')).toHaveValue('40')
+    expect(repayCta()).not.toBeDisabled()
+  })
+
+  it('clamps an over-balance repay entry to the held balance', () => {
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [usdcBalance(40)],
+    })
+    fireEvent.change(screen.getByPlaceholderText('0'), {
+      target: { value: '75' },
+    })
+    expect(screen.getByPlaceholderText('0')).toHaveValue('40')
+  })
+
+  it('shows no re-acquire notice when the balance covers the full debt', () => {
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [usdcBalance(150)],
+    })
+    expect(screen.queryByText(/repay this loan/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
   })
 })

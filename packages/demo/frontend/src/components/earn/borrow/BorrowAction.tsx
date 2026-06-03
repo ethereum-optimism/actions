@@ -21,12 +21,16 @@ import {
   lendPositionUsd,
   positionUsd,
 } from '@/utils/borrowValuation'
+import { assetBalanceAmount } from '@/utils/balanceMatching'
 import { sameMarketId } from '@/utils/marketId'
+import { displaySymbol } from '@/utils/tokenDisplay'
+import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
 import type { MarketPosition } from '@/types/market'
 import { CtaButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
 import { BorrowHealthCard } from './BorrowHealthCard'
 import { AmountSection, SectionHeader } from './BorrowAmountSection'
+import { ReacquireDebtNotice } from './ReacquireDebtNotice'
 import {
   BorrowActionModals,
   type BorrowHealthProps,
@@ -46,11 +50,13 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     markets,
     selectedMarket,
     borrowPositions,
+    tokenBalances,
     handleMarketSelect,
     handleTransaction,
     getQuote,
   } = useBorrowProviderContext()
   const { isExecuting, runTransaction, txModal, toast } = useBorrowTransaction()
+  const { setActiveTab } = useTabSwitcher()
 
   const [mode, setMode] = useState<'borrow' | 'repay'>('borrow')
   const [amount, setAmount] = useState('')
@@ -102,6 +108,30 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       : borrowMarket
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
+
+  // Repaying burns real debt-asset balance (USDC_DEMO for Aave), so the repay
+  // amount is capped at min(held balance, outstanding debt). The held balance
+  // gates the CTA and drives the re-acquire notice.
+  const outstandingDebt = activePosition
+    ? parseFloat(activePosition.borrowAmountFormatted) || 0
+    : 0
+  const debtBalance = assetBalanceAmount(tokenBalances, activeAsset)
+  const maxRepayable = Math.min(debtBalance, outstandingDebt)
+  const isRepay = mode === 'repay'
+  const cannotRepay = isRepay && outstandingDebt > 0 && debtBalance <= 0
+  const partialRepayOnly =
+    isRepay &&
+    outstandingDebt > 0 &&
+    debtBalance > 0 &&
+    debtBalance < outstandingDebt
+
+  // Floor a number to the active asset's decimals (capped at 6) so a prefilled
+  // or clamped repay never rounds above the held balance.
+  const floorToAsset = (value: number) => {
+    const decimals = Math.min(activeAsset?.metadata.decimals ?? 6, 6)
+    const factor = 10 ** decimals
+    return (Math.floor(value * factor) / factor).toString()
+  }
 
   const bufferPct = activeMarket?.healthBufferPct ?? 0
   const maxLtv = activeMarket?.maxLtv ?? 0
@@ -155,7 +185,13 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     if (!activeAsset) return
     if (mode === 'repay') {
       if (!activePosition) return
-      setAmount(activePosition.borrowAmountFormatted)
+      // Full debt when the balance covers it (exact string avoids dust);
+      // otherwise the floored held balance.
+      setAmount(
+        debtBalance >= outstandingDebt
+          ? activePosition.borrowAmountFormatted
+          : floorToAsset(maxRepayable),
+      )
       return
     }
     const maxBorrowUsd = computeMaxBorrowSafeUsd(
@@ -170,7 +206,17 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value
-    if (v === '' || /^\d*\.?\d*$/.test(v)) setAmount(v)
+    if (v !== '' && !/^\d*\.?\d*$/.test(v)) return
+    // In repay mode, cap entry at the max repayable (held balance vs debt)
+    // rather than hard-blocking the keystroke.
+    if (isRepay && v !== '' && maxRepayable > 0) {
+      const parsed = parseFloat(v)
+      if (Number.isFinite(parsed) && parsed > maxRepayable) {
+        setAmount(floorToAsset(maxRepayable))
+        return
+      }
+    }
+    setAmount(v)
   }
 
   const handleTokenClick = () => {
@@ -194,7 +240,10 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     amountNum > 0 &&
     !wouldLiquidate &&
     !inBufferZone &&
-    !isPreviewLoading
+    !isPreviewLoading &&
+    // Repay needs enough debt-asset balance to burn; entry is clamped to
+    // maxRepayable, so this only blocks the zero-balance case.
+    !cannotRepay
 
   const handleCtaClick = () => {
     if (!canOpenReview) return
@@ -273,6 +322,15 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
         />
 
         {health && <BorrowHealthCard {...health} />}
+
+        {activeAsset && (cannotRepay || partialRepayOnly) && (
+          <ReacquireDebtNotice
+            symbol={displaySymbol(activeAsset.metadata.symbol)}
+            variant={cannotRepay ? 'none' : 'partial'}
+            maxRepayable={maxRepayable}
+            onAcquire={() => setActiveTab('swap')}
+          />
+        )}
 
         <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
           {ctaText}
