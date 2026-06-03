@@ -6,7 +6,11 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { getDemoChains } from '@/demo/chains.js'
-import { AaveETH, GauntletUSDCDemo } from '@/demo/markets.js'
+import {
+  AaveETH,
+  GauntletUSDCDemo,
+  MorphoUSDCBorrowDemo,
+} from '@/demo/markets.js'
 
 /**
  * @description Returns the baked demo `NodeActionsConfig` the CLI boots
@@ -28,6 +32,9 @@ export function getDemoConfig(): NodeActionsConfig<never> {
     lend: {
       morpho: { marketAllowlist: [GauntletUSDCDemo] },
       aave: { marketAllowlist: [AaveETH] },
+    },
+    borrow: {
+      morpho: { marketAllowlist: [MorphoUSDCBorrowDemo] },
     },
     swap: {
       uniswap: {

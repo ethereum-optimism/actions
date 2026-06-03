@@ -1,14 +1,11 @@
-import {
-  APPROVAL_MODES,
-  type ApprovalMode,
-  type LendAction,
-} from '@eth-optimism/actions-sdk'
+import { type LendAction } from '@eth-optimism/actions-sdk'
 
 import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { configuredMarkets, resolveMarket } from '@/resolvers/markets.js'
 import { parseAmount } from '@/utils/parseAmount.js'
+import { parseApprovalMode } from '@/utils/parseApprovalMode.js'
 import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
 import { requireLendCapability } from './requireLendCapability.js'
@@ -26,18 +23,6 @@ export interface LendOpenFlags {
 export type LendCloseFlags =
   | { market: string; amount: string; max?: never }
   | { market: string; amount?: never; max: true }
-
-function parseApprovalMode(raw: string | undefined): ApprovalMode | undefined {
-  if (raw === undefined) return undefined
-  if ((APPROVAL_MODES as readonly string[]).includes(raw)) {
-    return raw as ApprovalMode
-  }
-  throw new CliError(
-    'validation',
-    `Invalid --approval-mode: ${raw} (expected ${APPROVAL_MODES.join(' or ')})`,
-    { approvalMode: raw },
-  )
-}
 
 /**
  * @description Shared backbone for the wallet-scoped lend write commands. `open` and `close` are mechanically identical apart from which `wallet.lend.*Position` method is called, the literal `action` value embedded in the output envelope, and the action-specific flags (`open` consumes `--approval-mode`; `close` accepts `--max`). This helper resolves the market, validates the amount, dispatches to the SDK, normalises the receipt array, raises on revert, and emits a `LendActionDoc` envelope.

@@ -50,14 +50,19 @@ function receiptFailure(r: WalletTransactionReceipt): CliError {
 }
 
 /**
- * @description Inspects receipts for failure markers and raises `CliError('onchain')` when any leg failed or carries an unrecognised shape. Default-deny: anything that is not an explicit success (`status === 'success'` for EOA, `success === true` for UserOp) is treated as failure, so a malformed receipt from a misbehaving RPC cannot be silently reported as success.
+ * @description Inspects receipts for failure markers and raises `CliError('onchain')` when any leg failed or carries an unrecognised shape. Default-deny: anything that is not an explicit success (`status === 'success'` for EOA, `success === true` for UserOp) is treated as failure, so a malformed receipt from a misbehaving RPC cannot be silently reported as success. The thrown error carries the full `receipts` array under `details.transactions` (alongside the failing leg's own diagnostics) so a batched failure does not drop the already-mined legs: on a sequential EOA bundle like `[approve, supplyCollateral, borrow]`, a reverted `borrow` still surfaces the mined `approve` hash and the gas it spent.
  * @param receipts - Receipts returned by the SDK.
- * @throws `CliError` with code `onchain` on revert, UserOp failure, or unrecognised shape.
+ * @throws `CliError` with code `onchain` on revert, UserOp failure, or unrecognised shape; `details.transactions` holds every receipt in the batch.
  */
 export function ensureOnchainSuccess(
   receipts: readonly WalletTransactionReceipt[],
 ): void {
   for (const r of receipts) {
-    if (isReceiptFailure(r)) throw receiptFailure(r)
+    if (!isReceiptFailure(r)) continue
+    const failure = receiptFailure(r)
+    throw new CliError('onchain', failure.message, {
+      ...(failure.details as Record<string, unknown>),
+      transactions: receipts,
+    })
   }
 }

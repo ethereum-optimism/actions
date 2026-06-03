@@ -2,6 +2,7 @@ import { Command } from 'commander'
 
 import { runWalletAddress } from '@/commands/wallet/address.js'
 import { runWalletBalance } from '@/commands/wallet/balance.js'
+import { walletBorrowCommand } from '@/commands/wallet/borrow/index.js'
 import { walletLendCommand } from '@/commands/wallet/lend/index.js'
 import { walletSwapCommand } from '@/commands/wallet/swap/index.js'
 import { CHAIN_EXAMPLES } from '@/resolvers/chains.js'
@@ -32,6 +33,7 @@ export function walletCommand(): Command {
     )
     .action(runWalletBalance)
   command.addCommand(walletLendCommand())
+  command.addCommand(walletBorrowCommand())
   command.addCommand(walletSwapCommand())
   return command
 }
