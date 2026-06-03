@@ -51,7 +51,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const {
     markets,
     selectedMarket,
-    selectedMarketPosition,
+    borrowPositions,
     handleMarketSelect,
     handleTransaction,
     getQuote,
@@ -75,21 +75,38 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     [markets, selectedLendPosition],
   )
 
+  // Active market for the form: a market whose collateral matches the chosen
+  // lend position (eligibleMarkets). Prefer the globally-selected market when
+  // it is one of those, otherwise fall back to the first eligible market. This
+  // keeps the form bound to the selected lend position rather than the global
+  // default, so switching collateral always re-targets the matching market.
+  const borrowMarket: BorrowMarket | null =
+    eligibleMarkets.find(
+      (m) =>
+        selectedMarket && sameMarketId(m.marketId, selectedMarket.marketId),
+    ) ??
+    eligibleMarkets[0] ??
+    null
+
+  // The wallet's borrow position in the active market, if any.
+  const activePosition =
+    borrowMarket &&
+    (borrowPositions.find((p) =>
+      sameMarketId(p.marketId, borrowMarket.marketId),
+    ) ??
+      null)
+
   // In repay mode, the asset is locked to the asset currently borrowed.
   const repayAsset =
-    mode === 'repay' && selectedMarketPosition
-      ? selectedMarketPosition.borrowAsset
-      : null
+    mode === 'repay' && activePosition ? activePosition.borrowAsset : null
 
-  // Active market for the form: in borrow mode, the user-selected;
-  // in repay mode, the position's market (since repay applies to an
-  // existing borrow).
+  // In repay mode, repay applies to the existing borrow's market.
   const activeMarket: BorrowMarket | null =
-    mode === 'repay' && selectedMarketPosition
+    mode === 'repay' && activePosition
       ? (markets.find((m) =>
-          sameMarketId(m.marketId, selectedMarketPosition.marketId),
+          sameMarketId(m.marketId, activePosition.marketId),
         ) ?? null)
-      : selectedMarket
+      : borrowMarket
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
@@ -102,7 +119,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // otherwise treat as a fresh open with the chosen lend position as
   // future collateral.
   const { collateralValueUsd: currentCollUsd, borrowValueUsd: currentBorrUsd } =
-    positionUsd(selectedMarketPosition)
+    positionUsd(activePosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
   const additionalLendCollateralUsd =
     directLendPositionUsd(selectedLendPosition)
@@ -150,8 +167,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const handleMax = () => {
     if (!activeAsset) return
     if (mode === 'repay') {
-      if (!selectedMarketPosition) return
-      setAmount(selectedMarketPosition.borrowAmountFormatted)
+      if (!activePosition) return
+      setAmount(activePosition.borrowAmountFormatted)
       return
     }
     const maxBorrowUsd = computeMaxBorrowSafeUsd(
