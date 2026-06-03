@@ -1,6 +1,7 @@
 import { parseAmount } from '@/utils/parseAmount.js'
+import { parseApprovalMode } from '@/utils/parseApprovalMode.js'
 
-import { parseApprovalMode, runBorrowAction } from './runBorrowAction.js'
+import { runBorrowAction } from './runBorrowAction.js'
 
 export interface BorrowDepositCollateralFlags {
   market: string

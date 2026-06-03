@@ -1,7 +1,5 @@
 import {
   type AmountOrMax,
-  APPROVAL_MODES,
-  type ApprovalMode,
   type BorrowAction,
   type BorrowMarketConfig,
   type BorrowReceipt,
@@ -86,26 +84,6 @@ export function amountOrMaxToEnvelope(
   if ('max' in value) return 'max'
   if ('amount' in value) return value.amount
   return undefined
-}
-
-/**
- * @description Validates `--approval-mode` against the SDK's `APPROVAL_MODES` allowlist. Returns `undefined` when the flag is omitted so the wallet's resolved default applies. Identical shape to the lend helper; deduplicated here because both lend and borrow expose the same flag with the same semantics.
- * @param raw - The argv value as a string, or `undefined`.
- * @returns The validated `ApprovalMode`, or `undefined` when unset.
- * @throws `CliError` with code `validation` when `raw` is not a recognised approval mode.
- */
-export function parseApprovalMode(
-  raw: string | undefined,
-): ApprovalMode | undefined {
-  if (raw === undefined) return undefined
-  if ((APPROVAL_MODES as readonly string[]).includes(raw)) {
-    return raw as ApprovalMode
-  }
-  throw new CliError(
-    'validation',
-    `Invalid --approval-mode: ${raw} (expected ${APPROVAL_MODES.join(' or ')})`,
-    { approvalMode: raw },
-  )
 }
 
 interface RunBorrowActionArgs {

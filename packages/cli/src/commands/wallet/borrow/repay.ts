@@ -1,6 +1,7 @@
+import { parseApprovalMode } from '@/utils/parseApprovalMode.js'
+
 import {
   amountOrMaxToEnvelope,
-  parseApprovalMode,
   resolveAmountOrMax,
   runBorrowAction,
 } from './runBorrowAction.js'
