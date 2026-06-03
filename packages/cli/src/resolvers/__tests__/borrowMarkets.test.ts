@@ -57,6 +57,8 @@ describe('resolveBorrowMarket', () => {
     expect(typeof m.chainId).toBe('number')
     expect(m.collateralAsset.metadata.symbol).toBe('USDC_DEMO')
     expect(m.borrowAsset.metadata.symbol).toBe('OP_DEMO')
+    if (m.kind !== 'morpho-blue')
+      throw new Error('expected a morpho-blue market')
     expect(m.marketParams.lltv).toBe(860000000000000000n)
   })
 })
