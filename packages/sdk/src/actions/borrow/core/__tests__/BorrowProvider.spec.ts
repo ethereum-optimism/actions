@@ -348,9 +348,19 @@ describe('BorrowProvider - single-amount actions', () => {
       walletAddress,
       amount: { amount: 250 },
     })
-    expect(provider.depositCalls[0].amountWei).toBe(
-      250_000_000_000_000_000_000n,
-    )
+    expect(provider.depositCalls[0].amount).toEqual({
+      amountWei: 250_000_000_000_000_000_000n,
+    })
+  })
+
+  it('depositCollateral preserves { max: true }', async () => {
+    const provider = makeProvider()
+    await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(provider.depositCalls[0].amount).toEqual({ max: true })
   })
 
   it('withdrawCollateral preserves { max: true }', async () => {

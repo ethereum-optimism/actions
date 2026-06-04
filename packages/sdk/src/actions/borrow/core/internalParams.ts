@@ -82,7 +82,7 @@ export function buildDepositCollateralInternalParams(
     walletAddress: base.walletAddress,
     options: params.options,
     approvalMode: base.approvalMode,
-    amountWei: toAmountWei(
+    amount: toAmountWeiOrMax(
       params.amount,
       params.market.collateralAsset.metadata.decimals,
     ),

@@ -201,27 +201,25 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = this.requireMorphoConfig(params.market)
-    const { current, allowance } = await this.fetchStateWithAllowance(
+    const { current, allowance, balance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
       market.marketParams.collateralToken,
     )
-    const after = current.supplyCollateral(params.amountWei)
+    // `max` deposits the wallet's full collateral-token balance.
+    const amountWei = 'max' in params.amount ? balance : params.amount.amountWei
+    const after = current.supplyCollateral(amountWei)
 
     const txs: TransactionData[] = []
     const approvalTx = buildMorphoCollateralApproval(
       market,
-      params.amountWei,
+      amountWei,
       allowance,
       params.approvalMode,
     )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
-      encodeMorphoSupplyCollateral(
-        market,
-        params.amountWei,
-        params.walletAddress,
-      ),
+      encodeMorphoSupplyCollateral(market, amountWei, params.walletAddress),
     )
 
     return this.assembleQuote({
@@ -230,7 +228,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
-      quoteAmounts: { collateralAmountRaw: params.amountWei },
+      quoteAmounts: { collateralAmountRaw: amountWei },
       approvalsSkipped: approvalTx === undefined,
     })
   }
@@ -362,6 +360,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<{
     current: AccrualPosition
     allowance: bigint
+    balance: bigint
   }> {
     return fetchMorphoStateWithAllowance(
       this.chainManager.getPublicClient(config.chainId),
