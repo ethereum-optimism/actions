@@ -20,6 +20,7 @@ import { useMarketData } from '@/hooks/useMarketData'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
+import { morphoBorrowMarketForVault } from '@/constants/markets'
 import type { LendExecutePositionParams } from '@/types/api'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { BorrowOperations } from '@/hooks/useBorrowProvider'
@@ -417,6 +418,75 @@ export function useLendProvider({
         }
       },
     ) => {
+      // Lend + chain collateral (Morpho): after depositing into the vault,
+      // pledge the resulting shares as borrow collateral so collateral tracks
+      // the lend position (like Aave). A failed pledge does not fail the lend —
+      // reconciliation retries it on the borrow tab.
+      if (
+        mode === 'lend' &&
+        borrowOperations &&
+        walletAddress &&
+        selectedMarket
+      ) {
+        const chainBorrowMarket = morphoBorrowMarketForVault(
+          selectedMarket.marketId.address,
+          selectedMarket.marketId.chainId,
+        )
+        if (chainBorrowMarket) {
+          const activity = logActivity('lend', {
+            amount: amount.toString(),
+            assetSymbol: selectedMarket.asset.metadata.symbol,
+            marketName: selectedMarket.marketName,
+            chainId: selectedMarket.marketId.chainId,
+          })
+          try {
+            const lendReceipt = await operations.openPosition({
+              marketId: selectedMarket.marketId as LendMarketId,
+              amount,
+              asset: selectedMarket.asset,
+              marketName: selectedMarket.marketName.toLowerCase(),
+            })
+            try {
+              await borrowOperations.depositCollateral(walletAddress, {
+                marketId: {
+                  kind: chainBorrowMarket.kind,
+                  marketId: chainBorrowMarket.marketId,
+                  chainId: chainBorrowMarket.chainId,
+                },
+                amount: { max: true },
+              })
+            } catch (collateralError) {
+              console.warn(
+                'Collateral pledge after lend failed; reconciliation will retry',
+                collateralError,
+              )
+            }
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: ['tokenBalances'] }),
+              queryClient.invalidateQueries({
+                queryKey: [
+                  'position',
+                  selectedMarket.marketId.address,
+                  selectedMarket.marketId.chainId,
+                ],
+              }),
+            ])
+            await refreshAllPositions()
+            dispatchEarnPositionsChanged()
+            const blockExplorerUrl = getBlockExplorerUrl(
+              selectedMarket.marketId.chainId,
+              lendReceipt,
+            )
+            activity?.confirm({ blockExplorerUrl })
+            const { txHash, userOpHash } = extractHashes(lendReceipt)
+            return { transactionHash: txHash || userOpHash, blockExplorerUrl }
+          } catch (error) {
+            activity?.error()
+            throw error
+          }
+        }
+      }
+
       if (
         mode !== 'withdraw' ||
         !options?.releaseCollateral ||

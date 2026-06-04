@@ -96,3 +96,23 @@ export function borrowCollateralVault(marketId: {
       c.chainId === marketId.chainId,
   )?.marketParams.collateralToken
 }
+
+/**
+ * The Morpho borrow market whose collateral is the given lend vault, matched by
+ * the vault address (the market's `collateralToken`). Lets the lend flow pledge
+ * freshly-minted vault shares as borrow collateral so collateral tracks the
+ * lend position. Returns undefined for non-Morpho lends (e.g. Aave, which
+ * supplies collateral at lend time and needs no chaining).
+ */
+export function morphoBorrowMarketForVault(
+  vaultAddress: string,
+  chainId: number,
+): BorrowMarketConfig | undefined {
+  return BORROW_MARKET_CONFIGS.find(
+    (c) =>
+      c.kind === 'morpho-blue' &&
+      c.chainId === chainId &&
+      c.marketParams.collateralToken.toLowerCase() ===
+        vaultAddress.toLowerCase(),
+  )
+}

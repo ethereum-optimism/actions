@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { borrowCollateralVault, MorphoBorrowDemo } from './markets'
+import {
+  AaveETH,
+  borrowCollateralVault,
+  GauntletUSDCDemo,
+  morphoBorrowMarketForVault,
+  MorphoBorrowDemo,
+} from './markets'
 
 describe('borrowCollateralVault', () => {
   it('resolves the demo borrow market to its on-chain vault collateralToken', () => {
@@ -25,6 +31,22 @@ describe('borrowCollateralVault', () => {
         marketId: MorphoBorrowDemo.marketId,
         chainId: 999999,
       }),
+    ).toBeUndefined()
+  })
+})
+
+describe('morphoBorrowMarketForVault', () => {
+  it('maps a Morpho lend vault to its borrow market', () => {
+    const borrowMarket = morphoBorrowMarketForVault(
+      GauntletUSDCDemo.address,
+      GauntletUSDCDemo.chainId,
+    )
+    expect(borrowMarket?.marketId).toBe(MorphoBorrowDemo.marketId)
+  })
+
+  it('returns undefined for an Aave lend market (no chaining needed)', () => {
+    expect(
+      morphoBorrowMarketForVault(AaveETH.address, AaveETH.chainId),
     ).toBeUndefined()
   })
 })
