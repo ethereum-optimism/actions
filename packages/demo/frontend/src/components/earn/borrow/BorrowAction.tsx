@@ -16,11 +16,7 @@ import {
   computeMaxBorrowSafeUsd,
   computeSafeCeilingLtv,
 } from '@/utils/borrowMath'
-import {
-  directLendPositionUsd,
-  lendPositionUsd,
-  positionUsd,
-} from '@/utils/borrowValuation'
+import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
 import { assetBalanceAmount } from '@/utils/balanceMatching'
 import { sameMarketId } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
@@ -142,19 +138,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const { collateralValueUsd: currentCollUsd, borrowValueUsd: currentBorrUsd } =
     positionUsd(activePosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
-  const additionalLendCollateralUsd =
-    directLendPositionUsd(selectedLendPosition)
 
-  // Aave's lend position IS the borrow collateral (the same aToken), so the
-  // lend balance must not be added on top of the position's collateral.
-  // Morpho's vault shares are supplied as collateral at borrow time, so a fresh
-  // open adds the full lend balance and a top-up adds the still-unpledged part.
-  const isAaveMarket = activeMarket?.marketId.kind === 'aave-v3'
-  const projectionCollateralUsd = isAaveMarket
-    ? lendCollateralUsd
-    : currentCollUsd > 0
-      ? currentCollUsd + additionalLendCollateralUsd
-      : lendCollateralUsd
+  // Collateral is what currently backs the loan; borrowing never pledges more
+  // (collateral changes only via lend / withdraw). A fresh open has no position
+  // yet, so it uses the lend balance it is about to supply as collateral.
+  const projectionCollateralUsd =
+    currentCollUsd > 0 ? currentCollUsd : lendCollateralUsd
 
   const amountNum = parseFloat(amount) || 0
   const amountAssetPriceUsd = activeAsset
@@ -162,7 +151,10 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const amountUsd = amountNum * amountAssetPriceUsd
 
-  const { livePreview, isPreviewLoading } = useBorrowQuotePreview({
+  // Quote preview still gates the CTA on a settled quote, but health is
+  // computed locally from stub prices (see useBorrowProjection), so the
+  // quote's oracle-priced ltv/HF are not used for display.
+  const { isPreviewLoading } = useBorrowQuotePreview({
     activeMarket,
     amountNum,
     mode,
@@ -182,7 +174,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       currentBorrUsd,
       currentCollUsd,
       projectionCollateralUsd,
-      livePreview,
     })
 
   // Max button: prefill the safe ceiling in borrow mode, the borrowed amount in repay mode.

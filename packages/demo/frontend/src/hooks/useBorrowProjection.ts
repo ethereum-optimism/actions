@@ -5,11 +5,7 @@
  */
 
 import { useMemo } from 'react'
-import type {
-  Asset,
-  BorrowMarket,
-  BorrowQuote,
-} from '@eth-optimism/actions-sdk'
+import type { Asset, BorrowMarket } from '@eth-optimism/actions-sdk'
 import { computeProjection } from '@/utils/borrowMath'
 
 export function useBorrowProjection({
@@ -22,7 +18,6 @@ export function useBorrowProjection({
   currentBorrUsd,
   currentCollUsd,
   projectionCollateralUsd,
-  livePreview,
 }: {
   activeMarket: BorrowMarket | null
   activeAsset: Asset | null
@@ -33,7 +28,6 @@ export function useBorrowProjection({
   currentBorrUsd: number
   currentCollUsd: number
   projectionCollateralUsd: number
-  livePreview: BorrowQuote | null
 }): {
   currentLtv: number
   projectedLtv: number
@@ -65,28 +59,21 @@ export function useBorrowProjection({
     maxLtv,
   ])
 
-  const backendLtv = livePreview?.positionAfter.ltv ?? null
-  const backendHf = livePreview?.positionAfter.healthFactor ?? null
-
-  // Baseline LTV reflects the user's current on-chain position, so the review modal's "before" reading matches reality.
+  // The whole demo is stub-priced, so health is computed from one source — the
+  // local stub projection — for both current and projected. The SDK quote's
+  // ltv/HF use each protocol's real on-chain oracle, which would fight the stub
+  // display (e.g. Aave's ETH oracle vs the $1770 stub) and make borrowing move
+  // the bar the wrong way.
   const currentLtv = currentCollUsd > 0 ? currentBorrUsd / currentCollUsd : 0
   const projectedLtv =
-    backendLtv !== null
-      ? backendLtv
-      : localProjection && localProjection.kind === 'projected'
-        ? localProjection.ltv
-        : currentLtv
-  // Backend has no discrete "would liquidate" flag; treat projected LTV >= maxLtv as the sentinel.
-  const wouldLiquidate =
-    backendLtv !== null
-      ? backendLtv >= maxLtv
-      : localProjection?.kind === 'wouldLiquidate'
+    localProjection && localProjection.kind === 'projected'
+      ? localProjection.ltv
+      : currentLtv
+  const wouldLiquidate = localProjection?.kind === 'wouldLiquidate'
   const projectedHealthFactor =
-    backendHf !== null
-      ? backendHf
-      : localProjection && localProjection.kind === 'projected'
-        ? localProjection.healthFactor
-        : Number.POSITIVE_INFINITY
+    localProjection && localProjection.kind === 'projected'
+      ? localProjection.healthFactor
+      : Number.POSITIVE_INFINITY
 
   return { currentLtv, projectedLtv, wouldLiquidate, projectedHealthFactor }
 }
