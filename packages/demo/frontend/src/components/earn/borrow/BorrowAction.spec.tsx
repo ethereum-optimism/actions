@@ -209,3 +209,29 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
   })
 })
+
+describe('BorrowAction Aave collateral (no double-count)', () => {
+  it('uses the lend position as collateral, not lend + position collateral', () => {
+    const lend = {
+      ...ethLendPosition,
+      depositedAmount: '0.02',
+      directDepositedAmount: '0.02',
+    } as unknown as MarketPosition
+    const position = buildBorrowMarketPosition({
+      marketId: aaveMarket.marketId,
+      collateralAsset: ETH,
+      borrowAsset: USDC,
+      collateralAmountFormatted: '0.02',
+      borrowAmount: 14_000000n,
+      borrowAmountFormatted: '14',
+    }) as BorrowPosition
+    render(<BorrowAction selectedLendPosition={lend} />, {
+      wrapper: makeBorrowContextWrapper(
+        ctx(aaveMarket, { borrowPositions: [position] }),
+      ),
+    })
+    // Collateral row shows the lend amount (0.02 ETH), not the doubled 0.04.
+    expect(screen.getByText('0.02')).toBeInTheDocument()
+    expect(screen.queryByText('0.04')).not.toBeInTheDocument()
+  })
+})

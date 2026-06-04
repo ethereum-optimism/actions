@@ -149,7 +149,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // lend balance must not be added on top of the position's collateral.
   // Morpho's vault shares are supplied as collateral at borrow time, so a fresh
   // open adds the full lend balance and a top-up adds the still-unpledged part.
-  const isAaveMarket = activeMarket?.kind === 'aave-v3'
+  const isAaveMarket = activeMarket?.marketId.kind === 'aave-v3'
   const projectionCollateralUsd = isAaveMarket
     ? lendCollateralUsd
     : currentCollUsd > 0
