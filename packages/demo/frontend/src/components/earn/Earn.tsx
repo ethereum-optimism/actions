@@ -220,7 +220,8 @@ function EarnHeader({
       style={{
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #E0E2EB',
-        position: 'relative',
+        position: 'sticky',
+        top: 0,
         zIndex: 40,
       }}
     >
