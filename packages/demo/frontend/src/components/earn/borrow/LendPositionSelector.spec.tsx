@@ -38,7 +38,7 @@ function ethPosition(depositedAmount: string): MarketPosition {
 }
 
 describe('LendPositionSelector', () => {
-  it('prices the deposited ETH amount in USD (0.01 ETH -> $30, not $0.01)', () => {
+  it('prices the deposited ETH amount in USD (0.01 ETH -> $17.70, not $0.01)', () => {
     const position = ethPosition('0.01')
     render(
       <LendPositionSelector
@@ -47,7 +47,7 @@ describe('LendPositionSelector', () => {
         onSelect={vi.fn()}
       />,
     )
-    expect(screen.getByText('$30.00')).toBeInTheDocument()
+    expect(screen.getByText('$17.70')).toBeInTheDocument()
     expect(screen.queryByText('$0.01')).not.toBeInTheDocument()
   })
 })
