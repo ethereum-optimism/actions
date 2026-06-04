@@ -20,7 +20,7 @@ import type {
   StubRepayParams,
 } from '@/api/borrowApi'
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
-import { MorphoBorrowDemo } from '@/constants/markets'
+import { AaveBorrowDemo, MorphoBorrowDemo } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
 
 export type FrontendWalletOperationsWallet = Pick<
@@ -38,17 +38,21 @@ export type FrontendWalletOperationsActions = Pick<
   'getSupportedAssets' | 'lend' | 'borrow' | 'swap'
 >
 
+const DEMO_BORROW_MARKETS: readonly BorrowMarketConfig[] = [
+  MorphoBorrowDemo,
+  AaveBorrowDemo,
+]
+
 function resolveBorrowMarketConfig(
   marketId: BorrowQuoteParams['marketId'],
 ): BorrowMarketConfig {
-  // The demo has a single borrow market today.
-  if (
-    MorphoBorrowDemo.kind === marketId.kind &&
-    MorphoBorrowDemo.chainId === marketId.chainId &&
-    MorphoBorrowDemo.marketId.toLowerCase() === marketId.marketId.toLowerCase()
-  ) {
-    return MorphoBorrowDemo
-  }
+  const match = DEMO_BORROW_MARKETS.find(
+    (m) =>
+      m.kind === marketId.kind &&
+      m.chainId === marketId.chainId &&
+      m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
+  )
+  if (match) return match
   throw new Error(`Unsupported borrow market: ${marketId.marketId}`)
 }
 
