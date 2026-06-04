@@ -211,10 +211,11 @@ function stateMulticallResult(
     collateral?: bigint
     borrowShares?: bigint
     allowance?: bigint
+    balance?: bigint
   } = {},
 ) {
-  // The state-with-allowance multicall returns 5 entries: position, market,
-  // price, rateAtTarget, allowance.
+  // The state-with-allowance multicall returns 6 entries: position, market,
+  // price, rateAtTarget, allowance, balance.
   return [
     positionTuple({
       collateral: opts.collateral ?? 0n,
@@ -224,6 +225,7 @@ function stateMulticallResult(
     1_000_000_000_000_000_000_000_000_000_000_000_000n,
     0n, // rateAtTarget
     opts.allowance ?? 0n,
+    opts.balance ?? 0n,
   ]
 }
 
@@ -240,6 +242,19 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     expect(quote.execution.transactions).toHaveLength(2)
     expect(quote.execution.approvalsSkipped).toBe(false)
     expect(quote.collateralAmountRaw).toBe(oneEth)
+  })
+
+  it('resolves a max deposit to the wallet collateral balance', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ allowance: oneEth * 10n, balance: oneEth * 3n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(quote.collateralAmountRaw).toBe(oneEth * 3n)
   })
 
   it('omits the approval tx when allowance already covers the amount', async () => {

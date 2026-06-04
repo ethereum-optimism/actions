@@ -117,6 +117,8 @@ export async function fetchMorphoStateWithAllowance(
 ): Promise<{
   current: AccrualPosition
   allowance: bigint
+  /** Wallet balance of `token`, used to resolve a `max` collateral deposit. */
+  balance: bigint
 }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const allowanceContract = {
@@ -125,13 +127,20 @@ export async function fetchMorphoStateWithAllowance(
     functionName: 'allowance' as const,
     args: [user, morphoBlue] as const,
   } as const
+  const balanceContract = {
+    address: token,
+    abi: erc20Abi,
+    functionName: 'balanceOf' as const,
+    args: [user] as const,
+  } as const
 
-  const [positionTuple, marketTuple, price, rateAtTarget, allowance] =
+  const [positionTuple, marketTuple, price, rateAtTarget, allowance, balance] =
     await client.multicall({
       allowFailure: false,
       contracts: [
         ...corePositionContracts(morphoBlue, config, user),
         allowanceContract,
+        balanceContract,
       ],
     })
   const current = buildAccrualPosition(
@@ -142,7 +151,7 @@ export async function fetchMorphoStateWithAllowance(
     price,
     rateAtTarget,
   )
-  return { current, allowance }
+  return { current, allowance, balance }
 }
 
 function buildAccrualPosition(

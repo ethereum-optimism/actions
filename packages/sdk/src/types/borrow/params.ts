@@ -67,7 +67,7 @@ export type BorrowClosePositionParams = BorrowOpenPositionBaseParams & {
 
 /** Params for depositing additional collateral without changing debt. */
 export type BorrowDepositCollateralParams = BorrowOpenPositionBaseParams & {
-  amount: Amount
+  amount: AmountOrMax
 }
 
 /** Params for withdrawing collateral. `{ max: true }` withdraws the full balance. */

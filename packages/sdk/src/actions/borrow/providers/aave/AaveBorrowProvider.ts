@@ -242,20 +242,30 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = this.requireAaveConfig(params.market)
+    // A `max` collateral deposit would mean "supply the wallet's entire
+    // reserve balance", which is ambiguous for the native-ETH gateway path and
+    // unused in practice (Aave collateral is supplied at lend time). Require an
+    // explicit amount.
+    if ('max' in params.amount) {
+      throw new Error(
+        'Aave depositCollateral does not support a max amount; pass an explicit amount.',
+      )
+    }
+    const amountWei = params.amount.amountWei
     const { current, prices } = await this.fetchStateAndPrices(
       market,
       params.walletAddress,
     )
     const { txs, approvalsSkipped } = await this.buildCollateralDeposit(
       market,
-      params.amountWei,
+      amountWei,
       params.walletAddress,
       params.approvalMode,
     )
     const after = projectAavePositionState(
       current,
       prices,
-      { collateralDelta: params.amountWei, debtDelta: 0n },
+      { collateralDelta: amountWei, debtDelta: 0n },
       this.decimals(market),
     )
     return this.assembleQuote({
@@ -264,7 +274,7 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       before: current,
       after,
       transactions: txs,
-      quoteAmounts: { collateralAmountRaw: params.amountWei },
+      quoteAmounts: { collateralAmountRaw: amountWei },
       approvalsSkipped,
     })
   }
