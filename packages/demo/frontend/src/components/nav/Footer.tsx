@@ -13,7 +13,7 @@ function Footer() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <p className="flex items-center justify-center gap-2 flex-wrap font-sans">
-            <span>© 2025 Actions by</span>
+            <span>© {new Date().getFullYear()} Actions by</span>
             <a
               href="https://www.optimism.io/"
               target="_blank"
