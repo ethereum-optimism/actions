@@ -631,6 +631,9 @@ function EarnContent({
               width: isSidebarCollapsed ? '0px' : '436px',
               transition: 'width 300ms ease-in-out',
               overflow: 'hidden',
+              position: 'sticky',
+              top: '65px',
+              alignSelf: 'flex-start',
             }}
           >
             <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
