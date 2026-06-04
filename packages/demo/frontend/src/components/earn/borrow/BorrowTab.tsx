@@ -79,6 +79,14 @@ export function BorrowTab() {
 
   const hasCollateral = !isInitialLoad && positionsWithDeposits.length > 0
 
+  // Active Positions lists open loans only: a market the wallet has supplied
+  // collateral to but not borrowed against (e.g. Aave, where collateral is the
+  // lend position) shouldn't appear until a borrow has actually occurred.
+  const activeBorrowPositions = useMemo(
+    () => borrowPositions.filter((p) => p.borrowAmount > 0n),
+    [borrowPositions],
+  )
+
   return (
     <>
       <div>
@@ -103,9 +111,9 @@ export function BorrowTab() {
         <BorrowAction selectedLendPosition={selectedLendPosition} />
       )}
 
-      {borrowPositions.length > 0 && (
+      {activeBorrowPositions.length > 0 && (
         <div style={{ marginTop: '24px' }}>
-          <BorrowPositions positions={borrowPositions} />
+          <BorrowPositions positions={activeBorrowPositions} />
         </div>
       )}
     </>
