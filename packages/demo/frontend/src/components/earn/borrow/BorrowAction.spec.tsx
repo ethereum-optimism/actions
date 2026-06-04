@@ -208,6 +208,16 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     expect(screen.queryByText(/repay this loan/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
   })
+
+  it('shows no notice when the balance is within tolerance of the debt (interest dust)', () => {
+    // Debt 100, holding 99.8 — within 0.5%, so effectively repayable in full.
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [usdcBalance(99.8)],
+    })
+    expect(screen.queryByText(/repay up to/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
+  })
 })
 
 describe('BorrowAction Aave collateral (no double-count)', () => {

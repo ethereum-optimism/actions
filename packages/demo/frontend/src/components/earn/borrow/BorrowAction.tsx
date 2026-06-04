@@ -114,12 +114,14 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const debtBalance = assetBalanceAmount(tokenBalances, activeAsset)
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
+  // Within a small tolerance of the debt counts as "can repay in full":
+  // interest accrues sub-unit dust between the position read and the repay, so
+  // a strict `debtBalance < outstandingDebt` would nag a user who holds
+  // effectively the full amount (e.g. 100 OP held vs 100.0001 OP owed).
+  const canRepayFull = debtBalance >= outstandingDebt * 0.995
   const cannotRepay = isRepay && outstandingDebt > 0 && debtBalance <= 0
   const partialRepayOnly =
-    isRepay &&
-    outstandingDebt > 0 &&
-    debtBalance > 0 &&
-    debtBalance < outstandingDebt
+    isRepay && outstandingDebt > 0 && debtBalance > 0 && !canRepayFull
 
   // Floor a number to the active asset's decimals (capped at 6) so a prefilled
   // or clamped repay never rounds above the held balance.
