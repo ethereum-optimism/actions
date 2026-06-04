@@ -22,6 +22,7 @@ import type {
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
 import { AaveBorrowDemo, MorphoBorrowDemo } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
+import { mintMirrorUsdcDemo, removeMirrorUsdcDemo } from '@/utils/borrowMirror'
 
 export type FrontendWalletOperationsWallet = Pick<
   Wallet,
@@ -144,15 +145,33 @@ export function buildFrontendBorrowOperations(
       return isEmptyPosition(position) ? null : position
     },
     getQuote: async (params) => actions.borrow.getQuote(withParams(params)),
-    openPosition: async (_walletAddress, params) =>
-      wallet.borrow.openPosition(withParams(params)),
-    closePosition: async (_walletAddress, params) =>
-      wallet.borrow.closePosition(withParams(params)),
+    openPosition: async (_walletAddress, params) => {
+      const receipt = await wallet.borrow.openPosition(withParams(params))
+      // Mirror the real Aave borrow as USDC_DEMO (silent, best-effort). The
+      // server-wallet path does this in the backend; the in-browser wallet
+      // does it here.
+      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
+        void mintMirrorUsdcDemo(wallet, receipt.borrowAmount)
+      }
+      return receipt
+    },
+    closePosition: async (_walletAddress, params) => {
+      const receipt = await wallet.borrow.closePosition(withParams(params))
+      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
+        void removeMirrorUsdcDemo(wallet, receipt.borrowAmount)
+      }
+      return receipt
+    },
     depositCollateral: async (_walletAddress, params) =>
       wallet.borrow.depositCollateral(withParams(params)),
     withdrawCollateral: async (_walletAddress, params) =>
       wallet.borrow.withdrawCollateral(withParams(params)),
-    repay: async (_walletAddress, params) =>
-      wallet.borrow.repay(withParams(params)),
+    repay: async (_walletAddress, params) => {
+      const receipt = await wallet.borrow.repay(withParams(params))
+      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
+        void removeMirrorUsdcDemo(wallet, receipt.borrowAmount)
+      }
+      return receipt
+    },
   }
 }

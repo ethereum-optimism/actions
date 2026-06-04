@@ -343,6 +343,9 @@ export function useBorrowProvider(
   useEffect(() => {
     const handlePositionsChanged = () => {
       void fetchPositionsRef.current(walletAddress)
+      // The mirror mint/remove and reconcile fire this event; refresh balances
+      // so the nav and gating pick up the USDC_DEMO change.
+      void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
     }
     window.addEventListener(
       EARN_POSITIONS_CHANGED_EVENT,
@@ -354,7 +357,7 @@ export function useBorrowProvider(
         handlePositionsChanged,
       )
     }
-  }, [walletAddress])
+  }, [walletAddress, queryClient])
 
   return {
     markets,
