@@ -67,6 +67,17 @@ describe('buildEffectiveLendPositions', () => {
     expect(position.pledgedCollateralAmount).toBe('75')
   })
 
+  it('floors the displayed deposit so it never exceeds the pledged collateral', () => {
+    const [position] = buildEffectiveLendPositions(
+      [market],
+      [],
+      [buildBorrowMarketPosition({ collateralAmountFormatted: '40.0172' })],
+    )
+    // 40.0172 must floor to 40.01, not round up to 40.02 (which would let the
+    // withdraw Max exceed the actual collateral).
+    expect(position.depositedAmount).toBe('40.01')
+  })
+
   it('synthesizes a lend row when all collateral is pledged', () => {
     const [position] = buildEffectiveLendPositions(
       [market],

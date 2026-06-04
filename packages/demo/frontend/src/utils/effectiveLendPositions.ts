@@ -56,8 +56,15 @@ export function buildEffectiveLendPositions(
         market.provider !== 'aave' && pledgedPosition
           ? pledgedPosition.collateralAmountFormatted
           : null
+      // Floor (not round) to 2 decimals: the displayed deposit doubles as the
+      // withdraw Max, so rounding up would let Max exceed the actual pledged
+      // collateral and trip a false "would liquidate".
       const totalDepositedAmount = (
-        toAmount(directDepositedAmount) + toAmount(pledgedCollateralAmount)
+        Math.floor(
+          (toAmount(directDepositedAmount) +
+            toAmount(pledgedCollateralAmount)) *
+            100,
+        ) / 100
       ).toFixed(2)
 
       if (toAmount(totalDepositedAmount) <= 0) return null
