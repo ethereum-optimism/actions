@@ -1,6 +1,6 @@
 ---
 type: feat
-status: active
+status: completed
 created: 2026-06-04
 origin: docs/brainstorms/2026-06-04-borrow-collateral-model-requirements.md
 scope: packages/demo/frontend (with backend reuse via existing endpoints)
