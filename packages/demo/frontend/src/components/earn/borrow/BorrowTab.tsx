@@ -5,9 +5,10 @@
  * none eligible, the no-collateral banner shows.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
+import { morphoBorrowMarketForVault } from '@/constants/markets'
 import type { MarketPosition } from '@/types/market'
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 import { BorrowAction } from './BorrowAction'
@@ -21,8 +22,40 @@ export function BorrowTab() {
     marketPositions,
     isInitialLoad,
   } = useLendProviderContext()
-  const { markets, handleMarketSelect, borrowPositions } =
+  const { markets, handleMarketSelect, borrowPositions, handleTransaction } =
     useBorrowProviderContext()
+
+  // Reconcile any Morpho lend shares that were not pledged as collateral (a
+  // failed/skipped lend-chain). On the borrow tab, pledge the unpledged balance
+  // in the background so collateral tracks the lend position. Pledged once per
+  // market per mount; a page reload re-checks.
+  const reconciledRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    marketPositions.forEach((position) => {
+      if (position.provider !== 'morpho') return
+      const shares = position.depositedSharesRaw
+      if (!shares || shares <= 0n) return
+      const borrowMarket = morphoBorrowMarketForVault(
+        position.marketId.address,
+        position.marketId.chainId,
+      )
+      if (!borrowMarket) return
+      const key = `${position.marketId.chainId}:${position.marketId.address.toLowerCase()}`
+      if (reconciledRef.current.has(key)) return
+      reconciledRef.current.add(key)
+      void handleTransaction('depositCollateral', {
+        marketId: {
+          kind: borrowMarket.kind,
+          marketId: borrowMarket.marketId,
+          chainId: borrowMarket.chainId,
+        },
+        amount: { max: true },
+      }).catch((error) => {
+        reconciledRef.current.delete(key)
+        console.warn('Collateral reconciliation failed', error)
+      })
+    })
+  }, [marketPositions, handleTransaction])
 
   const effectiveLendPositions = useMemo(
     () =>
