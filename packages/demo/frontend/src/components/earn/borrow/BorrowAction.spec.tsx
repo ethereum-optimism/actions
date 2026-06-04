@@ -209,6 +209,23 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
   })
 
+  it('disables Repay and shows no notice once the loan is fully repaid', () => {
+    const repaid = buildBorrowMarketPosition({
+      marketId: aaveMarket.marketId,
+      collateralAsset: ETH,
+      borrowAsset: USDC,
+      borrowAmount: 0n,
+      borrowAmountFormatted: '0',
+    }) as BorrowPosition
+    renderRepay({
+      borrowPositions: [repaid],
+      tokenBalances: [usdcBalance(50)],
+    })
+    expect(screen.queryByText(/repay this loan/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/repay up to/i)).not.toBeInTheDocument()
+    expect(repayCta()).toBeDisabled()
+  })
+
   it('shows no notice when the balance is within tolerance of the debt (interest dust)', () => {
     // Debt 100, holding 99.8 — within 0.5%, so effectively repayable in full.
     renderRepay({

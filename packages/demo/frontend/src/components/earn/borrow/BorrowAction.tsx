@@ -108,9 +108,13 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // Repaying burns real debt-asset balance (USDC_DEMO for Aave), so the repay
   // amount is capped at min(held balance, outstanding debt). The held balance
   // gates the CTA and drives the re-acquire notice.
-  const outstandingDebt = activePosition
+  // A fully-repaid position can keep sub-cent interest dust; treat that as no
+  // debt so the form reads "repaid" (no notice, Repay disabled) rather than
+  // prompting for an asset to repay a phantom loan.
+  const rawOutstandingDebt = activePosition
     ? parseFloat(activePosition.borrowAmountFormatted) || 0
     : 0
+  const outstandingDebt = rawOutstandingDebt >= 0.005 ? rawOutstandingDebt : 0
   const debtBalance = assetBalanceAmount(tokenBalances, activeAsset)
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
@@ -241,7 +245,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     !isPreviewLoading &&
     // Repay needs enough debt-asset balance to burn; entry is clamped to
     // maxRepayable, so this only blocks the zero-balance case.
-    !cannotRepay
+    !cannotRepay &&
+    // Nothing to repay once the loan is fully cleared.
+    !(isRepay && outstandingDebt <= 0)
 
   const handleCtaClick = () => {
     if (!canOpenReview) return
