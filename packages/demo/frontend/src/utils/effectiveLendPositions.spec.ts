@@ -76,4 +76,41 @@ describe('buildEffectiveLendPositions', () => {
     expect(position.depositedAmount).toBe('75.00')
     expect(position.directDepositedAmount).toBeNull()
   })
+
+  it('does not double-count Aave collateral (lend deposit is the same aToken)', () => {
+    const ethAsset = {
+      type: 'native' as const,
+      address: { 11155420: '0x4200000000000000000000000000000000000006' },
+      metadata: { symbol: 'ETH', name: 'Ether', decimals: 18 },
+    }
+    const aaveMarket: MarketInfo = {
+      ...market,
+      name: 'Aave ETH',
+      asset: ethAsset,
+      marketId: { address: '0xweth', chainId: 11155420 },
+      provider: 'aave',
+    }
+    const aaveLend = buildMarketPosition({
+      asset: ethAsset,
+      depositedAmount: '0.02',
+      directDepositedAmount: '0.02',
+      marketId: aaveMarket.marketId,
+      provider: 'aave',
+    })
+    // The Aave borrow position reports the same ETH aToken balance as collateral.
+    const aaveBorrow = buildBorrowMarketPosition({
+      marketId: { kind: 'aave-v3', marketId: '0xaave', chainId: 11155420 },
+      collateralAsset: ethAsset,
+      collateralAmountFormatted: '0.02',
+      borrowAmountFormatted: '14',
+      borrowAmount: 14_000000n,
+    })
+    const [position] = buildEffectiveLendPositions(
+      [aaveMarket],
+      [aaveLend],
+      [aaveBorrow],
+    )
+    expect(position.depositedAmount).toBe('0.02')
+    expect(position.pledgedCollateralAmount).toBeNull()
+  })
 })

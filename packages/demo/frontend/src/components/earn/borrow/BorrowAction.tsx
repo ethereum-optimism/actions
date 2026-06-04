@@ -145,9 +145,14 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const additionalLendCollateralUsd =
     directLendPositionUsd(selectedLendPosition)
 
-  // For a fresh open, the demo treats the full lend balance as available collateral.
-  const projectionCollateralUsd =
-    currentCollUsd > 0
+  // Aave's lend position IS the borrow collateral (the same aToken), so the
+  // lend balance must not be added on top of the position's collateral.
+  // Morpho's vault shares are supplied as collateral at borrow time, so a fresh
+  // open adds the full lend balance and a top-up adds the still-unpledged part.
+  const isAaveMarket = activeMarket?.kind === 'aave-v3'
+  const projectionCollateralUsd = isAaveMarket
+    ? lendCollateralUsd
+    : currentCollUsd > 0
       ? currentCollUsd + additionalLendCollateralUsd
       : lendCollateralUsd
 

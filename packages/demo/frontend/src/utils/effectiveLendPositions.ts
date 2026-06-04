@@ -48,9 +48,14 @@ export function buildEffectiveLendPositions(
       )
       const directDepositedAmount =
         directPosition?.directDepositedAmount ?? null
-      const pledgedCollateralAmount = pledgedPosition
-        ? pledgedPosition.collateralAmountFormatted
-        : null
+      // For Aave the lend deposit and the borrow collateral are the same aToken
+      // balance, so the pledged amount is already counted in the direct deposit
+      // and must not be added again. Morpho's vault shares pledged to a borrow
+      // market leave the lend vault, so the two are distinct and do sum.
+      const pledgedCollateralAmount =
+        market.provider !== 'aave' && pledgedPosition
+          ? pledgedPosition.collateralAmountFormatted
+          : null
       const totalDepositedAmount = (
         toAmount(directDepositedAmount) + toAmount(pledgedCollateralAmount)
       ).toFixed(2)
