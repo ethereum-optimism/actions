@@ -310,9 +310,14 @@ export function useBorrowProvider(
           return isEmptyPosition(next) ? filtered : [...filtered, next]
         })
       }
-      // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager refetch returns pre-tx state and clobbers the optimistic update.
+      // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager
+      // refetch returns pre-tx state and clobbers the optimistic update. The
+      // delayed token-balance invalidation also lets the nav balance pick up
+      // the post-borrow wallet change (the eager invalidation below races the
+      // RPC and would otherwise re-cache the stale balance until a page reload).
       window.setTimeout(() => {
         dispatchEarnPositionsChanged()
+        void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       }, 3000)
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       return receipt
