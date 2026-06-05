@@ -7,7 +7,7 @@ import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import {
   AaveETH,
-  AaveUSDCBorrowDemo,
+  AaveETHBorrowUSDCDemo,
   MorphoUSDCBorrowDemo,
   MorphoUSDCLendDemo,
 } from './markets.js'
@@ -47,7 +47,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
         marketAllowlist: [MorphoUSDCBorrowDemo],
       },
       aave: {
-        marketAllowlist: [AaveUSDCBorrowDemo],
+        marketAllowlist: [AaveETHBorrowUSDCDemo],
       },
     },
     swap: {

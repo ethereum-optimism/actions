@@ -32,13 +32,13 @@ export const AaveETH: LendMarketConfig = {
 // Real Aave V3 borrow market on Optimism Sepolia: real ETH collateral, real
 // USDC debt. The Aave OP Sepolia pool has only USDC and WETH reserves, so USDC
 // is the sole borrowable asset. Synthetic `marketId` derived from the
-// (chain, WETH, USDC) triple. Mirrors the backend's `AaveUSDCBorrowDemo`; the
+// (chain, WETH, USDC) triple. Mirrors the backend's `AaveETHBorrowUSDCDemo`; the
 // frontend-wallet path borrows real USDC directly via the SDK (no USDC_DEMO
 // mirror, which is backend-only).
 const AAVE_OP_SEPOLIA_WETH = WETH.address[optimismSepolia.id] as Address
 const AAVE_OP_SEPOLIA_USDC = USDC.address[optimismSepolia.id] as Address
 
-export const AaveBorrowDemo: BorrowMarketConfig = {
+export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
   kind: 'aave-v3',
   marketId: computeAaveBorrowMarketId({
     chainId: optimismSepolia.id,

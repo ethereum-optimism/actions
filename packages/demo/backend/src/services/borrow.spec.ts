@@ -45,7 +45,7 @@ vi.mock('../config/markets.js', async () => {
         lltv: 0n,
       },
     },
-    AaveUSDCBorrowDemo: {
+    AaveETHBorrowUSDCDemo: {
       kind: 'aave-v3' as const,
       marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
       chainId: 11155420 as never,

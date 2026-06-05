@@ -20,7 +20,10 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
-import { AaveUSDCBorrowDemo, MorphoUSDCBorrowDemo } from '@/config/markets.js'
+import {
+  AaveETHBorrowUSDCDemo,
+  MorphoUSDCBorrowDemo,
+} from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
 import { getWallet } from '@/services/wallet.js'
@@ -41,7 +44,7 @@ function realizedAmount(receipt: BorrowReceipt): bigint | undefined {
 
 const BORROW_MARKETS: BorrowMarketConfig[] = [
   MorphoUSDCBorrowDemo,
-  AaveUSDCBorrowDemo,
+  AaveETHBorrowUSDCDemo,
 ]
 
 export type BorrowReceiptWithUrls = BorrowReceipt & {

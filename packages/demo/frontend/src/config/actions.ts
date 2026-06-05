@@ -11,7 +11,7 @@ import {
   USDC_DEMO,
   GauntletUSDCDemo,
   AaveETH,
-  AaveBorrowDemo,
+  AaveETHBorrowUSDCDemo,
   MorphoBorrowDemo,
 } from '@/constants/markets'
 
@@ -61,7 +61,7 @@ export function createActionsConfig<T extends ReactProviderTypes>(
         marketAllowlist: [MorphoBorrowDemo],
       },
       aave: {
-        marketAllowlist: [AaveBorrowDemo],
+        marketAllowlist: [AaveETHBorrowUSDCDemo],
       },
     },
     chains: [

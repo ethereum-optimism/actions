@@ -48,7 +48,7 @@ export const AaveETH: LendMarketConfig = {
 const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
 const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
 
-export const AaveUSDCBorrowDemo: BorrowMarketConfig = {
+export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
   kind: 'aave-v3',
   marketId: computeAaveBorrowMarketId({
     chainId: optimismSepolia.id,

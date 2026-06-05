@@ -20,7 +20,7 @@ import type {
   StubRepayParams,
 } from '@/api/borrowApi'
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
-import { AaveBorrowDemo, MorphoBorrowDemo } from '@/constants/markets'
+import { AaveETHBorrowUSDCDemo, MorphoBorrowDemo } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
 import { mintMirrorUsdcDemo, removeMirrorUsdcDemo } from '@/utils/borrowMirror'
 
@@ -41,7 +41,7 @@ export type FrontendWalletOperationsActions = Pick<
 
 const DEMO_BORROW_MARKETS: readonly BorrowMarketConfig[] = [
   MorphoBorrowDemo,
-  AaveBorrowDemo,
+  AaveETHBorrowUSDCDemo,
 ]
 
 function resolveBorrowMarketConfig(
