@@ -1,4 +1,4 @@
-import type { Address, PublicClient } from 'viem'
+import { type Address, type PublicClient, zeroAddress } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -60,7 +60,6 @@ function reserveData(opts: {
   aToken?: Address
   variableDebtToken?: Address
 }) {
-  const z = '0x0000000000000000000000000000000000000000' as Address
   return [
     { data: opts.configBitmap ?? 0n }, // 0 configuration
     0n, // 1 liquidityIndex
@@ -70,10 +69,10 @@ function reserveData(opts: {
     0n, // 5 currentStableBorrowRate
     0, // 6 lastUpdateTimestamp
     0, // 7 id
-    opts.aToken ?? z, // 8 aTokenAddress
-    z, // 9 stableDebtTokenAddress
-    opts.variableDebtToken ?? z, // 10 variableDebtTokenAddress
-    z, // 11 interestRateStrategyAddress
+    opts.aToken ?? zeroAddress, // 8 aTokenAddress
+    zeroAddress, // 9 stableDebtTokenAddress
+    opts.variableDebtToken ?? zeroAddress, // 10 variableDebtTokenAddress
+    zeroAddress, // 11 interestRateStrategyAddress
     0n, // 12 accruedToTreasury
     0n, // 13 unbacked
     0n, // 14 isolationModeTotalDebt

@@ -3,6 +3,7 @@ import {
   decodeFunctionData,
   maxUint256,
   type PublicClient,
+  zeroAddress,
 } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
@@ -75,7 +76,6 @@ function reserveData(opts: {
   aToken?: Address
   variableDebtToken?: Address
 }) {
-  const z = '0x0000000000000000000000000000000000000000' as Address
   return [
     { data: opts.configBitmap ?? 0n },
     0n,
@@ -85,10 +85,10 @@ function reserveData(opts: {
     0n,
     0,
     0,
-    opts.aToken ?? z,
-    z,
-    opts.variableDebtToken ?? z,
-    z,
+    opts.aToken ?? zeroAddress,
+    zeroAddress,
+    opts.variableDebtToken ?? zeroAddress,
+    zeroAddress,
     0n,
     0n,
     0n,
