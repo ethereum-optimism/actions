@@ -67,6 +67,13 @@ export abstract class BorrowProvider<
     super(config, chainManager, settings)
   }
 
+  /**
+   * The `BorrowMarketId` discriminator this provider services. Lets the
+   * namespace route a market to its provider by kind without naming concrete
+   * providers, and is the fallback when a provider carries no market allowlist.
+   */
+  public abstract get marketKind(): BorrowMarketId['kind']
+
   /** Resolved quote expiration in seconds: provider → settings → `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   public get quoteExpirationSeconds(): number {
     return (

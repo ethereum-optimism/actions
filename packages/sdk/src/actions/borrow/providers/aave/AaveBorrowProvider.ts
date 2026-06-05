@@ -91,6 +91,11 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
   }
 
+  /** Services Aave V3 borrow markets. */
+  public get marketKind(): 'aave-v3' {
+    return 'aave-v3'
+  }
+
   protocolSupportedChainIds(): number[] {
     return getAaveSupportedChainIds()
   }

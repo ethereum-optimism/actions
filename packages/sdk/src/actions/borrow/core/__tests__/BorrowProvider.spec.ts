@@ -41,6 +41,10 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
   public repayCalls: BorrowRepayInternalParams[] = []
   public marketCalls: BorrowMarket[] = []
 
+  public get marketKind(): 'morpho-blue' {
+    return 'morpho-blue'
+  }
+
   constructor(
     config: BorrowProviderConfig,
     chainManager: ChainManager,

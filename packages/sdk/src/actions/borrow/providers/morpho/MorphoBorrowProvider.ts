@@ -91,6 +91,11 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
   }
 
+  /** Services Morpho Blue borrow markets. */
+  public get marketKind(): 'morpho-blue' {
+    return 'morpho-blue'
+  }
+
   protocolSupportedChainIds(): number[] {
     return getMorphoSupportedChainIds()
   }

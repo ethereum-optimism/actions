@@ -122,6 +122,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       .mockImplementation(this.defaultGetPosition.bind(this))
   }
 
+  public get marketKind(): BorrowMarketId['kind'] {
+    return this.mockConfig.provider === 'aave' ? 'aave-v3' : 'morpho-blue'
+  }
+
   protocolSupportedChainIds(): number[] {
     return this.mockConfig.supportedChains
   }

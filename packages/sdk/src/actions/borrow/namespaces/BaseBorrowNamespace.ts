@@ -102,10 +102,11 @@ export class BaseBorrowNamespace extends BaseNamespace<
 
   /**
    * Pick the provider whose allowlist contains this market.
-   * @description Falls back to discriminator routing (Morpho-Blue → morpho)
-   * when no allowlist hit is found (useful in tests where providers were
-   * spun up without explicit allowlists). Throws if no provider is registered
-   * for the market's protocol.
+   * @description Falls back to routing by the market's `kind` discriminator
+   * when no allowlist hit is found (covers providers configured without an
+   * explicit allowlist). Each provider declares the kind it services, so this
+   * stays generic as new borrow providers ship. Throws if no provider is
+   * registered for the market's protocol.
    */
   protected getProviderForMarket(
     marketId: BorrowMarketId,
@@ -122,14 +123,8 @@ export class BaseBorrowNamespace extends BaseNamespace<
       }
     }
 
-    if (marketId.kind === 'morpho-blue') {
-      const morpho = this.providers.morpho
-      if (morpho) return morpho
-    }
-
-    if (marketId.kind === 'aave-v3') {
-      const aave = this.providers.aave
-      if (aave) return aave
+    for (const provider of this.getAllProviders()) {
+      if (provider.marketKind === marketId.kind) return provider
     }
 
     throw new ProviderNotConfiguredError({
