@@ -25,7 +25,7 @@ vi.mock('../config/markets.js', async () => {
     chainId: 84532 as never,
   }
   return {
-    MorphoUSDCBorrowDemo: {
+    MorphoUSDCBorrowOPDemo: {
       ...baseMarketId,
       name: 'Demo dUSDC / OP',
       collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
