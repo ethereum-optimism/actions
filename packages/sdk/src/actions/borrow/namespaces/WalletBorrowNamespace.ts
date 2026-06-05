@@ -1,7 +1,6 @@
 import {
   validateBorrowMarketIdInAnyAllowlist,
   validateQuoteAction,
-  validateQuoteNotExpired,
 } from '@/actions/borrow/core/validations.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
@@ -19,7 +18,10 @@ import type {
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateQuoteNotExpired,
+} from '@/utils/validation.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import { extractReceiptHashes } from '@/wallet/core/utils/extractReceiptHashes.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -202,7 +204,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     expectedAction: BorrowQuote['action'],
   ): BorrowQuote {
     validateQuoteAction(quote, expectedAction)
-    validateQuoteNotExpired(quote)
+    validateQuoteNotExpired(quote.expiresAt)
     validateChainSupported(quote.marketId.chainId, this.supportedChainIds())
     validateBorrowMarketIdInAnyAllowlist(quote.marketId, this.getAllProviders())
     return quote

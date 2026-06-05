@@ -13,6 +13,7 @@ import {
   ConflictingAmountsError,
   InvalidAmountError,
   InvalidParamsError,
+  QuoteExpiredError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -59,6 +60,17 @@ export function validateNotSameAsset(assetIn: Asset, assetOut: Asset): void {
 export function validateNotZeroAddress(address: Address, label: string): void {
   if (address === ZERO_ADDRESS) {
     throw new ZeroAddressError(label, address)
+  }
+}
+
+/**
+ * Reject a quote whose expiration timestamp (unix seconds) has passed.
+ * @throws QuoteExpiredError when expired.
+ */
+export function validateQuoteNotExpired(expiresAt: number): void {
+  const now = Math.floor(Date.now() / 1000)
+  if (now >= expiresAt) {
+    throw new QuoteExpiredError({ expiresAt, currentTime: now })
   }
 }
 

@@ -4,7 +4,6 @@ import {
   InvalidParamsError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
-  QuoteExpiredError,
 } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -27,19 +26,6 @@ export function validateQuoteAction(
       param: 'quote.action',
       expected: expectedAction,
       received: quote.action,
-    })
-  }
-}
-
-/**
- * Reject a pre-built `BorrowQuote` whose expiration has passed.
- */
-export function validateQuoteNotExpired(quote: BorrowQuote): void {
-  const now = Math.floor(Date.now() / 1000)
-  if (now >= quote.expiresAt) {
-    throw new QuoteExpiredError({
-      expiresAt: quote.expiresAt,
-      currentTime: now,
     })
   }
 }

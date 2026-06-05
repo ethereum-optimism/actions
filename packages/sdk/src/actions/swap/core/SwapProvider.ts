@@ -10,7 +10,6 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
-  QuoteExpiredError,
   QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -53,6 +52,7 @@ import {
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
+  validateQuoteNotExpired,
   validateRecipient,
   validateSlippage,
   validateWalletAddress,
@@ -432,7 +432,7 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
-    this.validateQuoteExpiration(quote)
+    validateQuoteNotExpired(quote.expiresAt)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
     return this.buildSwapTransactions(quote)
   }
@@ -448,16 +448,6 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     validateRecipient(params.recipient)
-  }
-
-  private validateQuoteExpiration(quote: SwapQuote): void {
-    const now = Math.floor(Date.now() / 1000)
-    if (now >= quote.expiresAt) {
-      throw new QuoteExpiredError({
-        expiresAt: quote.expiresAt,
-        currentTime: now,
-      })
-    }
   }
 
   private resolveParams(
