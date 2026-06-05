@@ -43,10 +43,7 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import {
-  validateChainSupported,
-  validateWalletAddress,
-} from '@/utils/validation.js'
+import { validateWalletAddress } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -142,8 +139,7 @@ export abstract class LendProvider<
    * @returns Promise resolving to array of market information
    */
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
-    if (params.chainId !== undefined)
-      validateChainSupported(params.chainId, this.supportedChainIds())
+    if (params.chainId !== undefined) this.assertChainSupported(params.chainId)
 
     const filteredMarkets = this.filterMarketConfigs(
       params.chainId,
@@ -236,7 +232,7 @@ export abstract class LendProvider<
    * @throws Error if market allowlist is configured but market is not in it
    */
   protected validateMarketAllowed(marketId: LendMarketId): void {
-    validateChainSupported(marketId.chainId, this.supportedChainIds())
+    this.assertChainSupported(marketId.chainId)
 
     if (
       !this._config.marketAllowlist ||

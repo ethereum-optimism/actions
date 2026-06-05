@@ -34,10 +34,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import {
-  validateChainSupported,
-  validateWalletAddress,
-} from '@/utils/validation.js'
+import { validateWalletAddress } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
@@ -202,7 +199,7 @@ export abstract class BorrowProvider<
    * @throws MarketNotAllowedError when the market is not allowlisted.
    */
   public async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
-    validateChainSupported(marketId.chainId, this.supportedChainIds())
+    this.assertChainSupported(marketId.chainId)
     const market = this.requireAllowlistedMarketConfig(marketId)
     return this._getMarket(market)
   }
@@ -219,7 +216,7 @@ export abstract class BorrowProvider<
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
     if (params.chainId !== undefined) {
-      validateChainSupported(params.chainId, this.supportedChainIds())
+      this.assertChainSupported(params.chainId)
     }
     const filtered = filterMatchingConfigs(this._config.marketAllowlist, [
       params.chainId === undefined
@@ -253,7 +250,7 @@ export abstract class BorrowProvider<
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
     validateWalletAddress(params.walletAddress)
-    validateChainSupported(params.marketId.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.marketId.chainId)
     const market = this.requireAllowlistedMarketConfig(params.marketId)
     return this._getPosition({ market, walletAddress: params.walletAddress })
   }
@@ -296,7 +293,7 @@ export abstract class BorrowProvider<
     base: ResolvedBorrowBaseParams
   } {
     validateWalletAddress(params.walletAddress)
-    validateChainSupported(params.market.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.market.chainId)
     const market = this.requireAllowlistedMarketConfig(params.market)
     const base: ResolvedBorrowBaseParams = {
       walletAddress: params.walletAddress,
