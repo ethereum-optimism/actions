@@ -51,17 +51,7 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     settings?: BorrowSettings,
   ) {
     super(config, chainManager, settings)
-    // Fail fast on an aave-v3 market whose chain has no Aave deployment. Other
-    // kinds belong to their own provider, so skip them.
-    for (const market of config.marketAllowlist ?? []) {
-      if (market.kind !== 'aave-v3') continue
-      if (!getPoolAddress(market.chainId)) {
-        throw new ChainNotSupportedError({
-          chainId: market.chainId,
-          supportedChainIds: getAaveSupportedChainIds(),
-        })
-      }
-    }
+    assertAaveMarketChainsSupported(config.marketAllowlist)
   }
 
   /** Services Aave V3 borrow markets. */
@@ -179,5 +169,25 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       quoteExpirationSeconds: this.quoteExpirationSeconds,
       healthBufferPct: this.resolveHealthBufferPct(plan.market),
     })
+  }
+}
+
+/**
+ * Fail fast when an `aave-v3` allowlist entry targets a chain without an Aave
+ * deployment, so a misconfiguration surfaces at construction rather than on the
+ * first call. Other market kinds belong to their own provider and are skipped.
+ * @throws ChainNotSupportedError for an aave-v3 market on an unsupported chain.
+ */
+function assertAaveMarketChainsSupported(
+  allowlist: readonly BorrowMarketConfig[] | undefined,
+): void {
+  for (const market of allowlist ?? []) {
+    if (market.kind !== 'aave-v3') continue
+    if (!getPoolAddress(market.chainId)) {
+      throw new ChainNotSupportedError({
+        chainId: market.chainId,
+        supportedChainIds: getAaveSupportedChainIds(),
+      })
+    }
   }
 }
