@@ -134,6 +134,18 @@ export function buildFrontendBorrowOperations(
       | StubCollateralParams
       | StubRepayParams,
   ) => buildWalletBorrowParams(params, wallet.address)
+  // Mirror a real Aave borrow/repay as USDC_DEMO (silent, best-effort). The
+  // server-wallet path mirrors in the backend; the in-browser wallet does it
+  // here. No-op for Morpho or zero-amount receipts.
+  const mirror = (
+    marketId: BorrowQuoteParams['marketId'],
+    receipt: { borrowAmount: bigint },
+    settle: typeof mintMirrorUsdcDemo,
+  ) => {
+    if (marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
+      void settle(wallet, receipt.borrowAmount)
+    }
+  }
   return {
     getTokenBalances: async () => wallet.getBalance(),
     getMarkets: async () => actions.borrow.getMarkets(),
@@ -147,19 +159,12 @@ export function buildFrontendBorrowOperations(
     getQuote: async (params) => actions.borrow.getQuote(withParams(params)),
     openPosition: async (_walletAddress, params) => {
       const receipt = await wallet.borrow.openPosition(withParams(params))
-      // Mirror the real Aave borrow as USDC_DEMO (silent, best-effort). The
-      // server-wallet path does this in the backend; the in-browser wallet
-      // does it here.
-      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
-        void mintMirrorUsdcDemo(wallet, receipt.borrowAmount)
-      }
+      mirror(params.marketId, receipt, mintMirrorUsdcDemo)
       return receipt
     },
     closePosition: async (_walletAddress, params) => {
       const receipt = await wallet.borrow.closePosition(withParams(params))
-      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
-        void removeMirrorUsdcDemo(wallet, receipt.borrowAmount)
-      }
+      mirror(params.marketId, receipt, removeMirrorUsdcDemo)
       return receipt
     },
     depositCollateral: async (_walletAddress, params) =>
@@ -168,9 +173,7 @@ export function buildFrontendBorrowOperations(
       wallet.borrow.withdrawCollateral(withParams(params)),
     repay: async (_walletAddress, params) => {
       const receipt = await wallet.borrow.repay(withParams(params))
-      if (params.marketId.kind === 'aave-v3' && receipt.borrowAmount > 0n) {
-        void removeMirrorUsdcDemo(wallet, receipt.borrowAmount)
-      }
+      mirror(params.marketId, receipt, removeMirrorUsdcDemo)
       return receipt
     },
   }
