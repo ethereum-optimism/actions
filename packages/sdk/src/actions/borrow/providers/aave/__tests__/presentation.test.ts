@@ -1,7 +1,10 @@
-import type { Address } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
+import {
+  MOCK_USDC_ADDRESS as USDC_ADDR,
+  MOCK_WETH_ADDRESS as WETH_ADDR,
+} from '@/__mocks__/MockAssets.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import {
   adaptAaveBorrowMarket,
@@ -15,9 +18,6 @@ import {
 } from '@/actions/borrow/providers/aave/presentation.js'
 import type { Asset } from '@/types/asset.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
-
-const WETH_ADDR = '0x4200000000000000000000000000000000000006' as Address
-const USDC_ADDR = '0x5fd84259d66Cd46123540766Be93DFE6D43130D7' as Address
 
 const collateralAsset = {
   type: 'native',
