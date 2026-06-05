@@ -28,9 +28,8 @@ import {
 } from '@/utils/approve.js'
 
 /**
- * Resolve an `AmountWeiOrMax` to a concrete wei amount. `{ max: true }`
- * resolves to `fallbackMax` (the live balance) for projection; the on-chain
- * call separately uses `maxUint256` so Aave clears dust precisely.
+ * Resolve `AmountWeiOrMax` to a wei amount. `max` returns `fallbackMax` (the
+ * live balance) for projection; callers send `maxUint256` on-chain.
  */
 export function resolveAaveAmount(
   amount: AmountWeiOrMax,
@@ -41,9 +40,8 @@ export function resolveAaveAmount(
 }
 
 /**
- * Build the collateral-deposit transactions: native ETH routes through the
- * WETH gateway (no ERC-20 approval), an ERC-20 reserve uses Pool.supply with
- * an approval when the current allowance is insufficient.
+ * Collateral-deposit transactions: native ETH via the WETH gateway (no
+ * approval), an ERC-20 reserve via Pool.supply with an approval when needed.
  */
 export async function buildAaveCollateralDeposit(
   client: PublicClient,
@@ -78,10 +76,9 @@ export async function buildAaveCollateralDeposit(
 }
 
 /**
- * Build the collateral-withdraw transactions. The native-ETH path withdraws
- * through the WETH gateway, which pulls the user's aToken, so it must be
- * preceded by an aToken approval to the gateway when the allowance is
- * insufficient. The direct Pool.withdraw path needs no approval.
+ * Collateral-withdraw transactions. The native-ETH path withdraws via the WETH
+ * gateway, which pulls the aToken, so it needs an aToken approval when the
+ * allowance is short; the direct Pool.withdraw path needs none.
  */
 export async function buildAaveCollateralWithdraw(
   client: PublicClient,
@@ -118,12 +115,11 @@ export async function buildAaveCollateralWithdraw(
 }
 
 /**
- * Build the repay leg (debt-reserve approval + Pool.repay) shared by repay and
- * close. Approves the on-chain amount: a max repay sends `maxUint256` so Aave
- * clears principal plus interest accrued after the quote, which would exceed
- * an exact-debt approval and revert.
- * @returns The transactions, whether an approval was skipped, and the resolved
- * repay amount (live debt for a max repay) for position projection.
+ * Repay leg (debt-reserve approval + Pool.repay) shared by repay and close. A
+ * max repay approves and sends `maxUint256` so Aave can clear interest accrued
+ * after the quote.
+ * @returns Transactions, approval-skipped flag, and the resolved repay amount
+ * (live debt for a max repay) for projection.
  * @throws EmptyPositionError when a max repay targets a zero-debt position.
  */
 export async function buildAaveRepay(

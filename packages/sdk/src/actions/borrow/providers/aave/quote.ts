@@ -25,12 +25,7 @@ import type {
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
-/**
- * Everything `assembleAaveBorrowQuote` needs except the provider-resolved
- * settings (`quoteExpirationSeconds`, `healthBufferPct`). Each `planAaveX`
- * fetches state, builds the transactions, and projects the resulting position;
- * the provider supplies the settings and assembles the final quote.
- */
+/** A quote minus the provider-resolved settings, returned by each `planAaveX`. */
 export type AaveQuotePlan = Omit<
   AssembleAaveQuoteArgs,
   'quoteExpirationSeconds' | 'healthBufferPct'
@@ -131,10 +126,8 @@ export async function planAaveDepositCollateral(
   market: AaveBorrowMarketConfig,
   params: BorrowDepositCollateralInternalParams,
 ): Promise<AaveQuotePlan> {
-  // A `max` collateral deposit would mean "supply the wallet's entire reserve
-  // balance", which is ambiguous for the native-ETH gateway path and unused in
-  // practice (Aave collateral is supplied at lend time). Require an explicit
-  // amount.
+  // `max` is ambiguous for the native-ETH gateway path and unused (Aave
+  // collateral is supplied at lend time); require an explicit amount.
   if ('max' in params.amount) {
     throw new Error(
       'Aave depositCollateral does not support a max amount; pass an explicit amount.',
@@ -203,8 +196,7 @@ export async function planAaveWithdrawCollateral(
     before: current,
     after,
     transactions: txs,
-    // The native-ETH path prepends an aToken approval to the gateway; the
-    // direct Pool.withdraw path needs none.
+    // Native-ETH withdraws prepend a gateway aToken approval; direct ones don't.
     approvalsSkipped: txs.length === 1,
     quoteAmounts: { collateralAmountRaw: amount },
   }
@@ -263,8 +255,7 @@ export async function planAaveClose(
       borrowAmountRaw: repay.repayAmount,
       collateralAmountRaw: collateralDelta < 0n ? -collateralDelta : undefined,
     },
-    // Reflects the repay leg only; the native-ETH withdraw approval, when
-    // present, is a gateway aToken approval the caller does not pre-clear.
+    // Repay leg only; a native-ETH withdraw approval isn't pre-cleared.
     approvalsSkipped: repay.approvalsSkipped,
   }
 }

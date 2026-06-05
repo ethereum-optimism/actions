@@ -59,15 +59,11 @@ import type {
 import type { TransactionData } from '@/types/transaction.js'
 
 /**
- * Morpho Blue borrow provider.
- * @description Concrete `BorrowProvider` for Morpho Blue's borrow markets.
- * Reads happen in one multicall round-trip per call (`Morpho.position`,
- * `Morpho.market`, `IOracle.price`); the results are fed into Morpho's
- * official `Market` / `AccrualPosition` classes so we reuse the SDK's
- * accrual / health-factor / liquidation-price math without depending on
- * `@morpho-org/blue-sdk`'s per-chain registry (which does not yet include
- * the demo's `baseSepolia` deployment). Write paths build calldata
- * directly from the verified allowlist config.
+ * Morpho Blue borrow provider. Reads in one multicall (`Morpho.position`,
+ * `Morpho.market`, `IOracle.price`), fed into Morpho's `Market` /
+ * `AccrualPosition` classes for accrual / health / liquidation math without
+ * `@morpho-org/blue-sdk`'s per-chain registry (which lacks the `baseSepolia`
+ * deployment). Write paths build calldata from the verified allowlist config.
  */
 export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   constructor(

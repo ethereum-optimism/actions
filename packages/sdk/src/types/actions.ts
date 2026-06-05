@@ -197,7 +197,7 @@ export interface ActionsContext {
  * Permit2's inner allowance. Subsequent operations skip the re-approval
  * round trip until the underlying allowance is consumed or expires.
  *
- * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
+ * Default is `"exact"` for safety. Configs that prefer fewer prompts opt into
  * `"max"` to avoid an extra approval tx per swap or supply.
  */
 export const APPROVAL_MODES = ['exact', 'max'] as const

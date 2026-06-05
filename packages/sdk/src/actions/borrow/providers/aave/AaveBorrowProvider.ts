@@ -40,17 +40,9 @@ import type {
 } from '@/types/borrow/index.js'
 
 /**
- * Aave V3 borrow provider.
- * @description Concrete `BorrowProvider` for Aave V3. Reads reserve and
- * position state via viem multicall against the shared Aave Pool, and models
- * a borrow "market" as the synthetic (collateral, debt) reserve pair carried
- * on the `aave-v3` config. Holds zero demo or mirror logic; it is an honest
- * real-Aave integration reusable outside the demo. Variable-rate debt only.
- *
- * Each write hook narrows the config, resolves a client, and delegates to a
- * `planAaveX` builder in `quote.ts`; state reads live in `state.ts`, calldata
- * in `calldata.ts`, transaction assembly in `write.ts`, and quote shaping in
- * `presentation.ts`.
+ * Aave V3 borrow provider. Models a borrow market as the synthetic
+ * (collateral, debt) reserve pair on the `aave-v3` config, read via multicall
+ * against the shared Aave Pool. Variable-rate debt only.
  */
 export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   constructor(
@@ -59,8 +51,8 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     settings?: BorrowSettings,
   ) {
     super(config, chainManager, settings)
-    // Reject allowlist entries that aren't aave-v3 or whose chain lacks an
-    // Aave deployment, surfacing config mistakes at construction time.
+    // Fail fast on an aave-v3 market whose chain has no Aave deployment. Other
+    // kinds belong to their own provider, so skip them.
     for (const market of config.marketAllowlist ?? []) {
       if (market.kind !== 'aave-v3') continue
       if (!getPoolAddress(market.chainId)) {
