@@ -2,9 +2,12 @@ import { formatUnits } from 'viem'
 
 import type {
   AaveBorrowMarketConfig,
+  BorrowAction,
   BorrowMarket,
   BorrowMarketPosition,
+  BorrowQuote,
 } from '@/types/borrow/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 
 /** Aave stores interest rates in ray (27 decimals). */
 const RAY = 10n ** 27n
@@ -228,5 +231,59 @@ export function adaptAaveBorrowPosition(
     liquidationBonus: liquidationBonusFraction(state.liquidationBonusBps),
     ltv,
     maxLtv: bpsToFraction(state.liquidationThresholdBps),
+  }
+}
+
+export interface AssembleAaveQuoteArgs {
+  action: BorrowAction
+  market: AaveBorrowMarketConfig
+  before: AavePositionState
+  after: AavePositionState
+  transactions: TransactionData[]
+  quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  approvalsSkipped: boolean
+  quoteExpirationSeconds: number
+  healthBufferPct: number
+}
+
+/**
+ * Assemble a `BorrowQuote` from a projected before/after Aave position. The
+ * caller supplies the resolved settings (`quoteExpirationSeconds`,
+ * `healthBufferPct`) so this stays a pure presentation function.
+ */
+export function assembleAaveBorrowQuote(
+  args: AssembleAaveQuoteArgs,
+): BorrowQuote {
+  const now = Math.floor(Date.now() / 1000)
+  const hasBefore =
+    args.before.collateralAmount > 0n || args.before.debtAmount > 0n
+  const positionAfter = adaptAaveBorrowPosition(args.market, args.after)
+  return {
+    marketId: {
+      kind: args.market.kind,
+      marketId: args.market.marketId,
+      chainId: args.market.chainId,
+    },
+    action: args.action,
+    borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
+    collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
+    positionBefore: hasBefore
+      ? adaptAaveBorrowPosition(args.market, args.before)
+      : null,
+    positionAfter,
+    fees: {
+      borrowApy: positionAfter.borrowApy,
+      liquidationBonus: positionAfter.liquidationBonus,
+    },
+    safeCeilingLtv:
+      bpsToFraction(args.after.liquidationThresholdBps) *
+      (1 - args.healthBufferPct),
+    execution: {
+      transactions: args.transactions,
+      approvalsSkipped: args.approvalsSkipped,
+    },
+    provider: 'aave',
+    quotedAt: now,
+    expiresAt: now + args.quoteExpirationSeconds,
   }
 }

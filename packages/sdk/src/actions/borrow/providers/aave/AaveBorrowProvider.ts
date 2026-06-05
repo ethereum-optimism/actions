@@ -1,50 +1,39 @@
 import type { Address, PublicClient } from 'viem'
-import { maxUint256 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import {
-  buildAavePoolApproval,
-  encodeAaveBorrow,
-  encodeAaveDepositETH,
-  encodeAaveRepay,
-  encodeAaveSupply,
-  encodeAaveWithdraw,
-  encodeAaveWithdrawETH,
-} from '@/actions/borrow/providers/aave/calldata.js'
+import { encodeAaveBorrow } from '@/actions/borrow/providers/aave/calldata.js'
 import {
   type AavePositionState,
   type AaveReservePrices,
   adaptAaveBorrowMarket,
   adaptAaveBorrowPosition,
-  bpsToFraction,
+  assembleAaveBorrowQuote,
+  type AssembleAaveQuoteArgs,
   projectAavePositionState,
 } from '@/actions/borrow/providers/aave/presentation.js'
 import {
   fetchAaveMarketState,
   fetchAavePositionState,
-  fetchAavePrices,
-  fetchAaveReserveTokens,
+  fetchAaveStateAndPrices,
 } from '@/actions/borrow/providers/aave/state.js'
+import {
+  buildAaveCollateralDeposit,
+  buildAaveCollateralWithdraw,
+  buildAaveRepay,
+  resolveAaveAmount,
+} from '@/actions/borrow/providers/aave/write.js'
 import {
   getPoolAddress,
   getSupportedChainIds as getAaveSupportedChainIds,
-  requireAavePoolAddress,
-  requireAaveWethGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
 import {
   ChainNotSupportedError,
   EmptyPositionError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ApprovalMode,
-  BorrowProviderConfig,
-  BorrowSettings,
-} from '@/types/actions.js'
+import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
   AaveBorrowMarketConfig,
-  AmountWeiOrMax,
-  BorrowAction,
   BorrowClosePositionInternalParams,
   BorrowDepositCollateralInternalParams,
   BorrowMarket,
@@ -57,11 +46,6 @@ import type {
   GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import {
-  buildErc20ApprovalTx,
-  checkTokenAllowance,
-  resolveErc20ApprovalAmount,
-} from '@/utils/approve.js'
 
 /**
  * Aave V3 borrow provider.
@@ -70,6 +54,8 @@ import {
  * a borrow "market" as the synthetic (collateral, debt) reserve pair carried
  * on the `aave-v3` config. Holds zero demo or mirror logic; it is an honest
  * real-Aave integration reusable outside the demo. Variable-rate debt only.
+ * State reads live in `state.ts`, calldata in `calldata.ts`, transaction
+ * assembly in `write.ts`, and quote shaping in `presentation.ts`.
  */
 export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   constructor(
@@ -145,34 +131,35 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
     const market = this.requireAaveConfig(params.market)
-    const { current, prices } = await this.fetchStateAndPrices(
+    const client = this.client(market)
+    const { current, prices } = await fetchAaveStateAndPrices(
+      client,
       market,
       params.walletAddress,
     )
 
+    const collateral = params.collateralAmountWei ?? 0n
     const txs: TransactionData[] = []
     let approvalsSkipped = true
-    const collateral = params.collateralAmountWei ?? 0n
     if (collateral > 0n) {
-      const collateralTxs = await this.buildCollateralDeposit(
+      const deposit = await buildAaveCollateralDeposit(
+        client,
         market,
         collateral,
         params.walletAddress,
         params.approvalMode,
       )
-      txs.push(...collateralTxs.txs)
-      approvalsSkipped = collateralTxs.approvalsSkipped
+      txs.push(...deposit.txs)
+      approvalsSkipped = deposit.approvalsSkipped
     }
     txs.push(
       encodeAaveBorrow(market, params.borrowAmountWei, params.walletAddress),
     )
 
-    const after = projectAavePositionState(
-      current,
-      prices,
-      { collateralDelta: collateral, debtDelta: params.borrowAmountWei },
-      this.decimals(market),
-    )
+    const after = this.project(current, prices, market, {
+      collateralDelta: collateral,
+      debtDelta: params.borrowAmountWei,
+    })
     return this.assembleQuote({
       action: 'open',
       market,
@@ -192,46 +179,23 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = this.requireAaveConfig(params.market)
     const client = this.client(market)
-    const { current, prices } = await this.fetchStateAndPrices(
+    const { current, prices } = await fetchAaveStateAndPrices(
+      client,
       market,
       params.walletAddress,
     )
-
-    const { amount: repayAmount, isMax } = this.resolveAmount(
+    const { txs, approvalsSkipped, repayAmount } = await buildAaveRepay(
+      client,
+      market,
       params.amount,
       current.debtAmount,
-    )
-    if (isMax && current.debtAmount === 0n) {
-      throw new EmptyPositionError({ operation: 'repay' })
-    }
-    const onChainAmount = isMax ? maxUint256 : repayAmount
-
-    const allowance = await checkTokenAllowance({
-      publicClient: client,
-      token: market.aave.debtReserve,
-      owner: params.walletAddress,
-      spender: this.poolAddress(market),
-    })
-    // Approve against the on-chain amount: a max repay sends maxUint256 so
-    // Aave clears principal plus interest accrued after the quote, which would
-    // exceed an exact-debt approval and revert.
-    const approvalTx = buildAavePoolApproval(
-      market,
-      market.aave.debtReserve,
-      onChainAmount,
-      allowance,
+      params.walletAddress,
       params.approvalMode,
     )
-    const txs: TransactionData[] = []
-    if (approvalTx) txs.push(approvalTx)
-    txs.push(encodeAaveRepay(market, onChainAmount, params.walletAddress))
-
-    const after = projectAavePositionState(
-      current,
-      prices,
-      { collateralDelta: 0n, debtDelta: -repayAmount },
-      this.decimals(market),
-    )
+    const after = this.project(current, prices, market, {
+      collateralDelta: 0n,
+      debtDelta: -repayAmount,
+    })
     return this.assembleQuote({
       action: 'repay',
       market,
@@ -239,7 +203,7 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       after,
       transactions: txs,
       quoteAmounts: { borrowAmountRaw: repayAmount },
-      approvalsSkipped: approvalTx === undefined,
+      approvalsSkipped,
     })
   }
 
@@ -257,22 +221,23 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       )
     }
     const amountWei = params.amount.amountWei
-    const { current, prices } = await this.fetchStateAndPrices(
+    const client = this.client(market)
+    const { current, prices } = await fetchAaveStateAndPrices(
+      client,
       market,
       params.walletAddress,
     )
-    const { txs, approvalsSkipped } = await this.buildCollateralDeposit(
+    const { txs, approvalsSkipped } = await buildAaveCollateralDeposit(
+      client,
       market,
       amountWei,
       params.walletAddress,
       params.approvalMode,
     )
-    const after = projectAavePositionState(
-      current,
-      prices,
-      { collateralDelta: amountWei, debtDelta: 0n },
-      this.decimals(market),
-    )
+    const after = this.project(current, prices, market, {
+      collateralDelta: amountWei,
+      debtDelta: 0n,
+    })
     return this.assembleQuote({
       action: 'depositCollateral',
       market,
@@ -288,31 +253,31 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = this.requireAaveConfig(params.market)
-    const { current, prices } = await this.fetchStateAndPrices(
+    const client = this.client(market)
+    const { current, prices } = await fetchAaveStateAndPrices(
+      client,
       market,
       params.walletAddress,
     )
-    const { amount, isMax } = this.resolveAmount(
+    const { amount, isMax } = resolveAaveAmount(
       params.amount,
       current.collateralAmount,
     )
     if (isMax && current.collateralAmount === 0n) {
       throw new EmptyPositionError({ operation: 'withdrawCollateral' })
     }
-    const txs = await this.buildCollateralWithdraw(
+    const txs = await buildAaveCollateralWithdraw(
+      client,
       market,
       amount,
       isMax,
       params.walletAddress,
       params.approvalMode,
     )
-
-    const after = projectAavePositionState(
-      current,
-      prices,
-      { collateralDelta: -amount, debtDelta: 0n },
-      this.decimals(market),
-    )
+    const after = this.project(current, prices, market, {
+      collateralDelta: -amount,
+      debtDelta: 0n,
+    })
     return this.assembleQuote({
       action: 'withdrawCollateral',
       market,
@@ -331,58 +296,44 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowQuote> {
     const market = this.requireAaveConfig(params.market)
     const client = this.client(market)
-    const { current, prices } = await this.fetchStateAndPrices(
+    const { current, prices } = await fetchAaveStateAndPrices(
+      client,
       market,
       params.walletAddress,
     )
-
-    const { amount: repayAmount, isMax: repayIsMax } = this.resolveAmount(
+    const repay = await buildAaveRepay(
+      client,
+      market,
       params.borrowAmount,
       current.debtAmount,
-    )
-    if (repayIsMax && current.debtAmount === 0n) {
-      throw new EmptyPositionError({ operation: 'repay' })
-    }
-    const onChainRepay = repayIsMax ? maxUint256 : repayAmount
-
-    const allowance = await checkTokenAllowance({
-      publicClient: client,
-      token: market.aave.debtReserve,
-      owner: params.walletAddress,
-      spender: this.poolAddress(market),
-    })
-    const approvalTx = buildAavePoolApproval(
-      market,
-      market.aave.debtReserve,
-      onChainRepay,
-      allowance,
+      params.walletAddress,
       params.approvalMode,
     )
-    const txs: TransactionData[] = []
-    if (approvalTx) txs.push(approvalTx)
-    txs.push(encodeAaveRepay(market, onChainRepay, params.walletAddress))
+    const txs = [...repay.txs]
 
     let collateralDelta = 0n
     if (params.collateralAmount !== undefined) {
-      const { amount: withdrawAmount, isMax: withdrawIsMax } =
-        this.resolveAmount(params.collateralAmount, current.collateralAmount)
-      collateralDelta = -withdrawAmount
-      const withdrawTxs = await this.buildCollateralWithdraw(
-        market,
-        withdrawAmount,
-        withdrawIsMax,
-        params.walletAddress,
-        params.approvalMode,
+      const { amount: withdrawAmount, isMax } = resolveAaveAmount(
+        params.collateralAmount,
+        current.collateralAmount,
       )
-      txs.push(...withdrawTxs)
+      collateralDelta = -withdrawAmount
+      txs.push(
+        ...(await buildAaveCollateralWithdraw(
+          client,
+          market,
+          withdrawAmount,
+          isMax,
+          params.walletAddress,
+          params.approvalMode,
+        )),
+      )
     }
 
-    const after = projectAavePositionState(
-      current,
-      prices,
-      { collateralDelta, debtDelta: -repayAmount },
-      this.decimals(market),
-    )
+    const after = this.project(current, prices, market, {
+      collateralDelta,
+      debtDelta: -repay.repayAmount,
+    })
     return this.assembleQuote({
       action: 'close',
       market,
@@ -390,28 +341,17 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       after,
       transactions: txs,
       quoteAmounts: {
-        borrowAmountRaw: repayAmount,
+        borrowAmountRaw: repay.repayAmount,
         collateralAmountRaw:
           collateralDelta < 0n ? -collateralDelta : undefined,
       },
-      approvalsSkipped: approvalTx === undefined,
+      // Reflects the repay leg only; the native-ETH withdraw approval, when
+      // present, is a gateway aToken approval the caller does not pre-clear.
+      approvalsSkipped: repay.approvalsSkipped,
     })
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
-
-  /**
-   * Resolve an `AmountWeiOrMax` to a concrete wei amount. `{ max: true }`
-   * resolves to `fallbackMax` (the live balance) for projection; the on-chain
-   * call separately uses `maxUint256` so Aave clears dust precisely.
-   */
-  private resolveAmount(
-    amount: AmountWeiOrMax,
-    fallbackMax: bigint,
-  ): { amount: bigint; isMax: boolean } {
-    if ('max' in amount) return { amount: fallbackMax, isMax: true }
-    return { amount: amount.amountWei, isMax: false }
-  }
 
   private requireAaveConfig(
     config: BorrowMarketConfig,
@@ -428,147 +368,29 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     return this.chainManager.getPublicClient(config.chainId)
   }
 
-  private poolAddress(config: AaveBorrowMarketConfig): Address {
-    return requireAavePoolAddress(config.chainId)
-  }
-
-  /**
-   * Build the collateral-withdraw transactions. The native-ETH path withdraws
-   * through the WETH gateway, which pulls the user's aToken, so it must be
-   * preceded by an aToken approval to the gateway when the allowance is
-   * insufficient. The direct Pool.withdraw path needs no approval.
-   */
-  private async buildCollateralWithdraw(
-    config: AaveBorrowMarketConfig,
-    amount: bigint,
-    isMax: boolean,
-    user: Address,
-    approvalMode: ApprovalMode,
-  ): Promise<TransactionData[]> {
-    const onChainAmount = isMax ? maxUint256 : amount
-    if (!config.aave.collateralUsesWethGateway) {
-      return [encodeAaveWithdraw(config, onChainAmount, user)]
-    }
-    const gateway = requireAaveWethGatewayAddress(config.chainId)
-    const { aToken } = await fetchAaveReserveTokens(this.client(config), config)
-    const allowance = await checkTokenAllowance({
-      publicClient: this.client(config),
-      token: aToken,
-      owner: user,
-      spender: gateway,
+  /** Project the position after a collateral/debt delta using this market's decimals. */
+  private project(
+    current: AavePositionState,
+    prices: AaveReservePrices,
+    market: AaveBorrowMarketConfig,
+    delta: { collateralDelta: bigint; debtDelta: bigint },
+  ): AavePositionState {
+    return projectAavePositionState(current, prices, delta, {
+      collateral: market.collateralAsset.metadata.decimals,
+      debt: market.borrowAsset.metadata.decimals,
     })
-    const txs: TransactionData[] = []
-    if (allowance < onChainAmount) {
-      txs.push(
-        buildErc20ApprovalTx({
-          assetAddress: aToken,
-          spender: gateway,
-          amount: resolveErc20ApprovalAmount(approvalMode, onChainAmount),
-        }),
-      )
-    }
-    txs.push(encodeAaveWithdrawETH(config, onChainAmount, user))
-    return txs
   }
 
-  private decimals(config: AaveBorrowMarketConfig): {
-    collateral: number
-    debt: number
-  } {
-    return {
-      collateral: config.collateralAsset.metadata.decimals,
-      debt: config.borrowAsset.metadata.decimals,
-    }
-  }
-
-  private async fetchStateAndPrices(
-    config: AaveBorrowMarketConfig,
-    user: Address,
-  ): Promise<{ current: AavePositionState; prices: AaveReservePrices }> {
-    const client = this.client(config)
-    const [current, prices] = await Promise.all([
-      fetchAavePositionState(client, config, user),
-      fetchAavePrices(client, config),
-    ])
-    return { current, prices }
-  }
-
-  /**
-   * Build the collateral-deposit transactions: native ETH routes through the
-   * WETH gateway (no ERC-20 approval), an ERC-20 reserve uses Pool.supply with
-   * an approval when the current allowance is insufficient.
-   */
-  private async buildCollateralDeposit(
-    config: AaveBorrowMarketConfig,
-    amount: bigint,
-    user: Address,
-    approvalMode: BorrowOpenPositionInternalParams['approvalMode'],
-  ): Promise<{ txs: TransactionData[]; approvalsSkipped: boolean }> {
-    if (config.aave.collateralUsesWethGateway) {
-      return {
-        txs: [encodeAaveDepositETH(config, amount, user)],
-        approvalsSkipped: true,
-      }
-    }
-    const allowance = await checkTokenAllowance({
-      publicClient: this.client(config),
-      token: config.aave.collateralReserve,
-      owner: user,
-      spender: this.poolAddress(config),
+  private assembleQuote(
+    args: Omit<
+      AssembleAaveQuoteArgs,
+      'quoteExpirationSeconds' | 'healthBufferPct'
+    >,
+  ): BorrowQuote {
+    return assembleAaveBorrowQuote({
+      ...args,
+      quoteExpirationSeconds: this.quoteExpirationSeconds,
+      healthBufferPct: this.resolveHealthBufferPct(args.market),
     })
-    const approvalTx = buildAavePoolApproval(
-      config,
-      config.aave.collateralReserve,
-      amount,
-      allowance,
-      approvalMode,
-    )
-    const txs: TransactionData[] = []
-    if (approvalTx) txs.push(approvalTx)
-    txs.push(encodeAaveSupply(config, amount, user))
-    return { txs, approvalsSkipped: approvalTx === undefined }
-  }
-
-  private assembleQuote(args: {
-    action: BorrowAction
-    market: AaveBorrowMarketConfig
-    before: AavePositionState
-    after: AavePositionState
-    transactions: TransactionData[]
-    quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
-    approvalsSkipped: boolean
-  }): BorrowQuote {
-    const now = Math.floor(Date.now() / 1000)
-    const hasBefore =
-      args.before.collateralAmount > 0n || args.before.debtAmount > 0n
-    const positionAfter = adaptAaveBorrowPosition(args.market, args.after)
-    return {
-      marketId: {
-        kind: args.market.kind,
-        marketId: args.market.marketId,
-        chainId: args.market.chainId,
-      },
-      action: args.action,
-      borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
-      collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
-      positionBefore: hasBefore
-        ? adaptAaveBorrowPosition(args.market, args.before)
-        : null,
-      positionAfter,
-      fees: {
-        borrowApy: positionAfter.borrowApy,
-        liquidationBonus: positionAfter.liquidationBonus,
-      },
-      safeCeilingLtv:
-        bpsToFraction(args.after.liquidationThresholdBps) *
-        (1 - this.resolveHealthBufferPct(args.market)),
-      execution: {
-        transactions: args.transactions,
-        approvalsSkipped: args.approvalsSkipped,
-      },
-      provider: 'aave',
-      quotedAt: now,
-      expiresAt: now + this.quoteExpirationSeconds,
-    }
   }
 }

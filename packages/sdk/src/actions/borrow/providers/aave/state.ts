@@ -246,3 +246,19 @@ export async function fetchAavePrices(
 
   return { collateralPrice, debtPrice }
 }
+
+/**
+ * Read the caller's position and the reserve prices in parallel. Both feed
+ * `projectAavePositionState`, so every write path fetches them together.
+ */
+export async function fetchAaveStateAndPrices(
+  client: PublicClient,
+  config: AaveBorrowMarketConfig,
+  user: Address,
+): Promise<{ current: AavePositionState; prices: AaveReservePrices }> {
+  const [current, prices] = await Promise.all([
+    fetchAavePositionState(client, config, user),
+    fetchAavePrices(client, config),
+  ])
+  return { current, prices }
+}
