@@ -6,6 +6,7 @@ import {
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 import {
+  AddressRequiredError,
   AmountRequiredError,
   AssetNotSupportedOnChainError,
   ChainNotSupportedError,
@@ -59,6 +60,21 @@ export function validateNotZeroAddress(address: Address, label: string): void {
   if (address === ZERO_ADDRESS) {
     throw new ZeroAddressError(label, address)
   }
+}
+
+/**
+ * Reject a missing or zero-address wallet address in one call.
+ * @throws AddressRequiredError when undefined/empty.
+ * @throws ZeroAddressError when the zero address.
+ */
+export function validateWalletAddress(
+  walletAddress: Address | undefined,
+  label = 'walletAddress',
+): asserts walletAddress is Address {
+  if (!walletAddress) {
+    throw new AddressRequiredError(label)
+  }
+  validateNotZeroAddress(walletAddress, label)
 }
 
 export function validateSlippage(slippage: number, maxSlippage: number): void {

@@ -11,7 +11,6 @@ import {
 } from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
-  AddressRequiredError,
   AssetMetadataRequiredError,
   MarketIdRequiredError,
   MarketNotAllowedError,
@@ -44,7 +43,10 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateWalletAddress,
+} from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -83,9 +85,7 @@ export abstract class LendProvider<
    * @returns Promise resolving to lending transaction details
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
+    validateWalletAddress(params.walletAddress)
 
     this.validateMarketAllowed(params.marketId)
 
@@ -197,9 +197,7 @@ export abstract class LendProvider<
    * @returns Promise resolving to withdrawal transaction details
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
+    validateWalletAddress(params.walletAddress)
 
     this.validateMarketAllowed(params.marketId)
 

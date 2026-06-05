@@ -1,7 +1,6 @@
 import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import {
-  AddressRequiredError,
   InvalidParamsError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
@@ -13,22 +12,6 @@ import type {
   BorrowMarketId,
   BorrowQuote,
 } from '@/types/borrow/index.js'
-import { validateNotZeroAddress } from '@/utils/validation.js'
-
-/**
- * Reject missing or zero-address wallet addresses on borrow write/read calls.
- * @description Folds the two-step check (`AddressRequiredError` for
- * missing, `ZeroAddressError` for the zero literal) into a single call so
- * provider methods don't repeat the pair.
- */
-export function validateBorrowWalletAddress(
-  walletAddress: `0x${string}` | undefined,
-): asserts walletAddress is `0x${string}` {
-  if (!walletAddress) {
-    throw new AddressRequiredError('walletAddress')
-  }
-  validateNotZeroAddress(walletAddress, 'walletAddress')
-}
 
 /**
  * Reject a pre-built `BorrowQuote` whose `action` doesn't match the wallet

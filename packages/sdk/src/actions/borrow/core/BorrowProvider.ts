@@ -8,10 +8,7 @@ import {
   buildRepayInternalParams,
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
-import {
-  requireAllowlistedBorrowMarketConfig,
-  validateBorrowWalletAddress,
-} from '@/actions/borrow/core/validations.js'
+import { requireAllowlistedBorrowMarketConfig } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { filterMatchingConfigs } from '@/actions/shared/marketConfigs.js'
@@ -37,7 +34,10 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateWalletAddress,
+} from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
@@ -252,7 +252,7 @@ export abstract class BorrowProvider<
   public async getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     validateChainSupported(params.marketId.chainId, this.supportedChainIds())
     const market = this.requireAllowlistedMarketConfig(params.marketId)
     return this._getPosition({ market, walletAddress: params.walletAddress })
@@ -295,7 +295,7 @@ export abstract class BorrowProvider<
     market: BorrowMarketConfig
     base: ResolvedBorrowBaseParams
   } {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     validateChainSupported(params.market.chainId, this.supportedChainIds())
     const market = this.requireAllowlistedMarketConfig(params.market)
     const base: ResolvedBorrowBaseParams = {

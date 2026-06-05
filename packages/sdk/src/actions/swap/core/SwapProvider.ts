@@ -56,6 +56,7 @@ import {
   validateNotZeroAddress,
   validateRecipient,
   validateSlippage,
+  validateWalletAddress,
 } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider nor global config sets a value */
@@ -149,7 +150,7 @@ export abstract class SwapProvider<
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    validateWalletAddress(params.walletAddress)
     return this._execute(
       this.resolveParams({ ...params, approvalMode: resolvedApprovalMode }),
     )
