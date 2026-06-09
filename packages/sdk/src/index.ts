@@ -1,4 +1,19 @@
 export type { Actions } from '@/actions.js'
+export { BorrowProvider, MorphoBorrowProvider } from '@/actions/borrow/index.js'
+export {
+  computeMorphoMarketId,
+  verifyMorphoMarketId,
+} from '@/actions/borrow/providers/morpho/marketParams.js'
+export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+export {
+  SwapProvider,
+  type UniswapMarketConfig,
+  UniswapSwapProvider,
+  type UniswapSwapProviderConfig,
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
+} from '@/actions/swap/index.js'
 export {
   AAVE,
   ARB,
@@ -48,25 +63,55 @@ export {
   WSTETH,
 } from '@/constants/assets.js'
 export {
-  ACTIONS_SUPPORTED_CHAIN_IDS,
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_IDS,
+  SUPPORTED_CHAIN_SHORTNAMES,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
-export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
 export {
-  SwapProvider,
-  type UniswapMarketConfig,
-  UniswapSwapProvider,
-  type UniswapSwapProviderConfig,
-  type VelodromeMarketConfig,
-  VelodromeSwapProvider,
-  type VelodromeSwapProviderConfig,
-} from '@/swap/index.js'
+  type EnsInfo,
+  EnsNamespace,
+  EnsNotConfiguredError,
+  EnsResolutionError,
+  EnsRpcError,
+  type NameServiceProvider,
+} from '@/services/nameservices/ens/index.js'
+export {
+  type EnsName,
+  isEnsName,
+  resolveAddress,
+} from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  Amount,
+  AmountOrMax,
+  ApprovalMode,
   ApyBreakdown,
   Asset,
+  BorrowAction,
+  BorrowClosePositionParams,
+  BorrowConfig,
+  BorrowDepositCollateralParams,
+  BorrowFees,
+  BorrowMarket,
+  BorrowMarketConfig,
+  BorrowMarketId,
+  BorrowMarketPosition,
+  BorrowOpenPositionParams,
+  BorrowProviderConfig,
+  BorrowProviderName,
+  BorrowQuote,
+  BorrowQuoteExecution,
+  BorrowQuoteParams,
+  BorrowReceipt,
+  BorrowRepayParams,
+  BorrowSettings,
+  BorrowWithdrawCollateralParams,
   EOATransactionReceipt,
+  GetBorrowMarketsParams,
+  GetBorrowPositionParams,
+  LendAction,
   LendConfig,
   LendMarket,
   LendMarketConfig,
@@ -74,10 +119,11 @@ export type {
   LendMarketMetadata,
   LendMarketPosition,
   LendMarketSupply,
-  LendOptions,
   LendProviderConfig,
+  LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
+  MorphoMarketParams,
   SwapConfig,
   SwapExecuteParams,
   SwapMarket,
@@ -95,10 +141,21 @@ export type {
   SwapTransaction,
   TokenBalance,
   TransactionData,
+  TransactionOptions,
   UserOperationTransactionReceipt,
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
+export {
+  APPROVAL_MODES,
+  BORROW_PROVIDER_NAMES,
+  LEND_ACTIONS,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
+export { getLendMarketAllowlist } from '@/utils/lendConfig.js'
+export { serializeBigInt } from '@/utils/serializers.js'
+export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

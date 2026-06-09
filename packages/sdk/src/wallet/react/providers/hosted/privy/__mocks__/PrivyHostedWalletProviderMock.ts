@@ -33,13 +33,19 @@ export class PrivyHostedWalletProviderMock extends HostedWalletProvider<
     ): Promise<LocalAccount> => {
       return {} as unknown as LocalAccount
     },
-  )
+  ) as unknown as (
+    _params: PrivyHostedWalletToActionsWalletOptions,
+  ) => Promise<LocalAccount>
 
   constructor() {
     const mockChainManager = new MockChainManager({
       supportedChains: [unichain.id],
     }) as unknown as ChainManager
-    super(mockChainManager)
+    super({
+      chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
+    })
   }
 
   async toActionsWallet(

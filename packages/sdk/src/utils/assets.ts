@@ -2,7 +2,21 @@ import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  AssetNotSupportedOnChainError,
+  NativeAssetAddressError,
+} from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
+
+/**
+ * Parse a human-readable amount using explicit token decimals.
+ * @param amount - Human-readable amount
+ * @param decimals - Token decimals
+ * @returns Amount in smallest unit
+ */
+export function parseDecimalAmount(amount: number, decimals: number): bigint {
+  return parseUnits(amount.toString(), decimals)
+}
 
 /**
  * Parse human-readable amount to wei using an asset's decimals.
@@ -18,7 +32,7 @@ export function parseAssetAmount(
   amount: number | undefined,
 ): bigint | undefined {
   if (amount === undefined) return undefined
-  return parseUnits(amount.toString(), asset.metadata.decimals)
+  return parseDecimalAmount(amount, asset.metadata.decimals)
 }
 
 /**
@@ -75,14 +89,10 @@ export function getAssetAddress(
 ): Address {
   const address = asset.address[chainId]
   if (!address) {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} is not supported on chain ${chainId}`,
-    )
+    throw new AssetNotSupportedOnChainError(asset.metadata.symbol, chainId)
   }
   if (address === 'native') {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} is a native asset and has no contract address.`,
-    )
+    throw new NativeAssetAddressError(asset.metadata.symbol)
   }
   return address
 }

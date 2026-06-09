@@ -1,9 +1,9 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 
+import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/lend/index.js'
@@ -14,22 +14,30 @@ export class TestWallet extends Wallet {
   public readonly address: Address
   public readonly signer: LocalAccount
 
-  constructor(
-    chainManager: ChainManager,
-    address: Address,
-    signer: LocalAccount,
+  constructor(params: {
+    chainManager: ChainManager
+    address: Address
+    signer: LocalAccount
     lendProviders?: {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
-    },
+    }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    },
-    supportedAssets?: Asset[],
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
-    this.address = address
-    this.signer = signer
+    }
+    supportedAssets?: Asset[]
+  }) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+      },
+      actionSettings: {},
+      supportedAssets: params.supportedAssets,
+    })
+    this.address = params.address
+    this.signer = params.signer
   }
 
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
@@ -44,7 +52,7 @@ export class TestWallet extends Wallet {
   }
 
   async sendBatch(
-    _transactionData: TransactionData[],
+    _transactionData: readonly TransactionData[],
     _chainId: SupportedChainId,
   ): Promise<EOATransactionReceipt[]> {
     return [] as unknown as EOATransactionReceipt[]

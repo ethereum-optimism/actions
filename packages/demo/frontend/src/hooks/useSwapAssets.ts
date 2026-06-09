@@ -84,7 +84,9 @@ export function useSwapAssets({
         if (!asset || seen.has(symbol)) return null
         seen.add(symbol)
 
-        const chainId = Number(Object.keys(balance.chains)[0] ?? 84532) as SupportedChainId
+        const chainId = Number(
+          Object.keys(balance.chains)[0] ?? 84532,
+        ) as SupportedChainId
 
         return {
           asset,

@@ -70,6 +70,8 @@ describe('DynamicWallet', () => {
     const wallet = await DynamicWallet.create({
       dynamicWallet: dynamic,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     expect(wallet.address).toBe(mockAddress)
@@ -83,6 +85,8 @@ describe('DynamicWallet', () => {
     await DynamicWallet.create({
       dynamicWallet: dynamic,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     const calls = vi.mocked(toAccount).mock.calls
@@ -110,6 +114,8 @@ describe('DynamicWallet', () => {
     const wallet = await DynamicWallet.create({
       dynamicWallet: dynamic,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     const mockWalletClient = {
@@ -123,7 +129,8 @@ describe('DynamicWallet', () => {
 
     expect(createWalletClient).toHaveBeenCalledOnce()
     const args = vi.mocked(createWalletClient).mock.calls[0][0]
-    expect(args.account).toBe(mockLocalAccount)
+    expect(args.account).toMatchObject({ address: mockLocalAccount.address })
+    expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
   })
@@ -137,6 +144,8 @@ describe('DynamicWallet', () => {
       await DynamicWallet.create({
         dynamicWallet: dynamic,
         chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
       })
     } catch (err) {
       expect((err as Error).message).toBe('Failed to initialize wallet')

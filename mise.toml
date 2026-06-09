@@ -1,5 +1,5 @@
 [tools]
-node = "20.11"
+node = "22.14.0"
 
 # Foundry dependencies
 # Foundry is a special case because it supplies multiple binaries at the same

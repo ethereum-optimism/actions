@@ -115,7 +115,10 @@ describe('PrivyWallet', () => {
 
     expect(createWalletClient).toHaveBeenCalledOnce()
     const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
-    expect(callArgs.account).toBe(mockLocalAccount)
+    expect(callArgs.account).toMatchObject({
+      address: mockLocalAccount.address,
+    })
+    expect(callArgs.account).toHaveProperty('nonceManager')
     expect(callArgs.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
   })
@@ -133,5 +136,7 @@ async function createAndInitPrivyWallet(params: {
     walletId,
     address,
     chainManager: mockChainManager,
+    actionProviders: {},
+    actionSettings: {},
   })
 }

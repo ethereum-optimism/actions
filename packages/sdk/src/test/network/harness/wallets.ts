@@ -22,7 +22,7 @@ export class TestEOAWallet extends EOAWallet {
     chainManager: ChainManager,
     privateKey: `0x${string}` = ANVIL_ACCOUNTS.ACCOUNT_0,
   ) {
-    super(chainManager)
+    super({ actionProviders: {}, actionSettings: {}, chainManager })
     this.signer = privateKeyToAccount(privateKey)
     this.address = this.signer.address
   }

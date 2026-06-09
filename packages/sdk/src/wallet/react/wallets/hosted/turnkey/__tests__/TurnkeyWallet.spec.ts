@@ -45,6 +45,8 @@ describe('TurnkeyWallet', () => {
       organizationId: 'org_123',
       signWith: 'key_abc',
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     expect(wallet.address).toBe(mockAddress)
@@ -67,6 +69,8 @@ describe('TurnkeyWallet', () => {
       signWith: 'key_abc',
       ethereumAddress: '0x123',
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     const args = vi.mocked(createAccount).mock.calls[0][0]
@@ -81,6 +85,8 @@ describe('TurnkeyWallet', () => {
       organizationId: 'org_123',
       signWith: 'key_abc',
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
     const mockWalletClient = {
       account: mockLocalAccount,
@@ -92,7 +98,8 @@ describe('TurnkeyWallet', () => {
 
     expect(createWalletClient).toHaveBeenCalledOnce()
     const args = vi.mocked(createWalletClient).mock.calls[0][0]
-    expect(args.account).toBe(mockLocalAccount)
+    expect(args.account).toMatchObject({ address: mockLocalAccount.address })
+    expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
   })

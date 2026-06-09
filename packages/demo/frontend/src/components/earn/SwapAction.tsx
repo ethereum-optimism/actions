@@ -26,6 +26,7 @@ import {
 } from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
+import ArrowDownIcon from '@/components/icons/ArrowDownIcon'
 
 interface SwapActionProps {
   assets: SwapAsset[]
@@ -162,15 +163,7 @@ function FlipButton({ onClick }: { onClick: () => void }) {
           justifyContent: 'center',
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M8 3V13M8 13L4 9M8 13L12 9"
-            stroke="#666666"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <ArrowDownIcon color="#666666" />
       </button>
     </div>
   )

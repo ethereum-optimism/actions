@@ -2,7 +2,7 @@ import type { Address } from 'viem'
 import { base, mainnet, optimism } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { VelodromeMarketConfig } from '@/swap/providers/velodrome/types.js'
+import type { VelodromeMarketConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 
 import {

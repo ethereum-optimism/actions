@@ -1,18 +1,47 @@
 import type { Address, LocalAccount } from 'viem'
 
+import type { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
+import type { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
+import { ACTION_MODULES, ACTION_NAMES } from '@/actions/registry.js'
+import type {
+  ActionModule,
+  ActionModuleDeps,
+} from '@/actions/shared/ActionModule.js'
+import type { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
-import type { SwapSettings } from '@/types/actions.js'
-import type { Asset, TokenBalance } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  ActionModules,
+  ActionName,
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { validateBalanceFetchOptions } from '@/utils/validation.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
+
+/**
+ * Options handed to the `Wallet` super constructor.
+ * @description Action-keyed maps; adding a new action does not require new
+ * constructor params.
+ */
+export interface WalletConstructorOptions {
+  chainManager: ChainManager
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
+
+/**
+ * Shared shape for every concrete wallet's `*WalletCreateOptions`. Concrete
+ * wallets extend this with their provider-specific construction fields.
+ */
+export type BaseWalletCreateOptions = WalletConstructorOptions
 
 /**
  * Base actions wallet class
@@ -22,12 +51,14 @@ import type {
 export abstract class Wallet {
   /** Lend namespace with all lending operations */
   lend?: WalletLendNamespace
-  /** Providers for lending market operations */
-  protected lendProviders: LendProviders
+  /** Borrow namespace with all borrow operations */
+  borrow?: WalletBorrowNamespace
   /** Swap namespace with all swap operations */
   swap?: WalletSwapNamespace
-  /** Providers for swap operations */
-  protected swapProviders: SwapProviders
+  /** Provider instances keyed by action name. */
+  protected actionProviders: ActionProvidersMap
+  /** Shared settings keyed by action name. */
+  protected actionSettings: ActionSettingsMap
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** List of supported assets for this wallet */
@@ -50,49 +81,51 @@ export abstract class Wallet {
    */
   public abstract readonly signer: LocalAccount
 
-  /**
-   * Create a new wallet
-   * @param chainManager - Chain manager for the wallet
-   * @param lendProviders - Lend providers for the wallet
-   * @param swapProviders - Swap providers for the wallet
-   * @param supportedAssets - List of supported assets (defaults to empty)
-   */
-  protected constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    swapSettings?: SwapSettings,
-  ) {
-    this.chainManager = chainManager
-    this.lendProviders = lendProviders || {}
-    this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets || []
-    if (this.lendProviders.morpho || this.lendProviders.aave) {
-      this.lend = new WalletLendNamespace(this.lendProviders, this)
+  protected constructor(options: WalletConstructorOptions) {
+    this.chainManager = options.chainManager
+    this.actionProviders = options.actionProviders
+    this.actionSettings = options.actionSettings
+    this.supportedAssets = options.supportedAssets ?? []
+
+    const moduleDeps: ActionModuleDeps = {
+      chainManager: this.chainManager,
+      supportedAssets: this.supportedAssets,
     }
-    if (Object.values(this.swapProviders).some(Boolean)) {
-      this.swap = new WalletSwapNamespace(
-        this.swapProviders,
-        this,
-        swapSettings,
-      )
+
+    // One pass over the action registry attaches every configured
+    // `wallet.<name>` namespace. Adding a future action (e.g. stake,
+    // bridge, perp) is purely a registry entry — this loop, `Wallet`'s
+    // shape, and every consumer of it stay unchanged.
+    for (const name of ACTION_NAMES) {
+      attachWalletNamespace(this, name, moduleDeps)
     }
   }
 
   /**
-   * Get asset balances across all supported chains
-   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
-   * Uses the configured supported assets from ActionsConfig.assets if provided.
+   * Check whether a wallet namespace (`lend`, `swap`, `borrow`) is
+   * configured on this wallet. Useful for callers that branch on
+   * capability instead of catching a `TypeError` later.
+   * @param namespace - Wallet namespace name to probe.
+   * @returns `true` when the namespace is configured.
+   */
+  has(namespace: ActionName): boolean {
+    return this[namespace] !== undefined
+  }
+
+  /**
+   * Get asset balances across the requested chains (or all supported chains).
+   * @description Fetches ETH and ERC20 token balances for this wallet. By default queries every chain returned by the SDK's `ChainManager`. Pass `options.chainIds` to restrict the query to a subset of those chains; each id is validated against the configured chains and an `InvalidParamsError` / `ChainNotSupportedError` is thrown for unusable input. Uses the configured supported assets from `ActionsConfig.assets` if provided.
+   * @param options - Optional `chainIds` filter
    * @returns Promise resolving to array of token balances with chain breakdown
    */
-  async getBalance(): Promise<TokenBalance[]> {
-    const tokenBalancePromises = this.supportedAssets.map(async (asset) => {
-      return fetchERC20Balance(this.chainManager, this.address, asset)
-    })
-    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
-
-    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
+  async getBalance(options?: BalanceFetchOptions): Promise<TokenBalance[]> {
+    validateBalanceFetchOptions(options, this.chainManager)
+    return Promise.all([
+      fetchETHBalance(this.chainManager, this.address, options),
+      ...this.supportedAssets.map((asset) =>
+        fetchERC20Balance(this.chainManager, this.address, asset, options),
+      ),
+    ])
   }
 
   /**
@@ -160,7 +193,59 @@ export abstract class Wallet {
    * @returns Promise resolving to the transaction hash
    */
   abstract sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<BatchTransactionReturnType>
+}
+
+/**
+ * Build and attach the `wallet.<name>` namespace for one action. Generic
+ * over `K` so each module's per-action types unify internally. The typed
+ * setter map keeps the dynamic write tied to each action's concrete
+ * namespace. Adding a future action requires declaring its `name?: T` field
+ * on `Wallet` and adding the matching setter below.
+ */
+function attachWalletNamespace<K extends ActionName>(
+  wallet: Wallet,
+  name: K,
+  moduleDeps: ActionModuleDeps,
+): void {
+  const module = ACTION_MODULES[name] as ActionModule<K>
+  const providers = wallet['actionProviders'][name]
+  if (
+    !providers ||
+    !module.isConfigured(providers) ||
+    !module.buildWalletNamespace
+  ) {
+    return
+  }
+  const ns = module.buildWalletNamespace(
+    providers,
+    wallet,
+    wallet['actionSettings'][name],
+    moduleDeps,
+  )
+  setWalletNamespace(wallet, name, ns)
+}
+
+function setWalletNamespace<K extends ActionName>(
+  wallet: Wallet,
+  name: K,
+  namespace: ActionModules[K]['walletNamespace'],
+): void {
+  const setters: {
+    [P in ActionName]: (namespace: ActionModules[P]['walletNamespace']) => void
+  } = {
+    lend: (namespace) => {
+      wallet.lend = namespace
+    },
+    swap: (namespace) => {
+      wallet.swap = namespace
+    },
+    borrow: (namespace) => {
+      wallet.borrow = namespace
+    },
+  }
+
+  setters[name](namespace)
 }

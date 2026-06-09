@@ -3,8 +3,11 @@ import type { LocalAccount } from 'viem'
 import { getAddress } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
@@ -30,8 +33,6 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
    * @param params - Configuration parameters
    * @param params.privyClient - Privy client instance
    * @param params.chainManager - Chain manager for multi-chain operations
-   * @param params.lendProviders - Optional lend providers for DeFi operations
-   * @param params.swapProviders - Optional swap providers for trading operations
    * @param params.supportedAssets - Optional list of supported assets
    * @param params.authorizationContext - Optional authorization context for the Privy client.
    * Used when Privy needs to sign requests.
@@ -41,17 +42,17 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   constructor(params: {
     privyClient: PrivyClient
     chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
     supportedAssets?: Asset[]
     authorizationContext?: AuthorizationContext
   }) {
-    super(
-      params.chainManager,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-    )
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
     this.privyClient = params.privyClient
     this.authorizationContext = params.authorizationContext
   }
@@ -65,8 +66,8 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
       walletId: params.walletId,
       address: getAddress(params.address),
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
     })
   }

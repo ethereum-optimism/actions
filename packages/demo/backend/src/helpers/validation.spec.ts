@@ -3,17 +3,24 @@ import { z } from 'zod'
 
 import { validateRequest } from './validation.js'
 
-// Mock Hono context
+// Mock Hono context. When `hasBody` is true, advertises
+// `Content-Type: application/json` so validateRequest reads the body.
 const createMockContext = (
   params: Record<string, string> = {},
   query: Record<string, string | string[]> = {},
   body: unknown = null,
   hasBody = true,
+  contentType: string | undefined = hasBody ? 'application/json' : undefined,
 ) => {
   return {
     req: {
       param: vi.fn().mockReturnValue(params),
       query: vi.fn().mockReturnValue(query),
+      header: vi
+        .fn()
+        .mockImplementation((name: string) =>
+          name.toLowerCase() === 'content-type' ? contentType : undefined,
+        ),
       json: vi.fn().mockImplementation(async () => {
         if (!hasBody) throw new Error('No body')
         return body
@@ -237,30 +244,50 @@ describe('validateRequest', () => {
   })
 
   describe('error handling', () => {
-    it('should handle JSON parsing errors gracefully', async () => {
+    it('treats a malformed JSON body as a 400', async () => {
+      const BodySchema = z.object({
+        body: z.object({}).optional(),
+      })
+
+      const mockContext = createMockContext({}, {}, null, true)
+      // Request advertises JSON but body parse throws.
+      mockContext.req.json.mockRejectedValue(new Error('Invalid JSON'))
+
+      const result = await validateRequest(mockContext as any, BodySchema)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(mockContext.json).toHaveBeenCalledWith(
+          { error: 'Invalid JSON body' },
+          400,
+        )
+      }
+    })
+
+    it('skips JSON parsing entirely when content-type is not JSON', async () => {
       const BodySchema = z.object({
         body: z.object({}).optional(),
       })
 
       const mockContext = createMockContext({}, {}, null, false)
-      // Mock json() to throw error
-      mockContext.req.json.mockRejectedValue(new Error('Invalid JSON'))
 
       const result = await validateRequest(mockContext as any, BodySchema)
 
+      expect(mockContext.req.json).not.toHaveBeenCalled()
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.body).toEqual({})
       }
     })
 
-    it('should handle unexpected errors', async () => {
+    it('returns a generic 500 without leaking the inner error', async () => {
       const mockContext = {
         req: {
           param: vi.fn().mockImplementation(() => {
             throw new Error('Unexpected error')
           }),
           query: vi.fn(),
+          header: vi.fn().mockReturnValue(undefined),
           json: vi.fn(),
         },
         json: vi.fn().mockImplementation((data, status) => ({ data, status })),
@@ -274,12 +301,38 @@ describe('validateRequest', () => {
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(mockContext.json).toHaveBeenCalledWith(
-          {
-            error: 'Failed to validate request',
-            message: 'Unexpected error',
-          },
+          { error: 'Failed to validate request' },
           500,
         )
+      }
+    })
+
+    it('returns details as { path, message } summaries, not zod-internal AST', async () => {
+      const Schema = z.object({
+        body: z.object({ name: z.string().min(1) }),
+      })
+
+      const mockContext = createMockContext({}, {}, { name: '' }, true)
+
+      const result = await validateRequest(mockContext as any, Schema)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        const call = (mockContext.json as any).mock.calls[0]
+        expect(call[1]).toBe(400)
+        expect(call[0]).toEqual({
+          error: 'Invalid request',
+          details: expect.arrayContaining([
+            expect.objectContaining({
+              path: expect.stringContaining('body.name'),
+              message: expect.any(String),
+            }),
+          ]),
+        })
+        // Drops zod-internal fields like `code`/`unionErrors`.
+        for (const issue of call[0].details) {
+          expect(Object.keys(issue).sort()).toEqual(['message', 'path'])
+        }
       }
     })
   })

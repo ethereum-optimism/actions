@@ -33,7 +33,11 @@ class TestEOAWallet extends EOAWallet {
     signer: LocalAccount,
     chainManager: ChainManager,
   ) {
-    super(chainManager)
+    super({
+      chainManager,
+      actionProviders: {},
+      actionSettings: {},
+    })
     this.address = address
     this.signer = signer
   }
@@ -120,9 +124,43 @@ describe('EOAWallet', () => {
 
       expect(createWalletClient).toHaveBeenCalledOnce()
       const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
-      expect(callArgs.account).toBe(mockLocalAccount)
+      expect(callArgs.account).toMatchObject({
+        address: mockLocalAccount.address,
+      })
       expect(callArgs.chain).toBe(unichain)
       expect(walletClient).toBe(mockWalletClient)
+    })
+
+    it('attaches a nonce manager so back-to-back sends get sequential nonces', async () => {
+      await wallet.walletClient(unichain.id)
+
+      const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
+      const account = callArgs.account as { nonceManager?: unknown }
+      expect(account.nonceManager).toMatchObject({
+        consume: expect.any(Function),
+        increment: expect.any(Function),
+        get: expect.any(Function),
+        reset: expect.any(Function),
+      })
+    })
+
+    it('respects a nonce manager already set on the signer', async () => {
+      const customNonceManager = {
+        consume: vi.fn(),
+        increment: vi.fn(),
+        get: vi.fn(),
+        reset: vi.fn(),
+      }
+      ;(mockLocalAccount as LocalAccount).nonceManager =
+        customNonceManager as unknown as LocalAccount['nonceManager']
+
+      await wallet.walletClient(unichain.id)
+
+      const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
+      const account = callArgs.account as { nonceManager?: unknown }
+      expect(account.nonceManager).toBe(customNonceManager)
+
+      delete (mockLocalAccount as LocalAccount).nonceManager
     })
   })
 
@@ -191,12 +229,11 @@ describe('EOAWallet', () => {
         .mockResolvedValueOnce(mockReceipt2.transactionHash)
         .mockResolvedValueOnce(mockReceipt3.transactionHash)
 
+      // sendBatch performs exactly one inclusion wait per transaction (the
+      // wait inside `send()`). One mock per tx.
       vi.mocked(mockPublicClient.waitForTransactionReceipt)
         .mockResolvedValueOnce(mockReceipt)
-        .mockResolvedValueOnce(mockReceipt)
         .mockResolvedValueOnce(mockReceipt2)
-        .mockResolvedValueOnce(mockReceipt2)
-        .mockResolvedValueOnce(mockReceipt3)
         .mockResolvedValueOnce(mockReceipt3)
     })
 
@@ -226,33 +263,19 @@ describe('EOAWallet', () => {
       )
     })
 
-    it('should wait for extra confirmations after each transaction', async () => {
+    it('waits for exactly one confirmation per transaction', async () => {
       await wallet.sendBatch(
         [mockTransactionData1, mockTransactionData2],
         unichain.id,
       )
 
-      // Should be called twice per transaction:
-      // 1. Initial wait in send()
-      // 2. Extra confirmation wait (confirmations: 2) in sendBatch()
+      // One inclusion wait per tx, via `send()`.
       expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledTimes(
-        4,
+        2,
       )
-
-      // Check that extra confirmation wait was called with confirmations: 2
       expect(
         mockPublicClient.waitForTransactionReceipt,
-      ).toHaveBeenNthCalledWith(2, {
-        hash: mockReceipt.transactionHash,
-        confirmations: 2,
-      })
-
-      expect(
-        mockPublicClient.waitForTransactionReceipt,
-      ).toHaveBeenNthCalledWith(4, {
-        hash: mockReceipt2.transactionHash,
-        confirmations: 2,
-      })
+      ).not.toHaveBeenCalledWith(expect.objectContaining({ confirmations: 2 }))
     })
 
     it('should get public client for each transaction', async () => {
@@ -261,8 +284,8 @@ describe('EOAWallet', () => {
         unichain.id,
       )
 
-      // Called twice per transaction (once in send, once for extra confirmation)
-      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(4)
+      // One getPublicClient call per transaction (via send()).
+      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(2)
       expect(mockChainManager.getPublicClient).toHaveBeenCalledWith(unichain.id)
     })
 

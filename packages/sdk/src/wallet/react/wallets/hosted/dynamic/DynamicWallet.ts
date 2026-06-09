@@ -1,11 +1,13 @@
 import { type Address, type LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+
+interface DynamicWalletCreateOptions extends BaseWalletCreateOptions {
+  dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
+}
 
 /**
  * Dynamic wallet implementation
@@ -16,38 +18,20 @@ export class DynamicWallet extends EOAWallet {
   public address!: Address
   private readonly dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
 
-  /**
-   * Create a new Dynamic wallet
-   * @param chainManager - Chain manager for RPC, chain info, and transports
-   * @param dynamicWallet - Dynamic Labs wallet instance (EVM)
-   * @param lendProviders - Optional lend providers for DeFi operations
-   * @param swapProviders - Optional swap providers for trading operations
-   */
-  private constructor(
-    chainManager: ChainManager,
-    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet'],
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
-    this.dynamicWallet = dynamicWallet
+  private constructor(params: DynamicWalletCreateOptions) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
+    this.dynamicWallet = params.dynamicWallet
   }
 
-  static async create(params: {
-    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
-    chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    supportedAssets?: Asset[]
-  }): Promise<DynamicWallet> {
-    const wallet = new DynamicWallet(
-      params.chainManager,
-      params.dynamicWallet,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-    )
+  static async create(
+    params: DynamicWalletCreateOptions,
+  ): Promise<DynamicWallet> {
+    const wallet = new DynamicWallet(params)
     await wallet.initialize()
     return wallet
   }

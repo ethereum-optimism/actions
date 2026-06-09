@@ -1,9 +1,19 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+
+export interface HostedWalletProviderOptions {
+  chainManager: ChainManager
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Base hosted wallet provider class
@@ -16,20 +26,15 @@ export abstract class HostedWalletProvider<
   TOptionsMap extends Record<TType, unknown>,
 > {
   protected chainManager: ChainManager
-  protected lendProviders: LendProviders
-  protected swapProviders: SwapProviders
+  protected actionProviders: ActionProvidersMap
+  protected actionSettings: ActionSettingsMap
   protected supportedAssets?: Asset[]
 
-  protected constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-  ) {
-    this.chainManager = chainManager
-    this.lendProviders = lendProviders || {}
-    this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets
+  protected constructor(options: HostedWalletProviderOptions) {
+    this.chainManager = options.chainManager
+    this.actionProviders = options.actionProviders
+    this.actionSettings = options.actionSettings
+    this.supportedAssets = options.supportedAssets
   }
   /**
    * Convert a hosted wallet to an Actions wallet

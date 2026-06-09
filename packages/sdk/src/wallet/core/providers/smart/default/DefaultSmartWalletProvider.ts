@@ -3,8 +3,11 @@ import { keccak256, slice, toHex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
@@ -17,46 +20,38 @@ import { formatPublicKey } from '@/wallet/core/wallets/smart/default/utils/forma
 import { getSignerPublicKey } from '@/wallet/core/wallets/smart/default/utils/getSignerPublicKey.js'
 import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
 
+export interface DefaultSmartWalletProviderOptions {
+  chainManager: ChainManager
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
+  supportedAssets?: Asset[]
+  /** Optional 16-byte attribution suffix appended to callData */
+  attributionSuffix?: string
+}
+
 /**
  * Smart Wallet Provider
  * @description Factory for creating and managing Smart Wallet instances.
  * Handles wallet address prediction, creation, and retrieval using ERC-4337 account abstraction.
  */
 export class DefaultSmartWalletProvider extends SmartWalletProvider {
-  /** Manages supported blockchain networks */
   private chainManager: ChainManager
-  /** Providers for lending market operations */
-  private lendProviders: LendProviders
-  /** Providers for swap operations */
-  private swapProviders: SwapProviders
-  /** Supported assets for this wallet provider */
+  private actionProviders: ActionProvidersMap
+  private actionSettings: ActionSettingsMap
   private supportedAssets?: Asset[]
-  /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
-  /**
-   * Initialize the Smart Wallet Provider
-   * @param chainManager - Manages supported blockchain networks
-   * @param lendProviders - Providers for lending market operations
-   * @param swapProviders - Providers for swap operations
-   * @param supportedAssets - Optional list of supported assets
-   * @param attributionSuffix - Optional attribution suffix
-   */
-  constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    attributionSuffix?: string,
-  ) {
+  constructor(options: DefaultSmartWalletProviderOptions) {
     super()
-    this.chainManager = chainManager
-    this.lendProviders = lendProviders || {}
-    this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets
-    if (attributionSuffix) {
+    this.chainManager = options.chainManager
+    this.actionProviders = options.actionProviders
+    this.actionSettings = options.actionSettings
+    this.supportedAssets = options.supportedAssets
+    if (options.attributionSuffix) {
       this.attributionSuffix =
-        DefaultSmartWalletProvider.computeAttributionSuffix(attributionSuffix)
+        DefaultSmartWalletProvider.computeAttributionSuffix(
+          options.attributionSuffix,
+        )
     }
   }
 
@@ -90,8 +85,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       signers,
       signer,
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
       nonce,
       attributionSuffix: this.attributionSuffix,
@@ -180,8 +175,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       signers,
       signer,
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
       deploymentAddress: walletAddress,
       attributionSuffix: this.attributionSuffix,

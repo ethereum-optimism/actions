@@ -1,0 +1,32 @@
+import {
+  buildSwapInputs,
+  type QuoteFlags,
+} from '@/commands/actions/swap/util.js'
+import { baseContext } from '@/context/baseContext.js'
+import { rethrowAsCliError } from '@/output/errors.js'
+import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
+
+/**
+ * @description Handler for `actions swap quotes ...`. Same flag set as
+ * `swap quote` but returns every successful provider quote sorted by
+ * `amountOutRaw` desc (best price first). When `--provider` is set the
+ * SDK still returns a one-element array so the caller can branch
+ * uniformly.
+ * @param flags - Commander-parsed required + optional options.
+ * @returns Promise that resolves once stdout has been written.
+ */
+export async function runSwapQuotes(flags: QuoteFlags): Promise<void> {
+  const { actions, config } = baseContext()
+  const params = buildSwapInputs(
+    flags,
+    configuredAssets(config),
+    config.chains.map((c) => c.chainId),
+  )
+  try {
+    const quotes = await actions.swap.getQuotes(params)
+    printOutput('swapQuotes', quotes)
+  } catch (err) {
+    rethrowAsCliError(err)
+  }
+}

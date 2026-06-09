@@ -25,10 +25,12 @@ class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
       validateOptions(options): options is NodeOptionsMap['privy'] {
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
-      create({ chainManager }, options) {
+      create({ chainManager, actionProviders, actionSettings }, options) {
         return new PrivyHostedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
+          actionProviders,
+          actionSettings,
           authorizationContext: options.authorizationContext,
         })
       },
@@ -70,7 +72,11 @@ describe('HostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('privy')
 
     const provider = factory.create(
-      { chainManager: mockChainManager },
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
       {
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
@@ -84,7 +90,7 @@ describe('HostedWalletProviderRegistry', () => {
     const registry = new TestHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      "A 'unknown' provider is not configured",
     )
   })
 })

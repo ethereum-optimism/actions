@@ -21,6 +21,9 @@ export class MockChainManager {
   public getPublicClient: MockedFunction<
     (chainId: SupportedChainId) => PublicClient
   >
+  public tryGetPublicClient: MockedFunction<
+    (chainId: SupportedChainId) => PublicClient | undefined
+  >
   public getBundlerClient: MockedFunction<
     (chainId: SupportedChainId, account: SmartAccount) => BundlerClient
   >
@@ -53,6 +56,11 @@ export class MockChainManager {
           )
         }
         return client
+      })
+    this.tryGetPublicClient = vi
+      .fn()
+      .mockImplementation((chainId: SupportedChainId) => {
+        return this.publicClients.get(chainId)
       })
     this.getBundlerClient = vi
       .fn()

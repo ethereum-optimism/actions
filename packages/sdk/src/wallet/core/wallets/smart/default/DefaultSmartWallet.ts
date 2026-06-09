@@ -11,13 +11,16 @@ import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstrac
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { TransactionConfirmedButRevertedError } from '@/core/error/errors.js'
-import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { parseAssetAmount } from '@/utils/assets.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
+import { retryOnStaleRead } from '@/wallet/core/utils/retryOnStaleRead.js'
 import { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 import {
@@ -52,40 +55,34 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
-  /**
-   * Create a Smart Wallet instance
-   * @param owners - Array of wallet owners (addresses or WebAuthn accounts)
-   * @param signer - Local account for signing transactions
-   * @param chainManager - Network management service
-   * @param lendProviders - Lending operations providers
-   * @param swapProviders - Swap operations providers
-   * @param deploymentAddress - Known wallet address (if already deployed)
-   * @param ownerIndex - Index of signer in owners array
-   * @param nonce - Nonce for address generation
-   */
-  private constructor(
-    signers: Signer[],
-    signer: LocalAccount,
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    deploymentAddress?: Address,
-    nonce?: bigint,
-    attributionSuffix?: Hex,
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+  private constructor(params: {
+    signers: Signer[]
+    signer: LocalAccount
+    chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
+    supportedAssets?: Asset[]
+    deploymentAddress?: Address
+    nonce?: bigint
+    attributionSuffix?: Hex
+  }) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
 
     const { signersWithLocalAccount, signerIndex } =
-      DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
-    this.signer = signer
+      DefaultSmartWallet.ensureLocalAccountSigner(params.signers, params.signer)
+    this.signer = params.signer
     this.signers = signersWithLocalAccount
     this.signerIndex = signerIndex
-    this.deploymentAddress = deploymentAddress
-    this.nonce = nonce
-    if (attributionSuffix) {
-      DefaultSmartWallet.isValidAttributionSuffix(attributionSuffix)
-      this.attributionSuffix = attributionSuffix
+    this.deploymentAddress = params.deploymentAddress
+    this.nonce = params.nonce
+    if (params.attributionSuffix) {
+      DefaultSmartWallet.isValidAttributionSuffix(params.attributionSuffix)
+      this.attributionSuffix = params.attributionSuffix
     }
   }
 
@@ -114,26 +111,26 @@ export class DefaultSmartWallet extends SmartWallet {
   static async create(params: {
     signer: LocalAccount
     chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
     signers?: Signer[]
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
     supportedAssets?: Asset[]
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
   }): Promise<DefaultSmartWallet> {
     const signers = params.signers ?? [params.signer.address]
-    const wallet = new DefaultSmartWallet(
+    const wallet = new DefaultSmartWallet({
       signers,
-      params.signer,
-      params.chainManager,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-      params.deploymentAddress,
-      params.nonce,
-      params.attributionSuffix,
-    )
+      signer: params.signer,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+      deploymentAddress: params.deploymentAddress,
+      nonce: params.nonce,
+      attributionSuffix: params.attributionSuffix,
+    })
     await wallet.initialize()
     return wallet
   }
@@ -218,7 +215,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Promise resolving to the transaction hash
    */
   async sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<WaitForUserOperationReceiptReturnType> {
     const account = await this.getCoinbaseSmartAccount(chainId)

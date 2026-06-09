@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.21;
 
 /// @notice Market parameters for Morpho Blue
 struct MarketParams {
@@ -28,8 +28,36 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
+    /// @notice Supplies assets as borrowable liquidity to a market
+    function supply(
+        MarketParams memory marketParams,
+        uint256 assets,
+        uint256 shares,
+        address onBehalf,
+        bytes calldata data
+    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
+
     /// @notice Returns the market ID for given parameters
     function idToMarketParams(bytes32 id) external view returns (MarketParams memory);
+
+    /// @notice Returns market state for a given market id
+    function market(bytes32 id)
+        external
+        view
+        returns (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee
+        );
+
+    /// @notice Returns a user's position on a market
+    function position(bytes32 id, address user)
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 }
 
 /// @notice Minimal interface for MetaMorpho vault

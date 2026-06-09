@@ -1,0 +1,340 @@
+---
+name: actions-cli
+description: Invoke the Actions SDK from the shell - query assets/chains, derive an EOA address from a PRIVATE_KEY env var, read balances. Use when an agent needs to interact with the Actions SDK without embedding TypeScript.
+compatibility: Requires Node.js >=18 and the PRIVATE_KEY env var for wallet-scoped commands.
+---
+
+# Actions CLI - Agent Skill
+
+## Invocation
+
+Spawn the `actions` binary as a subprocess. **Always pass `--json`** (as
+the first flag) - the default output is human-readable and not intended
+for parsing. With `--json`, stdout is a bare JSON document on success
+and stderr is the error envelope on failure.
+
+```sh
+actions --json assets
+actions --json wallet balance --chain base-sepolia
+```
+
+## Command tree
+
+- `actions assets` - configured asset allowlist.
+- `actions chains` - configured chain shortnames + IDs.
+- `actions lend markets [--asset <symbol>] [--chain <name> | --chain-id <id>]` -
+  lending markets across configured providers, optionally filtered to one
+  asset and/or one chain (no wallet).
+- `actions lend market --market <name>` - inspect one market by name
+  (no wallet).
+- `actions borrow markets [--collateral <symbol>] [--borrow-asset <symbol>]
+  [--chain <name> | --chain-id <id>]` - borrow markets across configured
+  providers, optionally filtered (no wallet).
+- `actions borrow market --market <name>` - inspect one borrow market
+  by name (no wallet).
+- `actions borrow position --market <name> --wallet <address>` - read any
+  wallet's borrow position (no `PRIVATE_KEY` required).
+- `actions swap markets [--chain <name>]` - all swap markets across
+  configured providers (no wallet).
+- `actions swap market --pool <id> --chain <name>` - inspect one swap
+  market by pool id (no wallet).
+- `actions swap quote --in <symbol> --out <symbol>
+  (--amount-in <n> | --amount-out <n>) --chain <name>
+  [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
+  (no wallet).
+- `actions swap quotes ...` - same flag set; returns every provider's
+  quote sorted best price first.
+- `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
+- `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
+  per chain + asset; the chain flags are mutually exclusive.
+- `actions wallet lend position --market <name>` - the wallet's current
+  balance and shares in a market.
+- `actions wallet lend open --market <name> --amount <n> [--approval-mode <exact|max>]` -
+  supply assets to a market. `--approval-mode max` approves max-uint to
+  amortise approvals across future supplies (default: `exact`).
+- `actions wallet lend close --market <name> (--amount <n> | --max)` -
+  withdraw assets. Pass `--max` to withdraw the wallet's full balance in
+  the market (the CLI fetches the position first; subject to inflight
+  interest accrual).
+- `actions wallet borrow position --market <name>` - the wallet's current
+  collateral, debt, LTV, and health factor in a borrow market.
+- `actions wallet borrow open --market <name> --borrow-amount <n>
+  [--collateral-amount <n>] [--approval-mode <exact|max>]` - borrow
+  against existing or newly-deposited collateral. No `--max` (open path
+  only accepts strict amounts).
+- `actions wallet borrow close --market <name> [--borrow-amount <n> |
+  --borrow-max] [--collateral-amount <n> | --collateral-max]` - unwind a
+  position. Each leg is independently xor'd; the borrow leg is required.
+  `--*-max` resolves on-chain at dispatch time so interest-accrual dust
+  doesn't strand the position.
+- `actions wallet borrow deposit-collateral --market <name> --amount <n>
+  [--approval-mode <exact|max>]` - top up collateral without changing
+  debt.
+- `actions wallet borrow withdraw-collateral --market <name>
+  (--amount <n> | --max)` - pull collateral back without touching debt.
+- `actions wallet borrow repay --market <name> (--amount <n> | --max)
+  [--approval-mode <exact|max>]` - repay debt without touching collateral.
+- `actions wallet swap execute --in <symbol> --out <symbol>
+  (--amount-in <n> | --amount-out <n>) --chain <name>
+  [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
+  on the resolved chain.
+
+## Wallet model
+
+The CLI derives a viem `LocalAccount` from `PRIVATE_KEY` and wraps it in
+an EOA-backed Actions wallet via
+`actions.wallet.toActionsWallet(localAccount)`. No smart wallet, no
+bundler, no ERC-4337 UserOps - the signer pays gas directly. For the
+demo, fund the EOA with testnet ETH on Base Sepolia.
+
+## Resolution rules
+
+- **Assets** - pass the `metadata.symbol` value from the allowlist
+  (e.g. `USDC_DEMO`, `OP_DEMO`, `ETH`). Case-insensitive. Run
+  `actions --json assets` for the current list.
+- **Chains** - pass a shortname (`base-sepolia`, `op-sepolia`) via
+  `--chain`, or a numeric id via `--chain-id` (mutually exclusive).
+  Both flags accept a comma-separated list to scope the SDK fan-out
+  to multiple chains. Run `actions --json chains` for the current
+  list.
+- **Markets (lend)** - pass the market `name` from the config allowlist
+  (e.g. `Gauntlet USDC`, `Aave ETH`). Case-insensitive; whitespace
+  and hyphens are ignored, so `gauntlet-usdc` and `gauntletusdc`
+  resolve to the same entry. The market entry carries its own chain
+  and asset, so no `--chain` is needed.
+- **Markets (borrow)** - same name-based resolution as lend, plus `/`
+  is stripped (so `Demo dUSDC / OP` and `demo-dusdc-op` collapse to the
+  same key). Borrow market identifiers are discriminated unions (e.g.
+  `{ kind: 'morpho-blue', marketId: '0x...', chainId: ... }`); the CLI
+  forwards the resolved config to the SDK so a future second provider
+  variant adds no CLI work.
+- **Markets (swap)** - addressed pair-wise via `--in/--out/--chain` for
+  quotes and execution. `--pool <id>` is only used for direct
+  `swap market` lookups; the `poolId` surfaces in `swap markets`.
+- **Amounts** - human-readable decimal numbers (e.g. `10`, `0.5`).
+  The SDK converts to wei using the asset's decimals.
+- **Slippage** - `--slippage` accepts a percent (e.g. `0.5` for 0.5%);
+  the CLI converts to the SDK's decimal form internally.
+- **Amount direction** - exactly one of `--amount-in` (exact-in) or
+  `--amount-out` (exact-out) is required for `swap quote`,
+  `swap quotes`, and `wallet swap execute`.
+- **Provider selection** - `--provider uniswap|velodrome` forces a
+  provider and skips routing. Omit to let the SDK pick the best
+  available.
+
+## Presentation hints (for LLM/agent callers)
+
+These are rules for rendering CLI output to humans, not rules for the
+CLI itself.
+
+- **Chain labels - only when disambiguating.** When showing a list
+  (balances, markets, positions, pools), mention the chain only for
+  entries that share their name/symbol/market with another entry on a
+  different chain in the same response. If every row is uniquely
+  identifiable by its name alone, drop the chain label. Count chain
+  occurrences **after** skipping zero balances. Example: two chains
+  in the raw payload, but only one has a non-zero balance of `X` -
+  render as `X <amount>` with no chain. When the user explicitly scopes
+  a question to one chain, still omit the label.
+- **Zero rows - skip.** Don't render zero balances, empty positions,
+  or pools with no meaningful data, unless the user specifically asked
+  about that zero value ("do I have any X on op-sepolia").
+- **Raw addresses - omit by default.** Wallet/pool/market/contract
+  addresses in a listing add noise. Show them only when the user asks
+  for them explicitly, and even then truncate (`0xabc…def`).
+
+## Output
+
+With `--json`:
+
+- Success: bare JSON document on stdout, exit 0. No envelope (matches
+  `gh` and AWS CLI conventions).
+- Error: JSON `{error, code, retryable, retry_after_ms?, details?}` on
+  stderr, non-zero exit. `retryable: true` means the caller may retry
+  (typically network failures). `retry_after_ms` is present when a
+  specific back-off is recommended. `details` is redacted - bundler
+  URLs with API keys, signer metadata, and raw viem request bodies are
+  scrubbed.
+
+Without `--json` (default):
+
+- Success: plain text on stdout intended for human reading. Not stable
+  across versions.
+- Error: `Error (<code>): <message>` on stderr, exit code per the table
+  below.
+
+## Balance semantics
+
+Within a single `actions wallet balance` call, the SDK fans out via
+`Promise.all` over (asset x chain), so any single failing RPC rejects
+the whole call with a `network` error. Retries may succeed on a
+different call - do not assume per-chain isolation.
+
+To shrink the failure surface, scope the call with `--chain` or
+`--chain-id` (both accept a comma-separated list). The SDK only
+queries the chains you pass.
+
+## Lend semantics
+
+`wallet lend open` and `wallet lend close` emit a structured envelope
+on stdout:
+
+```json
+{
+  "action": "open" | "close",
+  "market": { "name": "...", "address": "0x...", "chainId": ..., "provider": "..." },
+  "asset":  { "symbol": "..." },
+  "amount": <number>,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ]
+}
+```
+
+`transactions` is always an array. On EOA the SDK sends approval +
+position as two sequential transactions when an approval is required,
+so `open` returns 1-2 receipts and `close` returns 1. Bigint receipt
+fields (`blockNumber`, `gasUsed`) are stringified.
+
+A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
+error envelope on stderr (exit 5), so callers do not need to inspect
+receipt status to detect failure.
+
+`wallet lend position` returns the SDK `LendMarketPosition` shape
+verbatim: `{ balance, balanceFormatted, shares, sharesFormatted, marketId }`
+with bigint fields stringified.
+
+`lend markets` and `lend market` return the SDK `LendMarket` shape(s)
+verbatim: `{ marketId, name, asset, supply, apy, metadata }`. These do
+not require `PRIVATE_KEY`.
+
+NL -> command examples:
+
+- "what markets can I lend in" -> `actions --json lend markets`
+- "supply 10 USDC to Gauntlet" -> `actions --json wallet lend open --market gauntlet-usdc --amount 10`
+- "deposit 0.5 ETH into Aave on op-sepolia" -> `actions --json wallet lend open --market aave-eth --amount 0.5`
+- "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
+- "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
+
+## Borrow semantics
+
+The wallet-scoped write verbs (`open`, `close`, `deposit-collateral`,
+`withdraw-collateral`, `repay`) emit a structured envelope on stdout:
+
+```json
+{
+  "action": "open" | "close" | "depositCollateral" | "withdrawCollateral" | "repay",
+  "market": {
+    "name": "...",
+    "marketId": { "kind": "morpho-blue", "marketId": "0x...", "chainId": ... },
+    "chainId": ...,
+    "provider": "morpho"
+  },
+  "borrowAmount":     <number | "max">,
+  "collateralAmount": <number | "max">,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ],
+  "ltv": <number | null>,
+  "healthFactor": <number | null>,
+  "liquidationPriceFormatted": "<string>"
+}
+```
+
+`borrowAmount` / `collateralAmount` echo what the verb touched (the
+inverse pair is omitted; e.g. `repay` reports only `borrowAmount`). The
+literal string `"max"` means the SDK resolved the full balance at
+dispatch time. `ltv` and `healthFactor` come from the SDK's
+`positionAfter` snapshot and are `null` when the action left no debt
+(divide-by-zero guard); they are omitted when the SDK did not surface a
+`positionAfter`. `transactions` is always an array, normalised the same
+way as lend / swap.
+
+A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
+error envelope on stderr (exit 5).
+
+`actions borrow position --market <name> --wallet <address>` reads any
+wallet's position without needing `PRIVATE_KEY`; the CLI checksums the
+address (viem `getAddress`) before forwarding. `wallet borrow position`
+uses the connected wallet instead.
+
+`borrow markets` / `borrow market` / both `position` commands return the
+SDK shapes verbatim with bigints stringified. Position fields `ltv` and
+`healthFactor` are `null` when there is no outstanding debt.
+
+NL -> command examples:
+
+- "what borrow markets are available" -> `actions --json borrow markets`
+- "borrow 1 OP against 2 USDC of collateral on the demo market" ->
+  `actions --json wallet borrow open --market demo-dusdc-op --borrow-amount 1 --collateral-amount 2`
+- "close my borrow position completely" ->
+  `actions --json wallet borrow close --market demo-dusdc-op --borrow-max --collateral-max`
+- "repay all my debt on demo dUSDC/OP" ->
+  `actions --json wallet borrow repay --market demo-dusdc-op --max`
+- "withdraw all collateral from demo dUSDC/OP" ->
+  `actions --json wallet borrow withdraw-collateral --market demo-dusdc-op --max`
+- "top up 5 USDC of collateral on demo dUSDC/OP" ->
+  `actions --json wallet borrow deposit-collateral --market demo-dusdc-op --amount 5`
+- "what's the health factor of 0x... on demo dUSDC/OP" ->
+  `actions --json borrow position --market demo-dusdc-op --wallet 0x...`
+- "how am I doing in demo dUSDC/OP" ->
+  `actions --json wallet borrow position --market demo-dusdc-op`
+
+## Swap semantics
+
+`swap quote` returns the SDK `SwapQuote` shape verbatim: amounts (both
+display and `Raw` bigint), price + price-impact, slippage (decimal),
+deadline, and pre-built `execution` calldata. `swap quotes` is the
+multi-provider variant sorted by `amountOutRaw` desc.
+
+`wallet swap execute` emits a structured envelope on stdout:
+
+```json
+{
+  "action": "execute",
+  "assetIn":  { "symbol": "USDC_DEMO" },
+  "assetOut": { "symbol": "OP_DEMO" },
+  "amountIn": 5, "amountOut": 4.9,
+  "amountInRaw":  "5000000",
+  "amountOutRaw": "4900000000000000000",
+  "price": 0.98, "priceImpact": 0.001,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ]
+}
+```
+
+`transactions` is always an array. EOA execution can fan out into
+token-approval + Permit2-approval + swap (up to 3 receipts); smart
+wallets collapse to a single UserOp receipt. A receipt with
+`status: "reverted"` is normalised to `code: "onchain"` exit 5.
+
+NL -> command examples:
+
+- "swap 5 USDC for OP on Unichain" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 5 --chain unichain`
+- "buy 1 OP with USDC" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-out 1 --chain unichain`
+- "what's the best price for 100 USDC -> OP" -> `actions --json swap quote --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
+- "compare provider quotes" -> `actions --json swap quotes --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
+- "execute on Velodrome with 1% slippage" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain --provider velodrome --slippage 1`
+
+## RPC trust
+
+`*_RPC_URL` env vars must point to operator-trusted endpoints. A
+malicious RPC can return fake balance data, which will confuse the
+caller.
+
+## Exit codes
+
+| Code | Meaning                                | Retryable |
+| ---- | -------------------------------------- | --------- |
+| 0    | Success                                | -         |
+| 1    | Unknown error                          | false     |
+| 2    | Validation (bad input)                 | false     |
+| 3    | Config error (missing env, malformed)  | false     |
+| 4    | Network error (RPC, timeout)           | true      |
+| 5    | Onchain error (revert, UserOp failure) | false (†) |
+
+(†) Specific onchain sub-classes (nonce conflicts, gas underpricing)
+may set `retryable: true` via the `retryableOverride` mechanism. Treat
+`retryable` as the source of truth; the table row shows the default.
+
+## Unknown commands
+
+Typos (`actions nonsense`) exit 1 with commander's default plain-text
+error on stderr - **not** the JSON error envelope. This distinction is
+deliberate: the JSON envelope is only emitted for errors thrown from
+within a registered handler.
