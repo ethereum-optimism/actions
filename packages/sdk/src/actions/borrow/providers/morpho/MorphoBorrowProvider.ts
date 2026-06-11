@@ -98,7 +98,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _getMarket(
     rawMarket: BorrowMarketConfig,
   ): Promise<BorrowMarket> {
-    const market = this.requireMorphoMarket(rawMarket)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(rawMarket)
     const state = await this.fetchMarket(market)
     const healthBufferPct = this.resolveHealthBufferPct(market)
     return toMorphoBorrowMarket(market, state, healthBufferPct)
@@ -108,7 +108,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     market: BorrowMarketConfig
     walletAddress: Address
   }): Promise<BorrowMarketPosition> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { position } = await this.fetchPosition(market, params.walletAddress)
     return toMorphoBorrowPosition(market, position)
   }
@@ -116,7 +118,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -144,7 +148,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -183,7 +189,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { current, allowance, balance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -222,7 +230,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { position: current } = await this.fetchPosition(
       market,
       params.walletAddress,
@@ -263,7 +273,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireMorphoMarket(params.market)
+    const market = this.requireOwnMarket<MorphoBorrowMarketConfig>(
+      params.market,
+    )
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -305,23 +317,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       },
       params.walletAddress,
     )
-  }
-
-  /**
-   * Narrow a trusted `BorrowMarketConfig` to the Morpho Blue variant. The
-   * base class resolves configs from this provider's own allowlist, which
-   * only holds `morpho-blue` markets, so a non-morpho kind here is a
-   * misconfiguration rather than a routing path.
-   */
-  private requireMorphoMarket(
-    market: BorrowMarketConfig,
-  ): MorphoBorrowMarketConfig {
-    if (market.kind !== 'morpho-blue') {
-      throw new Error(
-        `MorphoBorrowProvider received a ${market.kind} market config`,
-      )
-    }
-    return market
   }
 
   // Each `fetchX` wraps the corresponding `fetchMorphoX` in `state.ts` so

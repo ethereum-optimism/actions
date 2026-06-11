@@ -268,6 +268,24 @@ export abstract class BorrowProvider<
   }
 
   /**
+   * Narrow a trusted `BorrowMarketConfig` to this provider's own variant. The
+   * base resolves configs from this provider's allowlist, which only holds
+   * markets of `this.marketKind`, so a mismatched kind is a misconfiguration
+   * rather than a routing path. The cast is sound: the runtime check guarantees
+   * `kind` matches, and callers pass the matching variant as `T`.
+   */
+  protected requireOwnMarket<T extends BorrowMarketConfig>(
+    market: BorrowMarketConfig,
+  ): T {
+    if (market.kind !== this.marketKind) {
+      throw new Error(
+        `${this.constructor.name} received a ${market.kind} market config`,
+      )
+    }
+    return market as T
+  }
+
+  /**
    * Resolve a `BorrowMarketId` to its trusted `BorrowMarketConfig` from
    * the provider allowlist; throws `MarketNotAllowedError` when missing
    * or when the marketId is on the blocklist.
