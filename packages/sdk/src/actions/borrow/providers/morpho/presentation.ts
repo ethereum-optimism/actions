@@ -1,6 +1,7 @@
 import type { AccrualPosition, Market } from '@morpho-org/blue-sdk'
 import { type Address, formatUnits } from 'viem'
 
+import { assembleBorrowQuote } from '@/actions/borrow/core/quote.js'
 import {
   liquidationBonusFromIncentive,
   morphoFractionOrNull,
@@ -96,38 +97,20 @@ export function assembleMorphoBorrowQuote(args: {
   quoteExpirationSeconds: number
   healthBufferPct: number
 }): BorrowQuote {
-  const now = Math.floor(Date.now() / 1000)
   const hasBefore =
     args.positionBefore.collateral > 0n || args.positionBefore.borrowShares > 0n
-  return {
-    marketId: {
-      kind: args.market.kind,
-      marketId: args.market.marketId,
-      chainId: args.market.chainId,
-    },
-    recipient: args.recipient,
+  return assembleBorrowQuote({
+    provider: 'morpho',
     action: args.action,
-    borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
-    collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
+    recipient: args.recipient,
     positionBefore: hasBefore
       ? toMorphoBorrowPosition(args.market, args.positionBefore)
       : null,
     positionAfter: toMorphoBorrowPosition(args.market, args.positionAfter),
-    fees: {
-      borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
-      liquidationBonus: liquidationBonusFromIncentive(
-        args.positionAfter.market.params.liquidationIncentiveFactor,
-      ),
-    },
-    safeCeilingLtv:
-      morphoWadToNumber(args.market.marketParams.lltv) *
-      (1 - args.healthBufferPct),
-    execution: {
-      transactions: args.transactions,
-      approvalsSkipped: args.approvalsSkipped,
-    },
-    provider: 'morpho',
-    quotedAt: now,
-    expiresAt: now + args.quoteExpirationSeconds,
-  }
+    quoteAmounts: args.quoteAmounts,
+    transactions: args.transactions,
+    approvalsSkipped: args.approvalsSkipped,
+    healthBufferPct: args.healthBufferPct,
+    quoteExpirationSeconds: args.quoteExpirationSeconds,
+  })
 }

@@ -1,5 +1,6 @@
 import { type Address, formatUnits } from 'viem'
 
+import { assembleBorrowQuote } from '@/actions/borrow/core/quote.js'
 import type {
   AaveBorrowMarketConfig,
   BorrowAction,
@@ -239,38 +240,21 @@ export interface AssembleAaveQuoteArgs {
 export function assembleAaveBorrowQuote(
   args: AssembleAaveQuoteArgs,
 ): BorrowQuote {
-  const now = Math.floor(Date.now() / 1000)
   const hasBefore =
     args.positionBefore.collateralAmount > 0n ||
     args.positionBefore.debtAmount > 0n
-  const positionAfter = toAaveBorrowPosition(args.market, args.positionAfter)
-  return {
-    marketId: {
-      kind: args.market.kind,
-      marketId: args.market.marketId,
-      chainId: args.market.chainId,
-    },
-    recipient: args.recipient,
+  return assembleBorrowQuote({
+    provider: 'aave',
     action: args.action,
-    borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
-    collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
+    recipient: args.recipient,
     positionBefore: hasBefore
       ? toAaveBorrowPosition(args.market, args.positionBefore)
       : null,
-    positionAfter,
-    fees: {
-      borrowApy: positionAfter.borrowApy,
-      liquidationBonus: positionAfter.liquidationBonus,
-    },
-    safeCeilingLtv:
-      bpsToFraction(args.positionAfter.liquidationThresholdBps) *
-      (1 - args.healthBufferPct),
-    execution: {
-      transactions: args.transactions,
-      approvalsSkipped: args.approvalsSkipped,
-    },
-    provider: 'aave',
-    quotedAt: now,
-    expiresAt: now + args.quoteExpirationSeconds,
-  }
+    positionAfter: toAaveBorrowPosition(args.market, args.positionAfter),
+    quoteAmounts: args.quoteAmounts,
+    transactions: args.transactions,
+    approvalsSkipped: args.approvalsSkipped,
+    healthBufferPct: args.healthBufferPct,
+    quoteExpirationSeconds: args.quoteExpirationSeconds,
+  })
 }
