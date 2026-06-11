@@ -88,7 +88,11 @@ export interface AavePositionState {
   debtAmount: bigint
   /** Aggregate health factor from `getUserAccountData` (1e18 scaled). */
   healthFactorWad: bigint
-  /** Aggregate current liquidation threshold from `getUserAccountData` (bps). */
+  /**
+   * Collateral reserve liquidation threshold (bps) — same semantics as
+   * `AaveMarketState.liquidationThresholdBps`, but falls back to the aggregate
+   * `getUserAccountData` threshold when the reserve config reads zero.
+   */
   liquidationThresholdBps: bigint
   /** Collateral reserve liquidation bonus (bps). */
   liquidationBonusBps: bigint

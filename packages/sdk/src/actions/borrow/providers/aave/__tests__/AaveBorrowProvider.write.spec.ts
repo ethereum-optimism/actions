@@ -16,7 +16,7 @@ import {
 import { AaveBorrowProvider } from '@/actions/borrow/providers/aave/AaveBorrowProvider.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
-import { EmptyPositionError } from '@/core/error/errors.js'
+import { EmptyPositionError, InvalidParamsError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
@@ -174,6 +174,43 @@ describe('AaveBorrowProvider write layer', () => {
     expect(quote.positionAfter.borrowAmount).toBe(1_000_000_000n)
     expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
     expect(quote.safeCeilingLtv).toBeGreaterThan(0)
+  })
+
+  it('opens with collateral: deposits via gateway then borrows', async () => {
+    const provider = makeProvider({ collateral: 0n, debt: 0n, allowance: 0n })
+    const quote = await provider.openPosition({
+      market,
+      walletAddress: WALLET,
+      collateralAmount: { amountRaw: 5n * 10n ** 17n },
+      borrowAmount: { amountRaw: 1_000_000_000n },
+    })
+    expect(quote.execution.transactions).toHaveLength(2)
+    // Native-ETH collateral deposits route through the gateway, no approval.
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    expect(
+      decodeFunctionData({
+        abi: WETH_GATEWAY_ABI,
+        data: quote.execution.transactions[0].data,
+      }).functionName,
+    ).toBe('depositETH')
+    expect(
+      decodeFunctionData({
+        abi: POOL_ABI,
+        data: quote.execution.transactions[1].data,
+      }).functionName,
+    ).toBe('borrow')
+    expect(quote.collateralAmountRaw).toBe(5n * 10n ** 17n)
+  })
+
+  it('rejects a max-amount depositCollateral with InvalidParamsError', async () => {
+    const provider = makeProvider({ collateral: 0n, debt: 0n, allowance: 0n })
+    await expect(
+      provider.depositCollateral({
+        market,
+        walletAddress: WALLET,
+        amount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(InvalidParamsError)
   })
 
   it('repays with approval-then-repay when allowance is insufficient', async () => {
