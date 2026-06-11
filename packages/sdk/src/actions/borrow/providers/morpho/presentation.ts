@@ -1,5 +1,5 @@
 import type { AccrualPosition, Market } from '@morpho-org/blue-sdk'
-import { formatUnits } from 'viem'
+import { type Address, formatUnits } from 'viem'
 
 import {
   liquidationBonusFromIncentive,
@@ -15,7 +15,7 @@ import type {
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
-export function adaptMorphoBorrowMarket(
+export function toMorphoBorrowMarket(
   config: MorphoBorrowMarketConfig,
   market: Market,
   healthBufferPct: number,
@@ -40,7 +40,7 @@ export function adaptMorphoBorrowMarket(
   }
 }
 
-export function adaptMorphoBorrowPosition(
+export function toMorphoBorrowPosition(
   config: MorphoBorrowMarketConfig,
   position: AccrualPosition,
 ): BorrowMarketPosition {
@@ -92,6 +92,7 @@ export function assembleMorphoBorrowQuote(args: {
     collateralAmountRaw?: bigint
   }
   approvalsSkipped: boolean
+  recipient: Address
   quoteExpirationSeconds: number
   healthBufferPct: number
 }): BorrowQuote {
@@ -104,13 +105,14 @@ export function assembleMorphoBorrowQuote(args: {
       marketId: args.market.marketId,
       chainId: args.market.chainId,
     },
+    recipient: args.recipient,
     action: args.action,
     borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
     collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
     positionBefore: hasBefore
-      ? adaptMorphoBorrowPosition(args.market, args.positionBefore)
+      ? toMorphoBorrowPosition(args.market, args.positionBefore)
       : null,
-    positionAfter: adaptMorphoBorrowPosition(args.market, args.positionAfter),
+    positionAfter: toMorphoBorrowPosition(args.market, args.positionAfter),
     fees: {
       borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
       liquidationBonus: liquidationBonusFromIncentive(
