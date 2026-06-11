@@ -17,6 +17,7 @@ import {
 import { EmptyPositionError, InvalidParamsError } from '@/core/error/errors.js'
 import type {
   AaveBorrowMarketConfig,
+  BorrowAction,
   BorrowClosePositionInternalParams,
   BorrowDepositCollateralInternalParams,
   BorrowOpenPositionInternalParams,
@@ -47,6 +48,39 @@ function project(
   })
 }
 
+/**
+ * Shared tail of every `buildAave*QuoteArgs`: project the resulting position
+ * from the signed deltas and wrap it in the quote-args envelope. Each action
+ * differs only in the `plan` it computes (txs, deltas, amounts); this owns the
+ * project-and-assemble scaffold so that logic lives in one place.
+ */
+function finalizePlan(
+  market: AaveBorrowMarketConfig,
+  current: AavePositionState,
+  prices: AaveReservePrices,
+  plan: {
+    action: BorrowAction
+    collateralDelta: bigint
+    debtDelta: bigint
+    transactions: TransactionData[]
+    approvalsSkipped: boolean
+    quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  },
+): AaveQuoteArgs {
+  return {
+    action: plan.action,
+    market,
+    positionBefore: current,
+    positionAfter: project(current, prices, market, {
+      collateralDelta: plan.collateralDelta,
+      debtDelta: plan.debtDelta,
+    }),
+    transactions: plan.transactions,
+    quoteAmounts: plan.quoteAmounts,
+    approvalsSkipped: plan.approvalsSkipped,
+  }
+}
+
 export async function buildAaveOpenQuoteArgs(
   client: PublicClient,
   market: AaveBorrowMarketConfig,
@@ -74,22 +108,17 @@ export async function buildAaveOpenQuoteArgs(
   txs.push(
     encodeAaveBorrow(market, params.borrowAmountWei, params.walletAddress),
   )
-  const positionAfter = project(current, prices, market, {
+  return finalizePlan(market, current, prices, {
+    action: 'open',
     collateralDelta: collateral,
     debtDelta: params.borrowAmountWei,
-  })
-  return {
-    action: 'open',
-    market,
-    positionBefore: current,
-    positionAfter,
     transactions: txs,
+    approvalsSkipped,
     quoteAmounts: {
       borrowAmountRaw: params.borrowAmountWei,
       collateralAmountRaw: collateral > 0n ? collateral : undefined,
     },
-    approvalsSkipped,
-  }
+  })
 }
 
 export async function buildAaveRepayQuoteArgs(
@@ -110,19 +139,14 @@ export async function buildAaveRepayQuoteArgs(
     params.walletAddress,
     params.approvalMode,
   )
-  const positionAfter = project(current, prices, market, {
+  return finalizePlan(market, current, prices, {
+    action: 'repay',
     collateralDelta: 0n,
     debtDelta: -repayAmount,
-  })
-  return {
-    action: 'repay',
-    market,
-    positionBefore: current,
-    positionAfter,
     transactions: txs,
-    quoteAmounts: { borrowAmountRaw: repayAmount },
     approvalsSkipped,
-  }
+    quoteAmounts: { borrowAmountRaw: repayAmount },
+  })
 }
 
 export async function buildAaveDepositCollateralQuoteArgs(
@@ -152,19 +176,14 @@ export async function buildAaveDepositCollateralQuoteArgs(
     params.walletAddress,
     params.approvalMode,
   )
-  const positionAfter = project(current, prices, market, {
+  return finalizePlan(market, current, prices, {
+    action: 'depositCollateral',
     collateralDelta: amountWei,
     debtDelta: 0n,
-  })
-  return {
-    action: 'depositCollateral',
-    market,
-    positionBefore: current,
-    positionAfter,
     transactions: txs,
-    quoteAmounts: { collateralAmountRaw: amountWei },
     approvalsSkipped,
-  }
+    quoteAmounts: { collateralAmountRaw: amountWei },
+  })
 }
 
 export async function buildAaveWithdrawCollateralQuoteArgs(
@@ -192,20 +211,15 @@ export async function buildAaveWithdrawCollateralQuoteArgs(
     params.walletAddress,
     params.approvalMode,
   )
-  const positionAfter = project(current, prices, market, {
+  return finalizePlan(market, current, prices, {
+    action: 'withdrawCollateral',
     collateralDelta: -amount,
     debtDelta: 0n,
-  })
-  return {
-    action: 'withdrawCollateral',
-    market,
-    positionBefore: current,
-    positionAfter,
     transactions: txs,
     // Native-ETH withdraws prepend a gateway aToken approval; direct ones don't.
     approvalsSkipped: txs.length === 1,
     quoteAmounts: { collateralAmountRaw: amount },
-  }
+  })
 }
 
 export async function buildAaveCloseQuoteArgs(
@@ -253,20 +267,15 @@ export async function buildAaveCloseQuoteArgs(
     }
   }
 
-  const positionAfter = project(current, prices, market, {
+  return finalizePlan(market, current, prices, {
+    action: 'close',
     collateralDelta,
     debtDelta: -repay.repayAmount,
-  })
-  return {
-    action: 'close',
-    market,
-    positionBefore: current,
-    positionAfter,
     transactions: txs,
+    approvalsSkipped: repay.approvalsSkipped && withdrawApprovalsSkipped,
     quoteAmounts: {
       borrowAmountRaw: repay.repayAmount,
       collateralAmountRaw: collateralDelta < 0n ? -collateralDelta : undefined,
     },
-    approvalsSkipped: repay.approvalsSkipped && withdrawApprovalsSkipped,
-  }
+  })
 }
