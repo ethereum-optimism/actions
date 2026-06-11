@@ -6,7 +6,10 @@ import {
   getPoolAddress,
   getSupportedChainIds,
   getWETHGatewayAddress,
+  requireAavePoolAddress,
+  requireAaveWethGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 
 describe('shared aave addresses', () => {
   it('returns the full address set for a supported chain', () => {
@@ -35,5 +38,21 @@ describe('shared aave addresses', () => {
 
   it('lists supported chain ids including op sepolia', () => {
     expect(getSupportedChainIds()).toContain(optimismSepolia.id)
+  })
+
+  it('requires pool and gateway addresses on a supported chain', () => {
+    expect(requireAavePoolAddress(optimismSepolia.id)).toBe(
+      '0xb50201558b00496a145fe76f7424749556e326d8',
+    )
+    expect(requireAaveWethGatewayAddress(optimismSepolia.id)).toBe(
+      '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
+    )
+  })
+
+  it('throws ChainNotSupportedError when resolving an unsupported chain', () => {
+    expect(() => requireAavePoolAddress(1)).toThrow(ChainNotSupportedError)
+    expect(() => requireAaveWethGatewayAddress(1)).toThrow(
+      ChainNotSupportedError,
+    )
   })
 })

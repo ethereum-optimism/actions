@@ -7,6 +7,7 @@ import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNames
 import { AaveBorrowProvider } from '@/actions/borrow/providers/aave/AaveBorrowProvider.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
@@ -107,6 +108,6 @@ describe('borrow provider registration', () => {
           { marketAllowlist: [{ ...aaveMarket, chainId: 999999 as never }] },
           chainManager(),
         ),
-    ).toThrow()
+    ).toThrow(ChainNotSupportedError)
   })
 })

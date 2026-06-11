@@ -151,4 +151,35 @@ describe('fetchAavePositionState', () => {
     expect(state.totalCollateralBase).toBe(3000n)
     expect(state.totalDebtBase).toBe(1000n)
   })
+
+  it('falls back to the aggregate threshold when the reserve config reads zero', async () => {
+    const user = '0x000000000000000000000000000000000000beef' as Address
+    // LTV + bonus + decimals set, but the liquidation-threshold bits (16-31)
+    // are zeroed, so the reserve read is 0 and the aggregate must win.
+    const zeroThresholdBitmap = 8000n | (10500n << 32n) | (18n << 48n)
+    const aggregateThreshold = 7000n
+    const client = makeClient((contracts) => {
+      if (contracts[0].functionName === 'getReserveData') {
+        return [
+          reserveData({
+            variableBorrowRate: VARIABLE_BORROW_RATE,
+            variableDebtToken: VAR_DEBT_USDC,
+          }),
+          reserveData({ configBitmap: zeroThresholdBitmap, aToken: A_WETH }),
+          [
+            3000n,
+            1000n,
+            0n,
+            aggregateThreshold,
+            8000n,
+            1_500_000_000_000_000_000n,
+          ],
+        ]
+      }
+      return [10n ** 18n, 1_000_000_000n]
+    })
+
+    const state = await fetchAavePositionState(client, config, user)
+    expect(state.liquidationThresholdBps).toBe(aggregateThreshold)
+  })
 })
