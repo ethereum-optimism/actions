@@ -101,12 +101,15 @@ export async function buildAaveCollateralWithdraw(
     spender: gateway,
   })
   const txs: TransactionData[] = []
-  if (allowance < onChainAmount) {
+  // Size the aToken approval to the real withdraw amount (live balance for a
+  // max withdraw), never the `maxUint256` on-chain sentinel — otherwise exact
+  // mode would leave the gateway a standing unlimited aToken allowance.
+  if (allowance < amount) {
     txs.push(
       buildErc20ApprovalTx({
         assetAddress: aToken,
         spender: gateway,
-        amount: resolveErc20ApprovalAmount(approvalMode, onChainAmount),
+        amount: resolveErc20ApprovalAmount(approvalMode, amount),
       }),
     )
   }
@@ -116,8 +119,11 @@ export async function buildAaveCollateralWithdraw(
 
 /**
  * Repay leg (debt-reserve approval + Pool.repay) shared by repay and close. A
- * max repay approves and sends `maxUint256` so Aave can clear interest accrued
- * after the quote.
+ * max repay sends `maxUint256` on-chain so Aave can clear interest accrued
+ * after the quote, but sizes the approval to the live-debt snapshot — exact
+ * mode never grants an unlimited debt-reserve allowance. (Tradeoff: if debt
+ * accrues past the snapshot before execution the approval can fall a hair
+ * short; quote expiry bounds the window.)
  * @returns Transactions, approval-skipped flag, and the resolved repay amount
  * (live debt for a max repay) for projection.
  * @throws EmptyPositionError when a max repay targets a zero-debt position.
@@ -148,7 +154,7 @@ export async function buildAaveRepay(
   const approvalTx = buildAavePoolApproval(
     config,
     config.aave.debtReserve,
-    onChainAmount,
+    repayAmount,
     allowance,
     approvalMode,
   )

@@ -1,6 +1,7 @@
 import {
   type Address,
   decodeFunctionData,
+  erc20Abi,
   maxUint256,
   type PublicClient,
   zeroAddress,
@@ -218,6 +219,33 @@ describe('AaveBorrowProvider write layer', () => {
     expect(quote.positionAfter.borrowAmount).toBe(0n)
   })
 
+  it('bounds the exact-mode approval to live debt on a full repay (not maxUint256)', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: 0n,
+    })
+    const quote = await provider.repay({
+      market,
+      walletAddress: WALLET,
+      amount: { max: true },
+    })
+    expect(quote.execution.transactions).toHaveLength(2)
+    const approve = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(approve.functionName).toBe('approve')
+    // Exact mode approves the live-debt snapshot, never the maxUint256 sentinel.
+    expect(approve.args[1]).toBe(1_000_000_000n)
+    // The on-chain repay still carries maxUint256 so Aave clears accrued interest.
+    const repay = decodeFunctionData({
+      abi: POOL_ABI,
+      data: quote.execution.transactions[1].data,
+    })
+    expect(repay.args[1]).toBe(maxUint256)
+  })
+
   it('routes a native-ETH collateral withdrawal through the gateway', async () => {
     const provider = makeProvider({
       collateral: 10n ** 18n,
@@ -254,6 +282,34 @@ describe('AaveBorrowProvider write layer', () => {
       data: quote.execution.transactions[1].data,
     })
     expect(withdraw.functionName).toBe('withdrawETH')
+  })
+
+  it('bounds the exact-mode aToken approval to live collateral on a max withdraw', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: 0n,
+    })
+    const quote = await provider.withdrawCollateral({
+      market,
+      walletAddress: WALLET,
+      amount: { max: true },
+    })
+    expect(quote.execution.transactions).toHaveLength(2)
+    const approve = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(approve.functionName).toBe('approve')
+    // Exact mode approves the live collateral balance, never maxUint256.
+    expect(approve.args[1]).toBe(10n ** 18n)
+    // The on-chain withdraw still carries maxUint256 to drain residual dust.
+    const withdraw = decodeFunctionData({
+      abi: WETH_GATEWAY_ABI,
+      data: quote.execution.transactions[1].data,
+    })
+    expect(withdraw.functionName).toBe('withdrawETH')
+    expect(withdraw.args[1]).toBe(maxUint256)
   })
 
   it('throws EmptyPositionError on max withdraw with zero collateral', async () => {
