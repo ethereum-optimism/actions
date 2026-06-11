@@ -145,6 +145,7 @@ function makeStubQuote(
 ): BorrowQuote {
   return {
     marketId,
+    recipient: walletAddress,
     action,
     positionBefore: null,
     positionAfter: {

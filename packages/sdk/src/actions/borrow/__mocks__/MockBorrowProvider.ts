@@ -219,6 +219,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         marketId: config.marketId,
         chainId: config.chainId,
       },
+      recipient: params.walletAddress,
       action,
       positionBefore: null,
       positionAfter: position,
