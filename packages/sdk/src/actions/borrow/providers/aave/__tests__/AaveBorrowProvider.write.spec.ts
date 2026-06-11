@@ -412,6 +412,50 @@ describe('AaveBorrowProvider write layer', () => {
     expect(supply.args[0]).toBe(WBTC)
   })
 
+  it('skips the approval when ERC-20 collateral allowance already covers the deposit', async () => {
+    const provider = makeProvider({
+      collateral: 0n,
+      debt: 0n,
+      allowance: maxUint256,
+      market: erc20Market,
+    })
+    const quote = await provider.depositCollateral({
+      market: erc20Market,
+      walletAddress: WALLET,
+      amount: { amountRaw: 10n ** 8n },
+    })
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    expect(
+      decodeFunctionData({
+        abi: POOL_ABI,
+        data: quote.execution.transactions[0].data,
+      }).functionName,
+    ).toBe('supply')
+  })
+
+  it('withdraws an explicit (non-max) collateral amount on close', async () => {
+    const provider = makeProvider({
+      collateral: 10n ** 18n,
+      debt: 1_000_000_000n,
+      allowance: maxUint256,
+    })
+    const quote = await provider.closePosition({
+      market,
+      walletAddress: WALLET,
+      borrowAmount: { amountRaw: 1_000_000_000n },
+      collateralAmount: { amountRaw: 4n * 10n ** 17n },
+    })
+    const withdraw = decodeFunctionData({
+      abi: WETH_GATEWAY_ABI,
+      data: quote.execution.transactions[1].data,
+    })
+    expect(withdraw.functionName).toBe('withdrawETH')
+    // Explicit amount flows through verbatim, not the maxUint256 drain sentinel.
+    expect(withdraw.args[1]).toBe(4n * 10n ** 17n)
+    expect(quote.collateralAmountRaw).toBe(4n * 10n ** 17n)
+  })
+
   it('closes a position: approval, repay, then collateral withdraw', async () => {
     const provider = makeProvider({
       collateral: 10n ** 18n,
