@@ -16,3 +16,9 @@ Add `AaveBorrowProvider` for Aave V3 borrow markets.
   WETH gateway and full repays using `type(uint256).max`.
 - Hoists the shared Aave addresses and Pool ABI to `actions/shared/aave/` so
   both the lend and borrow providers consume one cross-domain home.
+
+Types note: `BorrowMarketId` and `BorrowMarketConfig` widen from a single shape
+into a discriminated union over `kind` (`morpho-blue` | `aave-v3`). This is a
+source-level type change for consumers that constructed those types without a
+`kind` or read `marketParams` without narrowing first; it ships under a `minor`
+because the borrow surface is pre-1.0 and still landing incrementally.
