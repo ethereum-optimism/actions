@@ -64,6 +64,23 @@ export function validateNotZeroAddress(address: Address, label: string): void {
 }
 
 /**
+ * Reject a value that is not a syntactically valid EVM address.
+ * @throws InvalidParamsError when `isAddress` rejects the value.
+ */
+export function validateAddress(
+  address: string,
+  label: string,
+): asserts address is Address {
+  if (!isAddress(address)) {
+    throw new InvalidParamsError({
+      param: label,
+      expected: 'a valid EVM address',
+      received: address,
+    })
+  }
+}
+
+/**
  * Reject a quote whose expiration timestamp (unix seconds) has passed.
  * @throws QuoteExpiredError when expired.
  */
@@ -75,8 +92,9 @@ export function validateQuoteNotExpired(expiresAt: number): void {
 }
 
 /**
- * Reject a missing or zero-address wallet address in one call.
+ * Reject a missing, malformed, or zero-address wallet address in one call.
  * @throws AddressRequiredError when undefined/empty.
+ * @throws InvalidParamsError when not a syntactically valid EVM address.
  * @throws ZeroAddressError when the zero address.
  */
 export function validateWalletAddress(
@@ -86,6 +104,7 @@ export function validateWalletAddress(
   if (!walletAddress) {
     throw new AddressRequiredError(label)
   }
+  validateAddress(walletAddress, label)
   validateNotZeroAddress(walletAddress, label)
 }
 
