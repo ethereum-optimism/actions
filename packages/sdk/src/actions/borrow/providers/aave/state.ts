@@ -231,7 +231,7 @@ export async function fetchAaveReserveTokens(
  * Resolves the oracle via the pool addresses provider, then reads both prices.
  * Used by the write path to project the resulting position's health factor.
  */
-export async function fetchAavePrices(
+async function fetchAavePrices(
   client: PublicClient,
   config: AaveBorrowMarketConfig,
 ): Promise<AaveReservePrices> {

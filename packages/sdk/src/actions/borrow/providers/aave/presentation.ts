@@ -36,7 +36,7 @@ export function liquidationBonusFraction(bonusBps: bigint): number {
 }
 
 /** Convert a 1e18-scaled value (Aave health factor) to a decimal fraction. */
-export function wad18ToNumber(wad: bigint): number {
+function wad18ToNumber(wad: bigint): number {
   return Number((wad * 1_000_000n) / 10n ** 18n) / 1_000_000
 }
 
