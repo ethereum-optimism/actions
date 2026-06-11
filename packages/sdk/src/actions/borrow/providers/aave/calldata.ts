@@ -5,13 +5,8 @@ import {
   requireAavePoolAddress,
   requireAaveWethGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
-import type { ApprovalMode } from '@/types/actions.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import {
-  buildErc20ApprovalTx,
-  resolveErc20ApprovalAmount,
-} from '@/utils/approve.js'
 
 /** Aave interest rate mode: 2 = variable (the only mode this provider supports). */
 const VARIABLE_RATE_MODE = 2n
@@ -133,24 +128,4 @@ export function encodeAaveWithdrawETH(
     }),
     value: 0n,
   }
-}
-
-/**
- * Build an ERC-20 approval of `token` to the Pool when the current allowance
- * is insufficient. Returns `undefined` when the existing allowance already
- * covers `amount`. Used for both the repay token and ERC-20 collateral supply.
- */
-export function buildAavePoolApproval(
-  config: AaveBorrowMarketConfig,
-  token: Address,
-  amount: bigint,
-  allowance: bigint,
-  approvalMode: ApprovalMode,
-): TransactionData | undefined {
-  if (allowance >= amount) return undefined
-  return buildErc20ApprovalTx({
-    assetAddress: token,
-    spender: requirePool(config),
-    amount: resolveErc20ApprovalAmount(approvalMode, amount),
-  })
 }

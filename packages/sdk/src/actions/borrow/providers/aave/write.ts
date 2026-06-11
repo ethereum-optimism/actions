@@ -2,7 +2,6 @@ import type { Address, PublicClient } from 'viem'
 import { maxUint256 } from 'viem'
 
 import {
-  buildAavePoolApproval,
   encodeAaveDepositETH,
   encodeAaveRepay,
   encodeAaveSupply,
@@ -40,6 +39,36 @@ export function resolveAaveAmount(
 }
 
 /**
+ * Read the live `token` allowance to `spender` and build an ERC-20 approval
+ * when it falls short of `amount`, else return `undefined`. The approval is
+ * sized to `amount` (and `approvalMode`), never an on-chain `maxUint256`
+ * sentinel — callers pass the real token amount so exact mode stays bounded.
+ */
+async function ensureSpenderApproval(
+  client: PublicClient,
+  opts: {
+    token: Address
+    spender: Address
+    amount: bigint
+    user: Address
+    approvalMode: ApprovalMode
+  },
+): Promise<TransactionData | undefined> {
+  const allowance = await checkTokenAllowance({
+    publicClient: client,
+    token: opts.token,
+    owner: opts.user,
+    spender: opts.spender,
+  })
+  if (allowance >= opts.amount) return undefined
+  return buildErc20ApprovalTx({
+    assetAddress: opts.token,
+    spender: opts.spender,
+    amount: resolveErc20ApprovalAmount(opts.approvalMode, opts.amount),
+  })
+}
+
+/**
  * Collateral-deposit transactions: native ETH via the WETH gateway (no
  * approval), an ERC-20 reserve via Pool.supply with an approval when needed.
  */
@@ -56,19 +85,13 @@ export async function buildAaveCollateralDeposit(
       approvalsSkipped: true,
     }
   }
-  const allowance = await checkTokenAllowance({
-    publicClient: client,
+  const approvalTx = await ensureSpenderApproval(client, {
     token: config.aave.collateralReserve,
-    owner: user,
     spender: requireAavePoolAddress(config.chainId),
-  })
-  const approvalTx = buildAavePoolApproval(
-    config,
-    config.aave.collateralReserve,
     amount,
-    allowance,
+    user,
     approvalMode,
-  )
+  })
   const txs: TransactionData[] = []
   if (approvalTx) txs.push(approvalTx)
   txs.push(encodeAaveSupply(config, amount, user))
@@ -94,25 +117,18 @@ export async function buildAaveCollateralWithdraw(
   }
   const gateway = requireAaveWethGatewayAddress(config.chainId)
   const { aToken } = await fetchAaveReserveTokens(client, config)
-  const allowance = await checkTokenAllowance({
-    publicClient: client,
-    token: aToken,
-    owner: user,
-    spender: gateway,
-  })
-  const txs: TransactionData[] = []
   // Size the aToken approval to the real withdraw amount (live balance for a
   // max withdraw), never the `maxUint256` on-chain sentinel — otherwise exact
   // mode would leave the gateway a standing unlimited aToken allowance.
-  if (allowance < amount) {
-    txs.push(
-      buildErc20ApprovalTx({
-        assetAddress: aToken,
-        spender: gateway,
-        amount: resolveErc20ApprovalAmount(approvalMode, amount),
-      }),
-    )
-  }
+  const approvalTx = await ensureSpenderApproval(client, {
+    token: aToken,
+    spender: gateway,
+    amount,
+    user,
+    approvalMode,
+  })
+  const txs: TransactionData[] = []
+  if (approvalTx) txs.push(approvalTx)
   txs.push(encodeAaveWithdrawETH(config, onChainAmount, user))
   return txs
 }
@@ -145,19 +161,13 @@ export async function buildAaveRepay(
     throw new EmptyPositionError({ operation: 'repay' })
   }
   const onChainAmount = isMax ? maxUint256 : repayAmount
-  const allowance = await checkTokenAllowance({
-    publicClient: client,
+  const approvalTx = await ensureSpenderApproval(client, {
     token: config.aave.debtReserve,
-    owner: user,
     spender: requireAavePoolAddress(config.chainId),
-  })
-  const approvalTx = buildAavePoolApproval(
-    config,
-    config.aave.debtReserve,
-    repayAmount,
-    allowance,
+    amount: repayAmount,
+    user,
     approvalMode,
-  )
+  })
   const txs: TransactionData[] = []
   if (approvalTx) txs.push(approvalTx)
   txs.push(encodeAaveRepay(config, onChainAmount, user))
