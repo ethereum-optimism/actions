@@ -13,12 +13,30 @@ import {
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 
-import {
-  type AaveMarketState,
-  type AavePositionState,
-  type AaveReservePrices,
-  decodeReserveConfig,
+import type {
+  AaveMarketState,
+  AavePositionState,
+  AaveReservePrices,
 } from './presentation.js'
+
+/**
+ * Decode the packed Aave reserve `configuration.data` bitmap.
+ * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
+ * bonus, 48-55 decimals; all in basis points except decimals.
+ */
+export function decodeReserveConfig(data: bigint): {
+  ltvBps: bigint
+  liquidationThresholdBps: bigint
+  liquidationBonusBps: bigint
+  decimals: number
+} {
+  return {
+    ltvBps: data & 0xffffn,
+    liquidationThresholdBps: (data >> 16n) & 0xffffn,
+    liquidationBonusBps: (data >> 32n) & 0xffffn,
+    decimals: Number((data >> 48n) & 0xffn),
+  }
+}
 
 /**
  * `getReserveData` returns a flat tuple. Pull out the fields the borrow

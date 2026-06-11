@@ -1,4 +1,4 @@
-import { formatUnits } from 'viem'
+import { type Address, formatUnits } from 'viem'
 
 import type {
   AaveBorrowMarketConfig,
@@ -37,26 +37,6 @@ export function liquidationBonusFraction(bonusBps: bigint): number {
 /** Convert a 1e18-scaled value (Aave health factor) to a decimal fraction. */
 export function wad18ToNumber(wad: bigint): number {
   return Number((wad * 1_000_000n) / 10n ** 18n) / 1_000_000
-}
-
-/**
- * Decode the packed Aave reserve `configuration.data` bitmap.
- * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
- * bonus, 48-55 decimals; all in basis points except decimals. Kept here next
- * to its only consumers; promote to a shared module if a second caller appears.
- */
-export function decodeReserveConfig(data: bigint): {
-  ltvBps: bigint
-  liquidationThresholdBps: bigint
-  liquidationBonusBps: bigint
-  decimals: number
-} {
-  return {
-    ltvBps: data & 0xffffn,
-    liquidationThresholdBps: (data >> 16n) & 0xffffn,
-    liquidationBonusBps: (data >> 32n) & 0xffffn,
-    decimals: Number((data >> 48n) & 0xffn),
-  }
 }
 
 /**
@@ -167,7 +147,7 @@ function max0(value: bigint): bigint {
   return value < 0n ? 0n : value
 }
 
-export function adaptAaveBorrowMarket(
+export function toAaveBorrowMarket(
   config: AaveBorrowMarketConfig,
   state: AaveMarketState,
   healthBufferPct: number,
@@ -190,7 +170,7 @@ export function adaptAaveBorrowMarket(
   }
 }
 
-export function adaptAaveBorrowPosition(
+export function toAaveBorrowPosition(
   config: AaveBorrowMarketConfig,
   state: AavePositionState,
 ): BorrowMarketPosition {
@@ -237,11 +217,12 @@ export function adaptAaveBorrowPosition(
 export interface AssembleAaveQuoteArgs {
   action: BorrowAction
   market: AaveBorrowMarketConfig
-  before: AavePositionState
-  after: AavePositionState
+  positionBefore: AavePositionState
+  positionAfter: AavePositionState
   transactions: TransactionData[]
   quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
   approvalsSkipped: boolean
+  recipient: Address
   quoteExpirationSeconds: number
   healthBufferPct: number
 }
@@ -256,19 +237,21 @@ export function assembleAaveBorrowQuote(
 ): BorrowQuote {
   const now = Math.floor(Date.now() / 1000)
   const hasBefore =
-    args.before.collateralAmount > 0n || args.before.debtAmount > 0n
-  const positionAfter = adaptAaveBorrowPosition(args.market, args.after)
+    args.positionBefore.collateralAmount > 0n ||
+    args.positionBefore.debtAmount > 0n
+  const positionAfter = toAaveBorrowPosition(args.market, args.positionAfter)
   return {
     marketId: {
       kind: args.market.kind,
       marketId: args.market.marketId,
       chainId: args.market.chainId,
     },
+    recipient: args.recipient,
     action: args.action,
     borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
     collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
     positionBefore: hasBefore
-      ? adaptAaveBorrowPosition(args.market, args.before)
+      ? toAaveBorrowPosition(args.market, args.positionBefore)
       : null,
     positionAfter,
     fees: {
@@ -276,7 +259,7 @@ export function assembleAaveBorrowQuote(
       liquidationBonus: positionAfter.liquidationBonus,
     },
     safeCeilingLtv:
-      bpsToFraction(args.after.liquidationThresholdBps) *
+      bpsToFraction(args.positionAfter.liquidationThresholdBps) *
       (1 - args.healthBufferPct),
     execution: {
       transactions: args.transactions,

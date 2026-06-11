@@ -7,15 +7,15 @@ import {
 } from '@/__mocks__/MockAssets.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import {
-  adaptAaveBorrowMarket,
-  adaptAaveBorrowPosition,
   bpsToFraction,
-  decodeReserveConfig,
   deriveLiquidationPrice,
   liquidationBonusFraction,
   projectAavePositionState,
   rayToFraction,
+  toAaveBorrowMarket,
+  toAaveBorrowPosition,
 } from '@/actions/borrow/providers/aave/presentation.js'
+import { decodeReserveConfig } from '@/actions/borrow/providers/aave/state.js'
 import type { Asset } from '@/types/asset.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 
@@ -100,7 +100,7 @@ describe('aave presentation conversions', () => {
   })
 
   it('adapts a market with apy, maxLtv, and liquidation bonus', () => {
-    const market = adaptAaveBorrowMarket(
+    const market = toAaveBorrowMarket(
       config,
       {
         variableBorrowRateRay: 35_000_000_000_000_000_000_000_000n,
@@ -119,7 +119,7 @@ describe('aave presentation conversions', () => {
   })
 
   it('adapts a position with debt: shares equal amount, hf present', () => {
-    const position = adaptAaveBorrowPosition(config, {
+    const position = toAaveBorrowPosition(config, {
       collateralAmount: 10n ** 18n,
       debtAmount: 1_000_000_000n,
       healthFactorWad: 1_500_000_000_000_000_000n,
@@ -191,7 +191,7 @@ describe('aave presentation conversions', () => {
   })
 
   it('adapts a debtless position: null hf and ltv, zero liq price', () => {
-    const position = adaptAaveBorrowPosition(config, {
+    const position = toAaveBorrowPosition(config, {
       collateralAmount: 10n ** 18n,
       debtAmount: 0n,
       healthFactorWad: 0n,

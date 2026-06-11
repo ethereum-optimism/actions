@@ -2,17 +2,17 @@ import type { Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
-  adaptAaveBorrowMarket,
-  adaptAaveBorrowPosition,
   assembleAaveBorrowQuote,
+  toAaveBorrowMarket,
+  toAaveBorrowPosition,
 } from '@/actions/borrow/providers/aave/presentation.js'
 import {
-  type AaveQuotePlan,
-  planAaveClose,
-  planAaveDepositCollateral,
-  planAaveOpen,
-  planAaveRepay,
-  planAaveWithdrawCollateral,
+  type AaveQuoteArgs,
+  buildAaveCloseQuoteArgs,
+  buildAaveDepositCollateralQuoteArgs,
+  buildAaveOpenQuoteArgs,
+  buildAaveRepayQuoteArgs,
+  buildAaveWithdrawCollateralQuoteArgs,
 } from '@/actions/borrow/providers/aave/quote.js'
 import {
   fetchAaveMarketState,
@@ -66,24 +66,21 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   // ── Read hooks ────────────────────────────────────────────────────────────
 
   protected async _getMarket(
-    rawConfig: BorrowMarketConfig,
+    rawMarket: BorrowMarketConfig,
   ): Promise<BorrowMarket> {
-    const config = this.requireAaveConfig(rawConfig)
-    const client = this.chainManager.getPublicClient(config.chainId)
-    const state = await fetchAaveMarketState(client, config)
-    return adaptAaveBorrowMarket(
-      config,
-      state,
-      this.resolveHealthBufferPct(config),
-    )
+    const market = this.requireAaveMarket(rawMarket)
+    const client = this.chainManager.getPublicClient(market.chainId)
+    const state = await fetchAaveMarketState(client, market)
+    const healthBufferPct = this.resolveHealthBufferPct(market)
+    return toAaveBorrowMarket(market, state, healthBufferPct)
   }
 
   protected async _getMarkets(
     params: GetBorrowMarketsParams,
   ): Promise<BorrowMarket[]> {
-    const configs = params.markets ?? []
+    const markets = params.markets ?? []
     const results = await Promise.allSettled(
-      configs.map((rawConfig) => this._getMarket(rawConfig)),
+      markets.map((market) => this._getMarket(market)),
     )
     return results.flatMap((result) =>
       result.status === 'fulfilled' ? result.value : [],
@@ -94,14 +91,14 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     market: BorrowMarketConfig
     walletAddress: Address
   }): Promise<BorrowMarketPosition> {
-    const config = this.requireAaveConfig(params.market)
-    const client = this.chainManager.getPublicClient(config.chainId)
+    const market = this.requireAaveMarket(params.market)
+    const client = this.chainManager.getPublicClient(market.chainId)
     const state = await fetchAavePositionState(
       client,
-      config,
+      market,
       params.walletAddress,
     )
-    return adaptAaveBorrowPosition(config, state)
+    return toAaveBorrowPosition(market, state)
   }
 
   // ── Write hooks ───────────────────────────────────────────────────────────
@@ -109,65 +106,77 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAaveConfig(params.market)
+    const market = this.requireAaveMarket(params.market)
     const client = this.chainManager.getPublicClient(market.chainId)
-    return this.assembleQuote(await planAaveOpen(client, market, params))
+    return this.assembleQuote(
+      await buildAaveOpenQuoteArgs(client, market, params),
+      params.walletAddress,
+    )
   }
 
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAaveConfig(params.market)
+    const market = this.requireAaveMarket(params.market)
     const client = this.chainManager.getPublicClient(market.chainId)
-    return this.assembleQuote(await planAaveRepay(client, market, params))
+    return this.assembleQuote(
+      await buildAaveRepayQuoteArgs(client, market, params),
+      params.walletAddress,
+    )
   }
 
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAaveConfig(params.market)
+    const market = this.requireAaveMarket(params.market)
     const client = this.chainManager.getPublicClient(market.chainId)
     return this.assembleQuote(
-      await planAaveDepositCollateral(client, market, params),
+      await buildAaveDepositCollateralQuoteArgs(client, market, params),
+      params.walletAddress,
     )
   }
 
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAaveConfig(params.market)
+    const market = this.requireAaveMarket(params.market)
     const client = this.chainManager.getPublicClient(market.chainId)
     return this.assembleQuote(
-      await planAaveWithdrawCollateral(client, market, params),
+      await buildAaveWithdrawCollateralQuoteArgs(client, market, params),
+      params.walletAddress,
     )
   }
 
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAaveConfig(params.market)
+    const market = this.requireAaveMarket(params.market)
     const client = this.chainManager.getPublicClient(market.chainId)
-    return this.assembleQuote(await planAaveClose(client, market, params))
+    return this.assembleQuote(
+      await buildAaveCloseQuoteArgs(client, market, params),
+      params.walletAddress,
+    )
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  private requireAaveConfig(
-    config: BorrowMarketConfig,
+  private requireAaveMarket(
+    market: BorrowMarketConfig,
   ): AaveBorrowMarketConfig {
-    if (config.kind !== 'aave-v3') {
+    if (market.kind !== 'aave-v3') {
       throw new Error(
-        `AaveBorrowProvider received a ${config.kind} market config`,
+        `AaveBorrowProvider received a ${market.kind} market config`,
       )
     }
-    return config
+    return market
   }
 
-  private assembleQuote(plan: AaveQuotePlan): BorrowQuote {
+  private assembleQuote(args: AaveQuoteArgs, recipient: Address): BorrowQuote {
     return assembleAaveBorrowQuote({
-      ...plan,
+      ...args,
+      recipient,
       quoteExpirationSeconds: this.quoteExpirationSeconds,
-      healthBufferPct: this.resolveHealthBufferPct(plan.market),
+      healthBufferPct: this.resolveHealthBufferPct(args.market),
     })
   }
 }
