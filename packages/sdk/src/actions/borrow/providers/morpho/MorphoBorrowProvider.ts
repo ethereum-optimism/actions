@@ -52,7 +52,6 @@ import type {
   BorrowQuote,
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
-  GetBorrowMarketsParams,
   MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
@@ -103,18 +102,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const state = await this.fetchMarket(market)
     const healthBufferPct = this.resolveHealthBufferPct(market)
     return toMorphoBorrowMarket(market, state, healthBufferPct)
-  }
-
-  protected async _getMarkets(
-    params: GetBorrowMarketsParams,
-  ): Promise<BorrowMarket[]> {
-    const markets = params.markets ?? []
-    const results = await Promise.allSettled(
-      markets.map((market) => this._getMarket(market)),
-    )
-    return results.flatMap((result) =>
-      result.status === 'fulfilled' ? result.value : [],
-    )
   }
 
   protected async _getPosition(params: {

@@ -334,9 +334,30 @@ export abstract class BorrowProvider<
     market: BorrowMarketConfig,
   ): Promise<BorrowMarket>
 
-  protected abstract _getMarkets(
+  /**
+   * Read each requested market concurrently. A market whose read rejects
+   * (e.g. a reverting reserve call or transient RPC failure) is dropped from
+   * the result rather than failing the whole list, but the rejection is
+   * logged so a shrinking market list can be correlated to the underlying
+   * fault instead of silently looking like a smaller successful response.
+   */
+  protected async _getMarkets(
     params: GetBorrowMarketsParams,
-  ): Promise<BorrowMarket[]>
+  ): Promise<BorrowMarket[]> {
+    const markets = params.markets ?? []
+    const results = await Promise.allSettled(
+      markets.map((market) => this._getMarket(market)),
+    )
+    return results.flatMap((result, i) => {
+      if (result.status === 'fulfilled') return result.value
+      const market = markets[i]
+      console.error(
+        `Failed to read borrow market ${market.marketId} on chain ${market.chainId}:`,
+        result.reason,
+      )
+      return []
+    })
+  }
 
   protected abstract _getPosition(params: {
     market: BorrowMarketConfig

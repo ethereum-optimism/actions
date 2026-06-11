@@ -36,7 +36,6 @@ import type {
   BorrowQuote,
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
-  GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
 
 /**
@@ -73,18 +72,6 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const state = await fetchAaveMarketState(client, market)
     const healthBufferPct = this.resolveHealthBufferPct(market)
     return toAaveBorrowMarket(market, state, healthBufferPct)
-  }
-
-  protected async _getMarkets(
-    params: GetBorrowMarketsParams,
-  ): Promise<BorrowMarket[]> {
-    const markets = params.markets ?? []
-    const results = await Promise.allSettled(
-      markets.map((market) => this._getMarket(market)),
-    )
-    return results.flatMap((result) =>
-      result.status === 'fulfilled' ? result.value : [],
-    )
   }
 
   protected async _getPosition(params: {

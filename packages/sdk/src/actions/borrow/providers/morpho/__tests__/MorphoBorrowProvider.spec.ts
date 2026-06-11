@@ -153,10 +153,14 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       cm,
     )
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const results = await provider.getMarkets()
 
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe(market.name)
+    // The dropped market is logged so a shrinking list traces to the fault.
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    errorSpy.mockRestore()
   })
 })
 
