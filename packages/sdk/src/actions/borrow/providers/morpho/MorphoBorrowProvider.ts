@@ -128,11 +128,11 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     market: BorrowMarketConfig
     walletAddress: Address
   }): Promise<BorrowMarketPosition> {
-    const accrualPosition = await this.fetchPosition(
+    const { position } = await this.fetchPosition(
       params.market,
       params.walletAddress,
     )
-    return adaptMorphoBorrowPosition(params.market, accrualPosition)
+    return adaptMorphoBorrowPosition(params.market, position)
   }
 
   protected async _openPosition(
@@ -233,7 +233,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
     const market = params.market
-    const current = await this.fetchPosition(market, params.walletAddress)
+    const { position: current } = await this.fetchPosition(
+      market,
+      params.walletAddress,
+    )
     let amountWei: bigint
     if ('max' in params.amount) {
       if (current.collateral === 0n) {
@@ -321,7 +324,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private fetchPosition(
     config: BorrowMarketConfig,
     user: Address,
-  ): Promise<AccrualPosition> {
+  ): Promise<{ position: AccrualPosition }> {
     return fetchMorphoPosition(
       this.chainManager.getPublicClient(config.chainId),
       config,
@@ -333,7 +336,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     config: BorrowMarketConfig,
     user: Address,
     token: Address,
-  ): Promise<{ current: AccrualPosition; allowance: bigint }> {
+  ): Promise<{
+    current: AccrualPosition
+    allowance: bigint
+  }> {
     return fetchMorphoStateWithAllowance(
       this.chainManager.getPublicClient(config.chainId),
       config,

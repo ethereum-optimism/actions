@@ -4,8 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
 import {
   BASE_SEPOLIA_ID,
-  borrowAsset,
-  collateralAsset,
+  makeBorrowQuote,
   market,
   walletAddress,
 } from '@/actions/borrow/__tests__/fixtures.js'
@@ -74,37 +73,7 @@ function makeEoaReceipt(
 }
 
 function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
-  const now = Math.floor(Date.now() / 1000)
-  return {
-    marketId: {
-      kind: market.kind,
-      marketId: market.marketId,
-      chainId: market.chainId,
-    },
-    action: 'open',
-    positionBefore: null,
-    positionAfter: {
-      marketId: {
-        kind: market.kind,
-        marketId: market.marketId,
-        chainId: market.chainId,
-      },
-      collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
-      borrowAsset,
-      borrowAmount: 0n,
-      borrowAmountFormatted: '0',
-      healthFactor: null,
-      liquidationPrice: 0n,
-      liquidationPriceFormatted: '0',
-      borrowApy: 0.05,
-      liquidationBonus: 0.05,
-      ltv: null,
-      maxLtv: 0.86,
-    },
-    fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
-    safeCeilingLtv: 0.86 * 0.95,
+  return makeBorrowQuote({
     execution: {
       transactions: [
         {
@@ -114,11 +83,8 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
         },
       ],
     },
-    provider: 'morpho',
-    quotedAt: now,
-    expiresAt: now + 30,
     ...overrides,
-  }
+  })
 }
 
 function makeProvider(): MockBorrowProvider {
@@ -267,6 +233,27 @@ describe('WalletBorrowNamespace - quote validation', () => {
 })
 
 describe('WalletBorrowNamespace - re-quote', () => {
+  it('injects walletAddress for getPosition reads', async () => {
+    const { wallet } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+    await namespace.getPosition({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+    })
+    expect(provider.getPosition).toHaveBeenCalledWith({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+      walletAddress,
+    })
+  })
+
   it('re-quotes raw params through the underlying provider', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()

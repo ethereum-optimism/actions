@@ -57,11 +57,9 @@ export function adaptMorphoBorrowPosition(
       chainId: config.chainId,
     },
     collateralAsset: config.collateralAsset,
-    collateralAmount: position.collateral,
-    collateralAmountFormatted: formatUnits(
-      position.collateral,
-      config.collateralAsset.metadata.decimals,
-    ),
+    // Raw on-chain collateral balance. For vault-wrapped collateral these are
+    // ERC-4626 shares; callers convert to underlying via the vault if needed.
+    collateralShares: position.collateral,
     borrowAsset: config.borrowAsset,
     borrowAmount: position.borrowAssets,
     borrowAmountFormatted: formatUnits(

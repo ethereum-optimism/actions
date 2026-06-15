@@ -153,6 +153,8 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
   }, [tokenBalances, marketData, selectedAsset])
 
   const depositedAmount = position?.balanceFormatted ?? null
+  const depositedShares = position?.sharesFormatted ?? null
+  const depositedSharesRaw = position?.shares ?? null
 
   // Reset mutation states and clear tracking refs when data actually changes
   useEffect(() => {
@@ -345,6 +347,8 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     isInitialLoad: isLoadingMarkets,
     isLoadingPosition: isLoadingPositionState,
     depositedAmount,
+    depositedShares,
+    depositedSharesRaw,
     handleTransaction,
   }
 }

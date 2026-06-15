@@ -1,7 +1,7 @@
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 
-export type ActionType = 'lend' | 'swap'
+export type ActionType = 'lend' | 'borrow' | 'swap'
 
 export interface ActionTabsProps {
   activeTab: ActionType
@@ -10,6 +10,7 @@ export interface ActionTabsProps {
 
 const TABS: { id: ActionType; label: string }[] = [
   { id: 'lend', label: 'Lend' },
+  { id: 'borrow', label: 'Borrow' },
   { id: 'swap', label: 'Swap' },
 ]
 
@@ -20,6 +21,23 @@ const LEND_ACTIONS = new Set([
   'getPosition',
 ])
 const SWAP_ACTIONS = new Set(['swap', 'getPrice'])
+const BORROW_ACTIONS = new Set([
+  'borrow',
+  'repay',
+  'getBorrowMarkets',
+  'getBorrowPosition',
+])
+
+function actionsForTab(tab: ActionType): Set<string> {
+  switch (tab) {
+    case 'lend':
+      return LEND_ACTIONS
+    case 'swap':
+      return SWAP_ACTIONS
+    case 'borrow':
+      return BORROW_ACTIONS
+  }
+}
 
 function isTabHighlighted(
   tabId: ActionType,
@@ -27,19 +45,7 @@ function isTabHighlighted(
   hoveredAction: string | null,
 ): boolean {
   if (!hoveredAction || tabId === activeTab) return false
-  if (
-    tabId === 'swap' &&
-    activeTab === 'lend' &&
-    SWAP_ACTIONS.has(hoveredAction)
-  )
-    return true
-  if (
-    tabId === 'lend' &&
-    activeTab === 'swap' &&
-    LEND_ACTIONS.has(hoveredAction)
-  )
-    return true
-  return false
+  return actionsForTab(tabId).has(hoveredAction)
 }
 
 export function ActionTabs({ activeTab, onTabChange }: ActionTabsProps) {

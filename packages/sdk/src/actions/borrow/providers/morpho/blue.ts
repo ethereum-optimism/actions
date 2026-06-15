@@ -33,6 +33,7 @@ export function buildMorphoBlueMarket(
   config: BorrowMarketConfig,
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],
   price: bigint,
+  rateAtTarget: bigint,
 ): Market {
   const [
     totalSupplyAssets,
@@ -57,6 +58,7 @@ export function buildMorphoBlueMarket(
     lastUpdate,
     fee,
     price,
+    rateAtTarget,
   })
 }
 

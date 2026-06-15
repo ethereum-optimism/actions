@@ -213,7 +213,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
       marketId: market,
       walletAddress: freshWallet,
     })
-    expect(position.collateralAmount).toBe(0n)
+    expect(position.collateralShares).toBe(0n)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
     expect(position.ltv).toBeNull()

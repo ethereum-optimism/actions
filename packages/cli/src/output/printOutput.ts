@@ -282,7 +282,7 @@ function formatBorrowPosition(p: BorrowMarketPosition): void {
   const collat = p.collateralAsset.metadata.symbol
   const borrow = p.borrowAsset.metadata.symbol
   writeLine(
-    `position: collateral=${p.collateralAmountFormatted} ${collat} debt=${p.borrowAmountFormatted} ${borrow} chain=${p.marketId.chainId}`,
+    `position: collateral=${p.collateralShares} shares (${collat}) debt=${p.borrowAmountFormatted} ${borrow} chain=${p.marketId.chainId}`,
   )
   const ltv = p.ltv == null ? 'n/a' : p.ltv.toFixed(4)
   const hf = p.healthFactor == null ? 'n/a' : p.healthFactor.toFixed(4)

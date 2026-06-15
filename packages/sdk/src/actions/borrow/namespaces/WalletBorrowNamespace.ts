@@ -10,11 +10,13 @@ import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralParams,
   BorrowMarketId,
+  BorrowMarketPosition,
   BorrowOpenPositionParams,
   BorrowQuote,
   BorrowReceipt,
   BorrowRepayParams,
   BorrowWithdrawCollateralParams,
+  GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
 import { validateChainSupported } from '@/utils/validation.js'
@@ -35,6 +37,24 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     private readonly wallet: Wallet,
   ) {
     super(providers)
+  }
+
+  /**
+   * @description Read the wallet's position on a borrow market. Binds the
+   * recipient to `this.wallet.address` so callers don't need to pass it
+   * explicitly. Returns an empty (collateral=0, debt=0) sentinel when
+   * the wallet has never interacted with the market.
+   * @param params Market identity (`{ marketId }`) plus optional reader hints.
+   * @returns The wallet's position on the given market.
+   * @throws If the underlying provider's RPC fetch fails.
+   */
+  async getPosition(
+    params: Omit<GetBorrowPositionParams, 'walletAddress'>,
+  ): Promise<BorrowMarketPosition> {
+    return this.getProviderForMarket(params.marketId).getPosition({
+      ...params,
+      walletAddress: this.wallet.address,
+    })
   }
 
   /**
