@@ -14,11 +14,13 @@ import type { TransactionData } from '@/types/transaction.js'
 // https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/math/WadRayMath.sol
 const RAY = 10n ** 27n
 const BPS = 10000n
+// Scale a bigint ratio into 1e6 fixed point before converting to a JS number,
+// preserving 6 decimals without floating-point division on bigints.
+const FRACTION_SCALE = 1_000_000n
 
 /** Ray rate to decimal fraction (e.g. 0.035). */
 export function rayToFraction(ray: bigint): number {
-  // 1e6 fixed point preserves precision before Number().
-  return Number((ray * 1_000_000n) / RAY) / 1_000_000
+  return Number((ray * FRACTION_SCALE) / RAY) / Number(FRACTION_SCALE)
 }
 
 /** Basis points to decimal fraction (e.g. 8250 -> 0.825). */
@@ -37,7 +39,7 @@ export function liquidationBonusFraction(bonusBps: bigint): number {
 
 /** Wad (1e18) value to decimal fraction. */
 function wad18ToNumber(wad: bigint): number {
-  return Number((wad * 1_000_000n) / 10n ** 18n) / 1_000_000
+  return Number((wad * FRACTION_SCALE) / 10n ** 18n) / Number(FRACTION_SCALE)
 }
 
 /**
@@ -188,8 +190,9 @@ export function toAaveBorrowPosition(
   })
   const ltv =
     hasDebt && state.totalCollateralBase > 0n
-      ? Number((state.totalDebtBase * 1_000_000n) / state.totalCollateralBase) /
-        1_000_000
+      ? Number(
+          (state.totalDebtBase * FRACTION_SCALE) / state.totalCollateralBase,
+        ) / Number(FRACTION_SCALE)
       : null
   return {
     marketId: {
