@@ -328,12 +328,10 @@ export class InvalidParamsError extends ActionsError {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Thrown when a pre-built quote (swap, borrow, …) is dispatched against a
- * wallet whose address differs from the quote's `recipient`. Some routers
- * (Velodrome v2/leaf) and protocols (Morpho `supplyCollateral` / `borrow` /
- * `repay` / `withdrawCollateral`) encode the recipient or `onBehalf` address
- * directly into calldata, so silently swapping recipients would route assets
- * or position changes to the wrong account.
+ * Thrown when a pre-built quote is dispatched against a wallet whose address
+ * differs from the quote's bound wallet address. Swap quotes may encode an
+ * output recipient that differs from the executing wallet, but allowances
+ * must still be checked against the wallet that signs the transaction.
  */
 export class QuoteRecipientMismatchError extends ActionsError {
   override name = 'QuoteRecipientMismatchError' as const
@@ -342,7 +340,7 @@ export class QuoteRecipientMismatchError extends ActionsError {
 
   constructor(params: { quoteRecipient: string; walletAddress: string }) {
     super(
-      `Quote was generated for a different recipient (${params.quoteRecipient}); re-quote so calldata is bound to this wallet (${params.walletAddress})`,
+      `Quote was generated for a different wallet (${params.quoteRecipient}); re-quote so approvals are bound to this wallet (${params.walletAddress})`,
     )
     this.quoteRecipient = params.quoteRecipient
     this.walletAddress = params.walletAddress

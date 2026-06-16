@@ -1,6 +1,11 @@
-import type { Address, PublicClient } from 'viem'
-import { decodeFunctionData, erc20Abi, maxUint256 } from 'viem'
-import { mode, optimism } from 'viem/chains'
+import type { Address, Hex, PublicClient } from 'viem'
+import {
+  decodeAbiParameters,
+  decodeFunctionData,
+  erc20Abi,
+  maxUint256,
+} from 'viem'
+import { baseSepolia, mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -9,6 +14,8 @@ import {
   MockUSDCAsset as USDC,
   MockWETHAsset as WETH,
 } from '@/__mocks__/MockAssets.js'
+import { UNIVERSAL_ROUTER_ABI } from '@/actions/swap/providers/velodrome/abis.js'
+import { V2_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/v2.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
 import { VelodromeSwapProvider } from '@/actions/swap/providers/velodrome/VelodromeSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -16,23 +23,37 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 
 const CHAIN_ID = optimism.id as SupportedChainId
+const BASE_SEPOLIA_CHAIN_ID = baseSepolia.id as SupportedChainId
+const CUSTOM_RECIPIENT = '0x000000000000000000000000000000000000bEEF' as Address
+
+function defaultReadContract({
+  functionName,
+}: {
+  functionName: string
+  args?: readonly unknown[]
+}) {
+  if (functionName === 'getAmountsOut') {
+    return Promise.resolve([100000000n, 500000000000000000n])
+  }
+  if (functionName === 'allowance') return Promise.resolve(0n)
+  if (functionName === 'getPool') {
+    return Promise.resolve('0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+  }
+  if (functionName === 'quoteExactInputSingle') {
+    return Promise.resolve([500000000000000000n, 0n, 0, 0n])
+  }
+  if (functionName === 'getAmountOut') {
+    return Promise.resolve(500000000000000000n)
+  }
+  return Promise.resolve(0n)
+}
 
 function createMockChainManager(
   supportedChains: SupportedChainId[] = [CHAIN_ID],
+  readContract = vi.fn().mockImplementation(defaultReadContract),
 ): ChainManager {
   const mockPublicClient = {
-    readContract: vi
-      .fn()
-      .mockImplementation(({ functionName }: { functionName: string }) => {
-        if (functionName === 'getAmountsOut')
-          return Promise.resolve([100000000n, 500000000000000000n])
-        if (functionName === 'allowance') return Promise.resolve(0n)
-        if (functionName === 'getPool')
-          return Promise.resolve('0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-        if (functionName === 'quoteExactInputSingle')
-          return Promise.resolve([500000000000000000n, 0n, 0, 0n])
-        return Promise.resolve(0n)
-      }),
+    readContract,
   } as unknown as PublicClient
 
   return {
@@ -44,13 +65,21 @@ function createMockChainManager(
 
 function createProvider(
   configOverrides?: Partial<VelodromeSwapProviderConfig>,
+  chainManager: ChainManager = createMockChainManager(),
 ): VelodromeSwapProvider {
   const config: VelodromeSwapProviderConfig = {
     defaultSlippage: 0.005,
     marketAllowlist: [{ assets: [USDC, OP], stable: false, chainId: CHAIN_ID }],
     ...configOverrides,
   }
-  return new VelodromeSwapProvider(config, createMockChainManager())
+  return new VelodromeSwapProvider(config, chainManager)
+}
+
+function decodeUniversalV2Recipient(data: Hex): Address {
+  const decoded = decodeFunctionData({ abi: UNIVERSAL_ROUTER_ABI, data })
+  const [, inputs] = decoded.args
+  const input = decodeAbiParameters(V2_SWAP_EXACT_IN_INPUT_PARAMS, inputs[0])
+  return input[0]
 }
 
 describe('VelodromeSwapProvider', () => {
@@ -238,6 +267,108 @@ describe('VelodromeSwapProvider', () => {
         quote.execution.swapCalldata,
       )
       expect(result.price).toBe(quote.price)
+    })
+
+    it('encodes custom recipient for Base Sepolia universal router swaps', async () => {
+      const provider = createProvider(
+        {
+          marketAllowlist: [
+            {
+              assets: [USDC, WETH],
+              stable: false,
+              chainId: BASE_SEPOLIA_CHAIN_ID,
+            },
+          ],
+        },
+        createMockChainManager([BASE_SEPOLIA_CHAIN_ID]),
+      )
+
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: BASE_SEPOLIA_CHAIN_ID,
+        recipient: CUSTOM_RECIPIENT,
+        walletAddress: MOCK_WALLET,
+      })
+
+      expect(decodeUniversalV2Recipient(result.transactionData.swap.data)).toBe(
+        CUSTOM_RECIPIENT,
+      )
+    })
+
+    it('encodes wallet address for Base Sepolia universal router swaps by default', async () => {
+      const provider = createProvider(
+        {
+          marketAllowlist: [
+            {
+              assets: [USDC, WETH],
+              stable: false,
+              chainId: BASE_SEPOLIA_CHAIN_ID,
+            },
+          ],
+        },
+        createMockChainManager([BASE_SEPOLIA_CHAIN_ID]),
+      )
+
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: BASE_SEPOLIA_CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+      })
+
+      expect(decodeUniversalV2Recipient(result.transactionData.swap.data)).toBe(
+        MOCK_WALLET,
+      )
+    })
+
+    it('checks Base Sepolia allowance against signer, not custom recipient', async () => {
+      const allowanceOwners: Address[] = []
+      const readContract = vi
+        .fn()
+        .mockImplementation(
+          ({
+            functionName,
+            args,
+          }: {
+            functionName: string
+            args?: Address[]
+          }) => {
+            if (functionName !== 'allowance') {
+              return defaultReadContract({ functionName, args })
+            }
+
+            const owner = args?.[0]
+            if (owner) allowanceOwners.push(owner)
+            return Promise.resolve(owner === MOCK_WALLET ? maxUint256 : 0n)
+          },
+        )
+      const provider = createProvider(
+        {
+          marketAllowlist: [
+            {
+              assets: [USDC, WETH],
+              stable: false,
+              chainId: BASE_SEPOLIA_CHAIN_ID,
+            },
+          ],
+        },
+        createMockChainManager([BASE_SEPOLIA_CHAIN_ID], readContract),
+      )
+
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: BASE_SEPOLIA_CHAIN_ID,
+        recipient: CUSTOM_RECIPIENT,
+        walletAddress: MOCK_WALLET,
+      })
+
+      expect(result.transactionData.tokenApproval).toBeUndefined()
+      expect(allowanceOwners).toEqual([MOCK_WALLET])
     })
   })
 

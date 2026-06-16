@@ -168,6 +168,11 @@ export interface SwapQuoteParams {
   deadline?: number
   /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
   recipient?: Address | EnsName
+  /**
+   * Wallet address expected to execute the quote and own the input tokens.
+   * Wallet namespaces inject this automatically.
+   */
+  walletAddress?: Address
   /** Explicitly select a swap provider */
   provider?: SwapProviderName
 }
@@ -247,14 +252,13 @@ export interface SwapQuote {
   expiresAt: number
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
-  /**
-   * Recipient address baked into execution.swapCalldata at quote time.
-   * Required. To execute a quote on a wallet, the quote must have been
-   * generated for that wallet (recipient === wallet.address); otherwise
-   * WalletSwapNamespace.execute throws. Re-quote via wallet.swap.getQuote
-   * when the executor differs from the quote's recipient.
-   */
+  /** Recipient address baked into execution.swapCalldata at quote time. */
   recipient: Address
+  /**
+   * Wallet address expected to execute this quote and own input-token
+   * allowances. Wallet-bound quote paths set this to `wallet.address`.
+   */
+  walletAddress?: Address
   /**
    * Per-call override for the approval-amount strategy. When set, the provider
    * uses this for the swap's approvals instead of the wallet-level config

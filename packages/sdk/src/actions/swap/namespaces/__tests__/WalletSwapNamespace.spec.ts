@@ -195,6 +195,35 @@ describe('WalletSwapNamespace', () => {
       expect(result.price).toBe(1.5)
       expect(wallet.send).toHaveBeenCalledTimes(1)
     })
+
+    it('executes wallet-bound quote with a custom output recipient', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const customRecipient =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+
+      const quote = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: customRecipient,
+      })
+
+      expect(quote.recipient).toBe(customRecipient)
+      expect(quote.walletAddress).toBe(mockWalletAddress)
+
+      const result = await namespace.execute(quote)
+
+      expect(provider.mockBuildApprovals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: customRecipient,
+          walletAddress: mockWalletAddress,
+        }),
+      )
+      expect(result.price).toBe(1.5)
+    })
   })
 
   describe('getQuote recipient injection', () => {
@@ -212,6 +241,7 @@ describe('WalletSwapNamespace', () => {
 
       // Quote should have wallet address as the encoded recipient
       expect(quote.recipient).toBe(mockWalletAddress)
+      expect(quote.walletAddress).toBe(mockWalletAddress)
     })
 
     it('preserves explicit recipient over wallet address', async () => {
@@ -230,16 +260,17 @@ describe('WalletSwapNamespace', () => {
       })
 
       expect(quote.recipient).toBe(customRecipient)
+      expect(quote.walletAddress).toBe(mockWalletAddress)
     })
   })
 
-  describe('execute with recipient mismatch', () => {
-    it('throws when quote.recipient does not match wallet.address', async () => {
+  describe('execute with wallet mismatch', () => {
+    it('throws when quote wallet does not match wallet.address', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      // Get quote without wallet (simulates ActionsSwapNamespace quote — recipient
+      // Get quote without wallet (simulates ActionsSwapNamespace quote, recipient
       // defaults to UNIVERSAL_ROUTER_MSG_SENDER, not the executing wallet)
       const quote = await provider.getQuote({
         assetIn: USDC,
@@ -251,7 +282,7 @@ describe('WalletSwapNamespace', () => {
       expect(quote.recipient).not.toBe(mockWalletAddress)
 
       await expect(namespace.execute(quote)).rejects.toThrow(
-        /generated for a different recipient/i,
+        /generated for a different wallet/i,
       )
       // Provider's getQuote was called once (the original); execute did not re-quote.
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
@@ -275,7 +306,7 @@ describe('WalletSwapNamespace', () => {
       expect(quote.recipient).toBe(otherWallet)
 
       await expect(namespace.execute(quote)).rejects.toThrow(
-        /generated for a different recipient/i,
+        /generated for a different wallet/i,
       )
     })
 
@@ -292,6 +323,7 @@ describe('WalletSwapNamespace', () => {
       })
 
       expect(quote.recipient).toBe(mockWalletAddress)
+      expect(quote.walletAddress).toBe(mockWalletAddress)
 
       const result = await namespace.execute(quote)
       expect(result.price).toBeDefined()

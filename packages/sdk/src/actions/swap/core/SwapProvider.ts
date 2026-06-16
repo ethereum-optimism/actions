@@ -265,15 +265,17 @@ export abstract class SwapProvider<
   /**
    * Resolve common quote parameters with provider defaults.
    * @param params - Raw quote params from the user
-   * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
+   * @returns Resolved slippage, deadline, recipient, wallet address, amountInRaw, and current timestamp
    */
   protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const recipient =
+      params.recipient ?? params.walletAddress ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const walletAddress = params.walletAddress ?? recipient
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
-    return { slippage, now, deadline, recipient, amountInRaw }
+    return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
   }
 
   /**
@@ -394,10 +396,10 @@ export abstract class SwapProvider<
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping
    * the swap calldata. Used by both the quote-execute path and provider
-   * `_execute` implementations. Quotes are required to have `recipient` set
-   * by the provider's `_getQuote`; sub-providers can dereference
-   * `quote.recipient` directly. Reads `quote.approvalMode` (populated by
-   * `execute()` at entry).
+   * `_execute` implementations. Quotes are required to have `recipient` set by
+   * the provider's `_getQuote`; providers can use `walletAddress` for signer
+   * and allowance ownership when present. Reads `quote.approvalMode`
+   * (populated by `execute()` at entry).
    * @param quote - SwapQuote with recipient and approvalMode set
    */
   protected async buildSwapTransactions(
@@ -425,6 +427,15 @@ export abstract class SwapProvider<
       priceImpact: quote.priceImpact,
       transactionData: { ...approvals, swap: swapTx },
     }
+  }
+
+  /**
+   * Resolve the wallet that owns input tokens for a quote.
+   * @param quote - Swap quote being executed
+   * @returns Wallet address for allowance checks
+   */
+  protected resolveQuoteWalletAddress(quote: SwapQuote): Address {
+    return quote.walletAddress ?? quote.recipient
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -546,7 +557,8 @@ export abstract class SwapProvider<
   /**
    * Build provider-specific approval transactions for a swap.
    * Called by the base class during executeFromQuote with a validated
-   * recipient and resolved approvalMode. Implementations read
+   * recipient and resolved approvalMode. Implementations use
+   * `quote.walletAddress` for allowance ownership and read
    * `quote.approvalMode` to choose between exact and max approvals.
    * @param quote - SwapQuote with recipient set by the provider's _getQuote and approvalMode populated by execute() at entry
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
