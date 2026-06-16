@@ -3,7 +3,7 @@ import { USDC_DEMO } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
-import { mintUsdcDemo, transferUsdcDemo } from '@/services/mint.js'
+import { mintUsdcDemo, transferUsdcDemo } from '@/services/usdcDemo.js'
 
 /**
  * Demo-only "mirror" accounting for the Aave borrow flow.

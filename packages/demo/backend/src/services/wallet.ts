@@ -17,7 +17,7 @@ import { formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { getActions, getPrivyClient } from '@/config/actions.js'
-import { mintUsdcDemo } from '@/services/mint.js'
+import { mintUsdcDemo } from '@/services/usdcDemo.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 /**
