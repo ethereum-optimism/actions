@@ -20,12 +20,12 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
-import { MorphoUSDCBorrowDemo } from '@/config/markets.js'
+import { MorphoUSDCBorrowOPDemo } from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
-const BORROW_MARKETS: BorrowMarketConfig[] = [MorphoUSDCBorrowDemo]
+const BORROW_MARKETS: BorrowMarketConfig[] = [MorphoUSDCBorrowOPDemo]
 
 export type BorrowReceiptWithUrls = BorrowReceipt & {
   blockExplorerUrls: string[]

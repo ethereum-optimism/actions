@@ -10,7 +10,6 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
-  QuoteExpiredError,
   QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -50,12 +49,13 @@ import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
   validateAssetOnChain,
-  validateChainSupported,
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
+  validateQuoteNotExpired,
   validateRecipient,
   validateSlippage,
+  validateWalletAddress,
 } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider nor global config sets a value */
@@ -149,7 +149,7 @@ export abstract class SwapProvider<
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    validateWalletAddress(params.walletAddress)
     return this._execute(
       this.resolveParams({ ...params, approvalMode: resolvedApprovalMode }),
     )
@@ -162,7 +162,7 @@ export abstract class SwapProvider<
    * @returns SwapQuote with pricing, amounts, and pre-encoded calldata
    */
   async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
     return this._getQuote(params)
   }
 
@@ -174,7 +174,7 @@ export abstract class SwapProvider<
    * @throws If market is blocklisted
    */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
     const market = await this._getMarket(params)
     this.validateMarketAllowed(
       market.assets[0],
@@ -192,7 +192,7 @@ export abstract class SwapProvider<
    */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
-      validateChainSupported(params.chainId, this.supportedChainIds())
+      this.assertChainSupported(params.chainId)
     }
     const markets = await this._getMarkets(params)
     return this.filterBlockedMarkets(markets)
@@ -432,14 +432,14 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
-    this.validateQuoteExpiration(quote)
+    validateQuoteNotExpired(quote.expiresAt)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
     return this.buildSwapTransactions(quote)
   }
 
   private validateSwapExecute(params: SwapExecuteParams | SwapQuote): void {
     validateNotSameAsset(params.assetIn, params.assetOut)
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
     this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
     validateAssetOnChain(params.assetIn, params.chainId)
     validateAssetOnChain(params.assetOut, params.chainId)
@@ -448,16 +448,6 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     validateRecipient(params.recipient)
-  }
-
-  private validateQuoteExpiration(quote: SwapQuote): void {
-    const now = Math.floor(Date.now() / 1000)
-    if (now >= quote.expiresAt) {
-      throw new QuoteExpiredError({
-        expiresAt: quote.expiresAt,
-        currentTime: now,
-      })
-    }
   }
 
   private resolveParams(

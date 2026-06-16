@@ -5,7 +5,10 @@ import {
   encodeMorphoBorrow,
   encodeMorphoSupplyCollateral,
 } from '@/actions/borrow/providers/morpho/blue.js'
-import type { BorrowOpenPositionInternalParams } from '@/types/borrow/index.js'
+import type {
+  BorrowOpenPositionInternalParams,
+  MorphoBorrowMarketConfig,
+} from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
 /**
@@ -29,9 +32,9 @@ export function computeOpen(
  */
 export function buildOpenTransactions(
   params: BorrowOpenPositionInternalParams,
+  market: MorphoBorrowMarketConfig,
   allowance: bigint,
 ): { txs: TransactionData[]; approvalTx: TransactionData | undefined } {
-  const market = params.market
   const txs: TransactionData[] = []
   const approvalTx = buildMorphoCollateralApproval(
     market,

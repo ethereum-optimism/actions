@@ -5,7 +5,11 @@ import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { OP_DEMO, USDC_DEMO } from './assets.js'
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
-import { AaveETH, MorphoUSDCBorrowDemo, MorphoUSDCLendDemo } from './markets.js'
+import {
+  AaveETH,
+  MorphoUSDCBorrowOPDemo,
+  MorphoUSDCLendDemo,
+} from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
@@ -39,7 +43,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     },
     borrow: {
       morpho: {
-        marketAllowlist: [MorphoUSDCBorrowDemo],
+        marketAllowlist: [MorphoUSDCBorrowOPDemo],
       },
     },
     swap: {

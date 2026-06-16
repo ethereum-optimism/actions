@@ -20,7 +20,7 @@ import type {
   StubRepayParams,
 } from '@/api/borrowApi'
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
-import { MorphoBorrowDemo } from '@/constants/markets'
+import { MorphoUSDCBorrowOPDemo } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
 
 export type FrontendWalletOperationsWallet = Pick<
@@ -43,11 +43,12 @@ function resolveBorrowMarketConfig(
 ): BorrowMarketConfig {
   // The demo has a single borrow market today.
   if (
-    MorphoBorrowDemo.kind === marketId.kind &&
-    MorphoBorrowDemo.chainId === marketId.chainId &&
-    MorphoBorrowDemo.marketId.toLowerCase() === marketId.marketId.toLowerCase()
+    MorphoUSDCBorrowOPDemo.kind === marketId.kind &&
+    MorphoUSDCBorrowOPDemo.chainId === marketId.chainId &&
+    MorphoUSDCBorrowOPDemo.marketId.toLowerCase() ===
+      marketId.marketId.toLowerCase()
   ) {
-    return MorphoBorrowDemo
+    return MorphoUSDCBorrowOPDemo
   }
   throw new Error(`Unsupported borrow market: ${marketId.marketId}`)
 }

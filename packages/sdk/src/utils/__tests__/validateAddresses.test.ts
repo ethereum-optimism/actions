@@ -12,7 +12,7 @@ import {
   POOL_ADDRESSES_TESTNET,
   WETH_GATEWAY_ADDRESSES_MAINNET,
   WETH_GATEWAY_ADDRESSES_TESTNET,
-} from '@/actions/lend/providers/aave/addresses.js'
+} from '@/actions/shared/aave/addresses.js'
 import { MORPHO_CONTRACTS } from '@/actions/shared/morpho/contracts.js'
 import { UNISWAP_ADDRESSES } from '@/actions/swap/providers/uniswap/addresses.js'
 import { VELODROME_CHAINS } from '@/actions/swap/providers/velodrome/addresses.js'

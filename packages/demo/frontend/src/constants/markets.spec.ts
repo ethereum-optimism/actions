@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { borrowCollateralVault, MorphoBorrowDemo } from './markets'
+import { borrowCollateralVault, MorphoUSDCBorrowOPDemo } from './markets'
 
 describe('borrowCollateralVault', () => {
   it('resolves the demo borrow market to its on-chain vault collateralToken', () => {
-    expect(borrowCollateralVault(MorphoBorrowDemo)).toBe(
-      MorphoBorrowDemo.marketParams.collateralToken,
+    expect(borrowCollateralVault(MorphoUSDCBorrowOPDemo)).toBe(
+      MorphoUSDCBorrowOPDemo.marketParams.collateralToken,
     )
   })
 
@@ -21,8 +21,8 @@ describe('borrowCollateralVault', () => {
   it('returns undefined when the chainId does not match', () => {
     expect(
       borrowCollateralVault({
-        kind: MorphoBorrowDemo.kind,
-        marketId: MorphoBorrowDemo.marketId,
+        kind: MorphoUSDCBorrowOPDemo.kind,
+        marketId: MorphoUSDCBorrowOPDemo.marketId,
         chainId: 999999,
       }),
     ).toBeUndefined()

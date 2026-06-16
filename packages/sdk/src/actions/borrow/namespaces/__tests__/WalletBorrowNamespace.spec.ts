@@ -15,6 +15,7 @@ import {
   InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
+  QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -229,6 +230,23 @@ describe('WalletBorrowNamespace - quote validation', () => {
     await expect(
       namespace.openPosition(makeQuote({ action: 'repay' })),
     ).rejects.toBeInstanceOf(InvalidParamsError)
+  })
+
+  it('throws QuoteRecipientMismatchError for a quote bound to another wallet', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    // Calldata bound to a different recipient would route borrowed funds to
+    // that address; dispatch must reject rather than re-bind a baked quote.
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          recipient: '0x000000000000000000000000000000000000c0de',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(QuoteRecipientMismatchError)
   })
 })
 

@@ -27,7 +27,7 @@ export const AaveETH: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
-export const MorphoBorrowDemo: BorrowMarketConfig = {
+export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId:
     '0x7dc82421423b50debf8c1f9f967f34367e0fb7bcdb1bda0cef27c319d89cd12f',
@@ -46,7 +46,9 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
   },
 }
 
-const BORROW_MARKET_CONFIGS: readonly BorrowMarketConfig[] = [MorphoBorrowDemo]
+const BORROW_MARKET_CONFIGS: readonly BorrowMarketConfig[] = [
+  MorphoUSDCBorrowOPDemo,
+]
 
 /**
  * On-chain ERC-4626 vault (the Morpho `collateralToken`) backing a borrow

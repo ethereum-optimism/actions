@@ -33,7 +33,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowMarketConfig,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import { type AnvilFork, startAnvilFork, stopAnvilFork } from '@/utils/test.js'
@@ -116,7 +116,9 @@ function createForkChainManager(rpcUrl: string): {
   return { chainManager, client: client as PublicClient }
 }
 
-function buildMarketConfig(deploy: DeployedBorrowMarket): BorrowMarketConfig {
+function buildMarketConfig(
+  deploy: DeployedBorrowMarket,
+): MorphoBorrowMarketConfig {
   // Asset shape mirrors what consumers pass when constructing a config.
   // Decimals match the demo tokens (USDC_DEMO is an 18-decimal mock; OP is 18).
   const collateralAsset = {
@@ -153,7 +155,7 @@ if (!deployed) {
 
 describeOrSkip('MorphoBorrowProvider network fork tests', () => {
   let fork: AnvilFork
-  let market: BorrowMarketConfig
+  let market: MorphoBorrowMarketConfig
 
   beforeAll(async () => {
     if (!deployed) return

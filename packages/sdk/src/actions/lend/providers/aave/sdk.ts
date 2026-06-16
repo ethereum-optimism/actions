@@ -3,12 +3,12 @@ import { formatReserves } from '@aave/math-utils'
 import { providers } from 'ethers'
 import type { Address } from 'viem'
 
-import { POOL_GET_RESERVE_DATA_ABI } from '@/actions/lend/providers/aave/abis/pool.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
+import { POOL_GET_RESERVE_DATA_ABI } from '@/actions/shared/aave/abis/pool.js'
 import {
   getAaveAddresses,
   getPoolAddress,
-} from '@/actions/lend/providers/aave/addresses.js'
-import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
+} from '@/actions/shared/aave/addresses.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {

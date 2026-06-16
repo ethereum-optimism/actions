@@ -9,7 +9,7 @@ import { getDemoChains } from '@/demo/chains.js'
 import {
   AaveETH,
   GauntletUSDCDemo,
-  MorphoUSDCBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
 } from '@/demo/markets.js'
 
 /**
@@ -34,7 +34,7 @@ export function getDemoConfig(): NodeActionsConfig<never> {
       aave: { marketAllowlist: [AaveETH] },
     },
     borrow: {
-      morpho: { marketAllowlist: [MorphoUSDCBorrowDemo] },
+      morpho: { marketAllowlist: [MorphoUSDCBorrowOPDemo] },
     },
     swap: {
       uniswap: {

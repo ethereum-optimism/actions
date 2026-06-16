@@ -6,6 +6,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   BorrowMarketConfig,
   BorrowQuote,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 
@@ -33,7 +34,7 @@ export const marketParams: MorphoMarketParams = {
   lltv: 860000000000000000n,
 }
 
-export const market: BorrowMarketConfig = {
+export const market: MorphoBorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId: computeMorphoMarketId(marketParams),
   chainId: BASE_SEPOLIA_ID,
@@ -50,7 +51,7 @@ export const otherMarketParams: MorphoMarketParams = {
   oracle: '0x0000000000000000000000000000000000000bbb',
 }
 
-export const otherMarket: BorrowMarketConfig = {
+export const otherMarket: MorphoBorrowMarketConfig = {
   ...market,
   marketId: computeMorphoMarketId(otherMarketParams),
   name: 'Second test market',
@@ -73,6 +74,7 @@ export function makeBorrowQuote(
   }
   return {
     marketId: id,
+    recipient: walletAddress,
     action: 'open',
     positionBefore: null,
     positionAfter: {
