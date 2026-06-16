@@ -164,6 +164,17 @@ export function useBorrowProvider(
     isReady: () => walletAddress !== null,
   })
 
+  // Post-tx balance re-poll timers; tracked so they can be cancelled on unmount
+  // rather than firing on a stale closure after the borrow tab is gone.
+  const repollTimers = useRef<number[]>([])
+  useEffect(
+    () => () => {
+      repollTimers.current.forEach((id) => window.clearTimeout(id))
+      repollTimers.current = []
+    },
+    [],
+  )
+
   // Load markets once (ref-guarded) so wallet re-renders don't re-run and reset the read-only activity to pending.
   const hasLoadedMarkets = useRef(false)
   useEffect(() => {
@@ -316,10 +327,11 @@ export function useBorrowProvider(
       // the nav balance and positions reliably reflect the borrow/repay.
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       for (const delay of [3000, 7000, 12000]) {
-        window.setTimeout(() => {
+        const id = window.setTimeout(() => {
           dispatchEarnPositionsChanged()
           void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         }, delay)
+        repollTimers.current.push(id)
       }
       return receipt
     },
