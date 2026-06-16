@@ -18,6 +18,7 @@ import {
 } from '@/utils/borrowMath'
 import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
 import { assetBalanceAmount } from '@/utils/balanceMatching'
+import { USDC_DEMO } from '@/constants/markets'
 import { sameMarketId } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
@@ -105,9 +106,17 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
-  // Repaying burns real debt-asset balance (USDC_DEMO for Aave), so the repay
-  // amount is capped at min(held balance, outstanding debt). The held balance
-  // gates the CTA and drives the re-acquire notice.
+  // The Aave market borrows real USDC, but the demo economy runs on USDC_DEMO
+  // (the mirror mints it on borrow and burns it on repay). The user spends that
+  // USDC_DEMO via swap/lend, so gate the repay on the USDC_DEMO balance, not the
+  // parked real USDC the borrow leaves behind; otherwise a user who spent their
+  // USDC_DEMO sees "repay in full", repays, and the USDC_DEMO removal reverts.
+  const repayBalanceAsset =
+    activeMarket?.marketId.kind === 'aave-v3' ? USDC_DEMO : activeAsset
+
+  // Repaying burns the held debt-asset balance, so the repay amount is capped at
+  // min(held balance, outstanding debt). The held balance gates the CTA and
+  // drives the re-acquire notice.
   // A fully-repaid position can keep sub-cent interest dust; treat that as no
   // debt so the form reads "repaid" (no notice, Repay disabled) rather than
   // prompting for an asset to repay a phantom loan.
@@ -115,7 +124,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     ? parseFloat(activePosition.borrowAmountFormatted) || 0
     : 0
   const outstandingDebt = rawOutstandingDebt >= 0.005 ? rawOutstandingDebt : 0
-  const debtBalance = assetBalanceAmount(tokenBalances, activeAsset)
+  const debtBalance = assetBalanceAmount(tokenBalances, repayBalanceAsset)
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
   // Within a small tolerance of the debt counts as "can repay in full":
@@ -327,9 +336,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
         {health && <BorrowHealthCard {...health} />}
 
-        {activeAsset && (cannotRepay || partialRepayOnly) && (
+        {repayBalanceAsset && (cannotRepay || partialRepayOnly) && (
           <ReacquireDebtNotice
-            symbol={displaySymbol(activeAsset.metadata.symbol)}
+            symbol={displaySymbol(repayBalanceAsset.metadata.symbol)}
             variant={cannotRepay ? 'none' : 'partial'}
             maxRepayable={maxRepayable}
             onAcquire={() => setActiveTab('swap')}

@@ -126,10 +126,12 @@ const aaveDebtPosition = buildBorrowMarketPosition({
   healthFactor: 1.5,
 }) as BorrowPosition
 
-function usdcBalance(amount: number): TokenBalance {
+// The Aave demo borrows real USDC but the user holds/spends USDC_DEMO (the
+// mirror mints/burns it), so the repay gate reads the held USDC_DEMO balance.
+function usdcDemoBalance(amount: number): TokenBalance {
   const raw = BigInt(Math.round(amount * 1e6))
   return {
-    asset: USDC,
+    asset: USDC_DEMO,
     totalBalance: amount,
     totalBalanceRaw: raw,
     chains: { [OPS]: { balance: amount, balanceRaw: raw } },
@@ -166,7 +168,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   it('blocks repay with a re-acquire notice when the USDC balance is zero', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [usdcBalance(0)],
+      tokenBalances: [usdcDemoBalance(0)],
     })
     expect(
       screen.getByText(/need USDC to repay this loan/i),
@@ -180,7 +182,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   it('allows partial repay and prompts to acquire more when balance is below the debt', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [usdcBalance(40)],
+      tokenBalances: [usdcDemoBalance(40)],
     })
     expect(screen.getByText(/repay up to 40 USDC/i)).toBeInTheDocument()
     // Max prefills the held balance (the cap), not the full 100 debt.
@@ -192,7 +194,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   it('clamps an over-balance repay entry to the held balance', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [usdcBalance(40)],
+      tokenBalances: [usdcDemoBalance(40)],
     })
     fireEvent.change(screen.getByPlaceholderText('0'), {
       target: { value: '75' },
@@ -203,7 +205,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   it('shows no re-acquire notice when the balance covers the full debt', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [usdcBalance(150)],
+      tokenBalances: [usdcDemoBalance(150)],
     })
     expect(screen.queryByText(/repay this loan/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
@@ -219,7 +221,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     }) as BorrowPosition
     renderRepay({
       borrowPositions: [repaid],
-      tokenBalances: [usdcBalance(50)],
+      tokenBalances: [usdcDemoBalance(50)],
     })
     expect(screen.queryByText(/repay this loan/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/repay up to/i)).not.toBeInTheDocument()
@@ -227,10 +229,10 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   })
 
   it('shows no notice when the balance is within tolerance of the debt (interest dust)', () => {
-    // Debt 100, holding 99.8 — within 0.5%, so effectively repayable in full.
+    // Debt 100, holding 99.8 (within 0.5%), so effectively repayable in full.
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [usdcBalance(99.8)],
+      tokenBalances: [usdcDemoBalance(99.8)],
     })
     expect(screen.queryByText(/repay up to/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
