@@ -216,6 +216,40 @@ describe('UniswapSwapProvider', () => {
       // 1 USDC = 1000000 (6 decimals)
       expect(quote.amountInRaw).toBe(1000000n)
     })
+
+    it('threads walletAddress onto the quote when provided', async () => {
+      const provider = createProvider()
+      const wallet = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address
+      const recipient = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+        recipient,
+        walletAddress: wallet,
+      })
+
+      // Allowance owner is decoupled from the output recipient.
+      expect(quote.walletAddress).toBe(wallet)
+      expect(quote.recipient).toBe(recipient)
+    })
+
+    it('falls back walletAddress to recipient for read-only quotes', async () => {
+      const provider = createProvider()
+      const recipient = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+        recipient,
+      })
+
+      // No wallet context (read-only): owner falls back to recipient and is
+      // never used for an allowance check.
+      expect(quote.walletAddress).toBe(recipient)
+    })
   })
 
   describe('getMarkets', () => {
