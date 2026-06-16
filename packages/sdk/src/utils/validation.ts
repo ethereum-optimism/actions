@@ -99,8 +99,8 @@ export function validateQuoteNotExpired(expiresAt: number): void {
  */
 export function validateWalletAddress(
   walletAddress: Address | undefined,
-  label = 'walletAddress',
 ): asserts walletAddress is Address {
+  const label = 'walletAddress'
   if (!walletAddress) {
     throw new AddressRequiredError(label)
   }
