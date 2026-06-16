@@ -42,6 +42,11 @@ export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
 }
 
+// Debt below half a cent is interest dust; treat the position as fully repaid.
+const DEBT_DUST_THRESHOLD = 0.005
+// Holding within 0.5% of the debt counts as repayable in full (interest dust).
+const REPAY_FULL_TOLERANCE = 0.995
+
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const {
     markets,
@@ -110,24 +115,16 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // mirror market; see utils/demoMagic), not the position's real borrow asset.
   const repayBalanceAsset = repayGateAsset(activeMarket, activeAsset)
 
-  // Repaying burns the held debt-asset balance, so the repay amount is capped at
-  // min(held balance, outstanding debt). The held balance gates the CTA and
-  // drives the re-acquire notice.
-  // A fully-repaid position can keep sub-cent interest dust; treat that as no
-  // debt so the form reads "repaid" (no notice, Repay disabled) rather than
-  // prompting for an asset to repay a phantom loan.
+  // Cap the repay at min(held balance, outstanding debt); the balance gates the CTA.
   const rawOutstandingDebt = activePosition
     ? parseFloat(activePosition.borrowAmountFormatted) || 0
     : 0
-  const outstandingDebt = rawOutstandingDebt >= 0.005 ? rawOutstandingDebt : 0
+  const outstandingDebt =
+    rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
   const debtBalance = assetBalanceAmount(tokenBalances, repayBalanceAsset)
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
-  // Within a small tolerance of the debt counts as "can repay in full":
-  // interest accrues sub-unit dust between the position read and the repay, so
-  // a strict `debtBalance < outstandingDebt` would nag a user who holds
-  // effectively the full amount (e.g. 100 OP held vs 100.0001 OP owed).
-  const canRepayFull = debtBalance >= outstandingDebt * 0.995
+  const canRepayFull = debtBalance >= outstandingDebt * REPAY_FULL_TOLERANCE
   const cannotRepay = isRepay && outstandingDebt > 0 && debtBalance <= 0
   const partialRepayOnly =
     isRepay && outstandingDebt > 0 && debtBalance > 0 && !canRepayFull
