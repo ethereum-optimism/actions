@@ -7,7 +7,7 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
-import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { requireAuth } from '@/helpers/errors.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as swapService from '@/services/swap.js'
 
@@ -77,85 +77,73 @@ const GetMarketsRequestSchema = z.object({
  * GET - Retrieve all available swap markets
  */
 export async function getMarkets(c: Context) {
-  try {
-    const validation = await validateRequest(c, GetMarketsRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, GetMarketsRequestSchema)
+  if (!validation.success) return validation.response
 
-    const { chainId } = validation.data.query
+  const { chainId } = validation.data.query
 
-    const markets = await swapService.getMarkets(
-      chainId as SupportedChainId | undefined,
-    )
-    return c.json({ result: serializeBigInt(markets) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get swap markets', 500, error)
-  }
+  const markets = await swapService.getMarkets(
+    chainId as SupportedChainId | undefined,
+  )
+  return c.json({ result: serializeBigInt(markets) })
 }
 
 /**
  * GET - Get a swap quote with pricing and pre-built execution data
  */
 export async function getQuote(c: Context) {
-  try {
-    const validation = await validateRequest(c, PriceRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, PriceRequestSchema)
+  if (!validation.success) return validation.response
 
-    const {
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      amountIn,
-      amountOut,
-      provider,
-    } = validation.data.query
+  const {
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  } = validation.data.query
 
-    const quote = await swapService.getQuote({
-      tokenInAddress: tokenInAddress as Address,
-      tokenOutAddress: tokenOutAddress as Address,
-      chainId: chainId as SupportedChainId,
-      amountIn,
-      amountOut,
-      provider,
-    })
+  const quote = await swapService.getQuote({
+    tokenInAddress: tokenInAddress as Address,
+    tokenOutAddress: tokenOutAddress as Address,
+    chainId: chainId as SupportedChainId,
+    amountIn,
+    amountOut,
+    provider,
+  })
 
-    return c.json({ result: serializeBigInt(quote) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get swap quote', 500, error)
-  }
+  return c.json({ result: serializeBigInt(quote) })
 }
 
 /**
  * POST - Execute a token swap
  */
 export async function executeSwap(c: Context) {
-  try {
-    const validation = await validateRequest(c, ExecuteSwapRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, ExecuteSwapRequestSchema)
+  if (!validation.success) return validation.response
 
-    const {
-      amountIn,
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      slippage,
-      provider,
-    } = validation.data.body
+  const {
+    amountIn,
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    slippage,
+    provider,
+  } = validation.data.body
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await swapService.executeSwap({
-      idToken: authResult.auth.idToken,
-      amountIn,
-      tokenInAddress: tokenInAddress as Address,
-      tokenOutAddress: tokenOutAddress as Address,
-      chainId: chainId as SupportedChainId,
-      slippage,
-      provider,
-    })
+  const result = await swapService.executeSwap({
+    idToken: authResult.auth.idToken,
+    amountIn,
+    tokenInAddress: tokenInAddress as Address,
+    tokenOutAddress: tokenOutAddress as Address,
+    chainId: chainId as SupportedChainId,
+    slippage,
+    provider,
+  })
 
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to execute swap', 500, error)
-  }
+  return c.json({ result: serializeBigInt(result) })
 }

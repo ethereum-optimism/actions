@@ -7,6 +7,7 @@ import {
   ChainNotSupportedError,
   ConflictingAmountsError,
   EmptyPositionError,
+  ExactOutputNotSupportedError,
   InvalidAmountError,
   InvalidParamsError,
   MarketIdRequiredError,
@@ -18,6 +19,8 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  SameAssetError,
+  SlippageOutOfRangeError,
   TransactionConfirmedButRevertedError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
@@ -164,6 +167,21 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
         status: 503,
         message: 'Protocol contracts are not configured for this chain.',
       },
+    ],
+    [
+      SameAssetError,
+      { status: 400, message: 'Cannot swap an asset for itself.' },
+    ],
+    [
+      ExactOutputNotSupportedError,
+      {
+        status: 400,
+        message: 'Exact-output swaps are not supported by this provider.',
+      },
+    ],
+    [
+      SlippageOutOfRangeError,
+      { status: 400, message: 'Slippage is out of the allowed range.' },
     ],
   ]
 
