@@ -1,9 +1,4 @@
-/**
- * Repay-gating notice for the Aave borrow flow. Repaying burns real
- * USDC_DEMO, so the user must hold enough of the debt asset. When their
- * balance can't cover the outstanding debt, this explains why and links to
- * the swap tab to acquire more rather than leaving a bare disabled button.
- */
+// Repay-gating notice: links to swap when the held balance can't cover the debt.
 
 import InfoIcon from '@/components/icons/InfoIcon'
 

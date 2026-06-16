@@ -25,7 +25,7 @@ import {
   MorphoUSDCBorrowOPDemo,
 } from '@/constants/markets'
 import { mintDemoAsset } from '@/utils/demoAssetMinting'
-import { mirrorBorrowReceipt } from '@/utils/demoMagic'
+import { mirrorBorrowReceipt } from '@/demoMagic'
 
 export type FrontendWalletOperationsWallet = Pick<
   Wallet,

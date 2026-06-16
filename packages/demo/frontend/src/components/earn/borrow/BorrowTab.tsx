@@ -1,14 +1,10 @@
-/**
- * Top-level Borrow tab layout. Wires the lend-position selector (the collateral
- * source) to the borrow provider's selected market and mounts the borrow form
- * once collateral is selected. Zero-deposit positions are filtered out; with
- * none eligible, the no-collateral banner shows.
- */
+// Borrow tab: wires the lend-position selector (collateral) to the borrow form.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
-import { morphoBorrowMarketForVault } from '@/constants/markets'
+import { DEBT_DUST_THRESHOLD } from '@/constants/borrow'
+import { useReconcileMorphoCollateral } from '@/demoMagic'
 import type { MarketPosition } from '@/types/market'
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 import { BorrowAction } from './BorrowAction'
@@ -25,37 +21,7 @@ export function BorrowTab() {
   const { markets, handleMarketSelect, borrowPositions, handleTransaction } =
     useBorrowProviderContext()
 
-  // Reconcile any Morpho lend shares that were not pledged as collateral (a
-  // failed/skipped lend-chain). On the borrow tab, pledge the unpledged balance
-  // in the background so collateral tracks the lend position. Pledged once per
-  // market per mount; a page reload re-checks.
-  const reconciledRef = useRef<Set<string>>(new Set())
-  useEffect(() => {
-    marketPositions.forEach((position) => {
-      if (position.provider !== 'morpho') return
-      const shares = position.depositedSharesRaw
-      if (!shares || shares <= 0n) return
-      const borrowMarket = morphoBorrowMarketForVault(
-        position.marketId.address,
-        position.marketId.chainId,
-      )
-      if (!borrowMarket) return
-      const key = `${position.marketId.chainId}:${position.marketId.address.toLowerCase()}`
-      if (reconciledRef.current.has(key)) return
-      reconciledRef.current.add(key)
-      void handleTransaction('depositCollateral', {
-        marketId: {
-          kind: borrowMarket.kind,
-          marketId: borrowMarket.marketId,
-          chainId: borrowMarket.chainId,
-        },
-        amount: { max: true },
-      }).catch((error) => {
-        reconciledRef.current.delete(key)
-        console.warn('Collateral reconciliation failed', error)
-      })
-    })
-  }, [marketPositions, handleTransaction])
+  useReconcileMorphoCollateral(marketPositions, handleTransaction)
 
   const effectiveLendPositions = useMemo(
     () =>
@@ -112,15 +78,12 @@ export function BorrowTab() {
 
   const hasCollateral = !isInitialLoad && positionsWithDeposits.length > 0
 
-  // Active Positions lists open loans only. A market the wallet supplied
-  // collateral to but never borrowed against (e.g. Aave, where collateral is
-  // the lend position) shouldn't appear; nor should a fully-repaid position,
-  // whose debt rounds to zero but can leave sub-cent interest dust (so a strict
-  // `> 0n` wouldn't hide it).
+  // Active Positions lists open loans only: drop positions with no real debt
+  // (collateral-only markets, or fully repaid down to interest dust).
   const activeBorrowPositions = useMemo(
     () =>
       borrowPositions.filter(
-        (p) => parseFloat(p.borrowAmountFormatted) >= 0.005,
+        (p) => parseFloat(p.borrowAmountFormatted) >= DEBT_DUST_THRESHOLD,
       ),
     [borrowPositions],
   )

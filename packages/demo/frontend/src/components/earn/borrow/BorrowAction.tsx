@@ -18,7 +18,8 @@ import {
 } from '@/utils/borrowMath'
 import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
 import { assetBalanceAmount } from '@/utils/balanceMatching'
-import { repayGateAsset } from '@/utils/demoMagic'
+import { repayGateAsset, ReacquireDebtNotice } from '@/demoMagic'
+import { DEBT_DUST_THRESHOLD } from '@/constants/borrow'
 import { sameMarketId } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
@@ -27,7 +28,6 @@ import { CtaButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
 import { BorrowHealthCard } from './BorrowHealthCard'
 import { AmountSection, SectionHeader } from './BorrowAmountSection'
-import { ReacquireDebtNotice } from './ReacquireDebtNotice'
 import {
   BorrowActionModals,
   type BorrowHealthProps,
@@ -42,8 +42,6 @@ export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
 }
 
-// Debt below half a cent is interest dust; treat the position as fully repaid.
-const DEBT_DUST_THRESHOLD = 0.005
 // Holding within 0.5% of the debt counts as repayable in full (interest dust).
 const REPAY_FULL_TOLERANCE = 0.995
 
@@ -111,8 +109,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
-  // Gate the repay on the asset the user actually holds (USDC_DEMO for the
-  // mirror market; see utils/demoMagic), not the position's real borrow asset.
+  // Gate the repay on the asset the user holds (USDC_DEMO for the mirror market).
   const repayBalanceAsset = repayGateAsset(activeMarket, activeAsset)
 
   // Cap the repay at min(held balance, outstanding debt); the balance gates the CTA.
