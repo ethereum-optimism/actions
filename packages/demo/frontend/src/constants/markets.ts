@@ -2,6 +2,7 @@ import {
   type BorrowMarketConfig,
   computeAaveBorrowMarketId,
   ETH,
+  getAssetAddress,
   type LendMarketConfig,
   OP_DEMO,
   USDC,
@@ -22,7 +23,7 @@ export const GauntletUSDCDemo: LendMarketConfig = {
 }
 
 export const AaveETH: LendMarketConfig = {
-  address: WETH.address[optimismSepolia.id] as Address,
+  address: getAssetAddress(WETH, optimismSepolia.id),
   chainId: optimismSepolia.id,
   name: 'Aave ETH',
   asset: ETH,
@@ -35,8 +36,8 @@ export const AaveETH: LendMarketConfig = {
 // (chain, WETH, USDC) triple. Mirrors the backend's `AaveETHBorrowUSDCDemo`; the
 // frontend-wallet path borrows real USDC directly via the SDK (no USDC_DEMO
 // mirror, which is backend-only).
-const AAVE_OP_SEPOLIA_WETH = WETH.address[optimismSepolia.id] as Address
-const AAVE_OP_SEPOLIA_USDC = USDC.address[optimismSepolia.id] as Address
+const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
+const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
 
 export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
   kind: 'aave-v3',
