@@ -44,6 +44,13 @@ actions --json wallet balance --chain base-sepolia
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
   quote sorted best price first.
+- `actions ens resolve <name>` - forward-resolve an ENS name to its
+  address on Ethereum mainnet (no wallet; requires `MAINNET_RPC_URL`).
+- `actions ens reverse <address>` - reverse-resolve an address to its
+  primary ENS name, or `name: null` when none is set (no wallet;
+  requires `MAINNET_RPC_URL`).
+- `actions ens info <input>` - fetch the standard ENS profile text
+  records for a name or address (no wallet; requires `MAINNET_RPC_URL`).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
@@ -311,11 +318,42 @@ NL -> command examples:
 - "compare provider quotes" -> `actions --json swap quotes --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
 - "execute on Velodrome with 1% slippage" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain --provider velodrome --slippage 1`
 
+## ENS semantics
+
+Read-only name resolution on Ethereum mainnet (chain ID 1). No
+`PRIVATE_KEY` is required, but mainnet must be configured via
+`MAINNET_RPC_URL` - the CLI insists on an operator-trusted endpoint
+rather than the SDK's public-RPC fallback, because a malicious RPC can
+return a fake address for a name. When `MAINNET_RPC_URL` is unset, every
+`ens` command exits `config` (3).
+
+- `resolve` takes an ENS name (must be dot-separated, e.g. `vitalik.eth`)
+  and emits `{ name, address }`. A non-name input (raw address, bare
+  label) exits `validation` (2).
+- `reverse` takes a `0x` address and emits `{ address, name }`, where
+  `name` is `null` when the address has no primary ENS record. A
+  non-address input exits `validation` (2).
+- `info` takes either a name or an address and emits the SDK `EnsInfo`
+  shape verbatim: the standard ENSIP-5 / ENSIP-18 profile text records
+  (`avatar`, `display`, `description`, `url`, `email`, `keywords`,
+  `twitter`, `github`, `discord`, `reddit`), each `string` or `null`.
+
+NL -> command examples:
+
+- "what address is vitalik.eth" -> `actions --json ens resolve vitalik.eth`
+- "resolve vitalik.eth" -> `actions --json ens resolve vitalik.eth`
+- "what's the ENS name for 0xd8dA...96045" -> `actions --json ens reverse 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+- "show vitalik.eth's profile" -> `actions --json ens info vitalik.eth`
+- "get the ENS records for 0xd8dA...96045" -> `actions --json ens info 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+
 ## RPC trust
 
 `*_RPC_URL` env vars must point to operator-trusted endpoints. A
 malicious RPC can return fake balance data, which will confuse the
-caller.
+caller. The same trust requirement applies to `MAINNET_RPC_URL` for ENS
+reads: a fake RPC can return a wrong address for a name, so the CLI
+requires an operator-configured mainnet endpoint rather than falling
+back to a public RPC.
 
 ## Exit codes
 

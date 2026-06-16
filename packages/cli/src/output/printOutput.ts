@@ -5,6 +5,8 @@ import type {
   BorrowMarketId,
   BorrowMarketPosition,
   BorrowProviderName,
+  EnsInfo,
+  EnsName,
   LendAction,
   LendMarket,
   LendMarketPosition,
@@ -32,6 +34,16 @@ export interface ChainRow {
 
 export interface AddressDoc {
   address: string
+}
+
+export interface EnsResolveDoc {
+  name: EnsName
+  address: Address
+}
+
+export interface EnsReverseDoc {
+  address: Address
+  name: EnsName | null
 }
 
 export interface LendActionDoc {
@@ -102,6 +114,9 @@ interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
+  ensResolve: EnsResolveDoc
+  ensReverse: EnsReverseDoc
+  ensInfo: EnsInfo
   balance: readonly TokenBalance[]
   lendAction: LendActionDoc
   lendMarkets: readonly LendMarket[]
@@ -142,6 +157,29 @@ function formatChains(rows: Printers['chains']): void {
 
 function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
+}
+
+function formatEnsResolve(doc: Printers['ensResolve']): void {
+  writeLine(`${doc.name} -> ${doc.address}`)
+}
+
+function formatEnsReverse(doc: Printers['ensReverse']): void {
+  writeLine(
+    doc.name
+      ? `${doc.address} -> ${doc.name}`
+      : `${doc.address} -> (no primary ENS name)`,
+  )
+}
+
+function formatEnsInfo(info: Printers['ensInfo']): void {
+  const set = Object.entries(info).filter(([, value]) => value != null)
+  if (set.length === 0) {
+    writeLine('(no ENS profile records set)')
+    return
+  }
+  for (const [key, value] of set) {
+    writeLine(`${key.padEnd(12)} ${value}`)
+  }
 }
 
 function formatBalance(balances: Printers['balance']): void {
@@ -340,6 +378,9 @@ const TEXT_FORMATTERS: {
   assets: formatAssets,
   chains: formatChains,
   address: formatAddress,
+  ensResolve: formatEnsResolve,
+  ensReverse: formatEnsReverse,
+  ensInfo: formatEnsInfo,
   balance: formatBalance,
   lendAction: formatLendAction,
   lendMarkets: formatLendMarkets,
