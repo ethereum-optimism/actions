@@ -336,7 +336,14 @@ return a fake address for a name. When `MAINNET_RPC_URL` is unset, every
 - `info` takes either a name or an address and emits the SDK `EnsInfo`
   shape verbatim: the standard ENSIP-5 / ENSIP-18 profile text records
   (`avatar`, `display`, `description`, `url`, `email`, `keywords`,
-  `twitter`, `github`, `discord`, `reddit`), each `string` or `null`.
+  `twitter`, `github`, `discord`, `reddit`), each `string` or `null`. An
+  all-`null` result is a normal success (the name exists but set no
+  records), not an error.
+
+Setting `MAINNET_RPC_URL` adds mainnet to the CLI's shared chain set, so
+it also becomes a valid `--chain mainnet` / `--chain-id 1` target and is
+included in the default `wallet balance` fan-out. The demo lend/borrow/swap
+markets are testnet-only, so this affects reads (balances), not write targets.
 
 NL -> command examples:
 

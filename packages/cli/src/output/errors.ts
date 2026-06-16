@@ -1,5 +1,6 @@
 import {
   ActionsError,
+  EnsResolutionError,
   ProviderNotConfiguredError,
   serializeBigInt,
 } from '@eth-optimism/actions-sdk'
@@ -108,6 +109,7 @@ function sdkErrorDetails(err: ActionsError): Record<string, unknown> {
  * @description Maps any thrown value into a `CliError` with the right code:
  * - `CliError` instances pass through unchanged.
  * - `ProviderNotConfiguredError` → `config`.
+ * - `EnsResolutionError` → `validation` (a well-formed name that is unregistered, normalizes to nothing, or resolves to the zero address is a permanent, non-retryable failure - it must not surface as a retryable `network` error).
  * - Other `ActionsError` subclasses → `validation` (carries the SDK error's own properties as `details`).
  * - viem `ContractFunctionRevertedError` → `onchain`.
  * - Anything else → retryable `network`.
@@ -122,6 +124,9 @@ export function toCliError(err: unknown): CliError {
   if (err instanceof CliError) return err
   if (err instanceof ProviderNotConfiguredError) {
     return new CliError('config', err.shortMessage, sdkErrorDetails(err))
+  }
+  if (err instanceof EnsResolutionError) {
+    return new CliError('validation', err.message, { input: err.input })
   }
   if (err instanceof ActionsError) {
     return new CliError('validation', err.shortMessage, sdkErrorDetails(err))

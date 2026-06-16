@@ -21,6 +21,12 @@ function rpcUrls(key: CliEnvKey): string[] | undefined {
  * can return a fake address; the CLI therefore insists on an operator-trusted
  * endpoint rather than accepting the SDK's public mainnet fallback. When the var
  * is unset, mainnet is absent and the ENS handlers raise `CliError('config')`.
+ *
+ * Note: this chain set is shared by every command, not just ENS. Setting
+ * `MAINNET_RPC_URL` therefore also makes mainnet a valid `--chain`/`--chain-id`
+ * target elsewhere and folds mainnet into the default (no-`--chain`) fan-out of
+ * `wallet balance`. The demo lend/borrow/swap market allowlists are testnet-only,
+ * so this widens reads (balances) but not write targets.
  * @returns Array of chain configs suitable for `NodeActionsConfig.chains`.
  */
 export function getDemoChains(): DemoChainConfig[] {

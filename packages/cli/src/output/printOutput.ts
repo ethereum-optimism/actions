@@ -159,14 +159,26 @@ function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
 }
 
+// ENS names and profile text records are arbitrary on-chain strings set by
+// whoever owns the name. Rendered verbatim in a terminal they can carry ANSI /
+// OSC escape sequences that rewrite the screen, the window title, or inject
+// clickable phishing hyperlinks. Strip C0/C1 control bytes (keeping ordinary
+// printable text) before writing the human-readable output. The `--json` path
+// is unaffected: JSON.stringify already escapes control characters.
+const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
+
+function sanitizeEnsText(value: string): string {
+  return value.replace(CONTROL_CHARS, '')
+}
+
 function formatEnsResolve(doc: Printers['ensResolve']): void {
-  writeLine(`${doc.name} -> ${doc.address}`)
+  writeLine(`${sanitizeEnsText(doc.name)} -> ${doc.address}`)
 }
 
 function formatEnsReverse(doc: Printers['ensReverse']): void {
   writeLine(
     doc.name
-      ? `${doc.address} -> ${doc.name}`
+      ? `${doc.address} -> ${sanitizeEnsText(doc.name)}`
       : `${doc.address} -> (no primary ENS name)`,
   )
 }
@@ -178,7 +190,7 @@ function formatEnsInfo(info: Printers['ensInfo']): void {
     return
   }
   for (const [key, value] of set) {
-    writeLine(`${key.padEnd(12)} ${value}`)
+    writeLine(`${key.padEnd(12)} ${sanitizeEnsText(String(value))}`)
   }
 }
 

@@ -72,7 +72,7 @@ export function requireAddress(input: string): Address {
 }
 
 /**
- * @description Validates that an input is either an ENS name or a 0x address —
+ * @description Validates that an input is either an ENS name or a 0x address:
  * the two forms `actions.ens.getInfo` accepts. Addresses are returned
  * checksummed; names are returned verbatim for the SDK to normalize on-chain.
  * @param input - Raw positional argument from argv.

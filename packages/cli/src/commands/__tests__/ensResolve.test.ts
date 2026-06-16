@@ -67,6 +67,20 @@ describe('runEnsResolve', () => {
     }
   })
 
+  it('checks mainnet config before input shape (config wins over validation)', async () => {
+    // Both conditions are violated: mainnet absent AND input is not name-shaped.
+    // The mainnet guard must fire first so the caller learns it is unconfigured
+    // rather than chasing a validation error it cannot otherwise reach.
+    mockEns(async () => VITALIK, [{ chainId: optimismSepolia.id }])
+    try {
+      await runEnsResolve('notaname')
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('config')
+    }
+  })
+
   it('maps RPC failures to CliError(network)', async () => {
     mockEns(async () => {
       throw new Error('fetch failed')
