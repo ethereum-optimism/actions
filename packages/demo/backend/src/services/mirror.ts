@@ -1,10 +1,9 @@
 import type { SmartWallet } from '@eth-optimism/actions-sdk'
-import { getAssetAddress, USDC_DEMO } from '@eth-optimism/actions-sdk'
+import { USDC_DEMO } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
-import { encodeFunctionData, formatUnits } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { formatUnits } from 'viem'
 
-import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
+import { mintUsdcDemo, transferUsdcDemo } from '@/services/mint.js'
 
 /**
  * Demo-only "mirror" accounting for the Aave borrow flow.
@@ -62,20 +61,7 @@ export async function mintMirrorUsdc(
   realTxHash?: string,
 ): Promise<void> {
   try {
-    await wallet.sendBatch(
-      [
-        {
-          to: getAssetAddress(USDC_DEMO, baseSepolia.id),
-          data: encodeFunctionData({
-            abi: mintableErc20Abi,
-            functionName: 'mint',
-            args: [wallet.address, amountWei],
-          }),
-          value: 0n,
-        },
-      ],
-      baseSepolia.id,
-    )
+    await mintUsdcDemo(wallet, wallet.address, amountWei)
     logMirror(
       'mint',
       { wallet: wallet.address, amount: amountWei, realTxHash },
@@ -103,20 +89,7 @@ export async function removeMirrorUsdc(
   realTxHash?: string,
 ): Promise<void> {
   try {
-    await wallet.sendBatch(
-      [
-        {
-          to: getAssetAddress(USDC_DEMO, baseSepolia.id),
-          data: encodeFunctionData({
-            abi: mintableErc20Abi,
-            functionName: 'transfer',
-            args: [MIRROR_SINK_ADDRESS, amountWei],
-          }),
-          value: 0n,
-        },
-      ],
-      baseSepolia.id,
-    )
+    await transferUsdcDemo(wallet, MIRROR_SINK_ADDRESS, amountWei)
     logMirror(
       'remove',
       { wallet: wallet.address, amount: amountWei, realTxHash },
