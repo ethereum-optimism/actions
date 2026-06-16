@@ -89,6 +89,23 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * quote's recipient differs from `wallet.address`; silently swapping
    * recipients would route output tokens to the wrong address on routers that
    * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   *
+   * Invariant: `wallet.address` is the *receiving* address, not the signer.
+   *
+   * Recipient is who receives the output tokens. For a smart wallet that is the
+   * smart-wallet contract address; for an EOA wallet it is the EOA. In both
+   * cases it equals `wallet.address`, which is exactly what a quote built via
+   * `getQuote()` encodes as its recipient.
+   *
+   * Executor is who signs and submits the transaction (an EOA key, a
+   * smart-wallet owner, or a session-key holder). The executor's address can
+   * differ from `wallet.address` — e.g. a session-key signer authoring a
+   * UserOperation for a smart wallet (see #403).
+   *
+   * The comparison is therefore `recipient === wallet.address`, never
+   * `recipient === signer`. It stays correct regardless of who actually signed,
+   * because the check asserts the quote was built to pay *this* wallet, not
+   * anything about the executor's identity.
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
     if (!isAddressEqual(quote.recipient, this.wallet.address)) {
