@@ -36,12 +36,6 @@ function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
   return market.kind === 'aave-v3'
 }
 
-// Realized borrow/repay amount from a receipt, used as the mirror mint/remove
-// amount so the demo USDC_DEMO ledger tracks the real Aave debt principal.
-function realizedAmount(receipt: BorrowReceipt): bigint | undefined {
-  return receipt.borrowAmount
-}
-
 const BORROW_MARKETS: BorrowMarketConfig[] = [
   MorphoUSDCBorrowDemo,
   AaveETHBorrowUSDCDemo,
@@ -191,7 +185,7 @@ export async function openPosition(
   // Mirror the borrowed USDC as USDC_DEMO once the real Aave tx confirms.
   // Best-effort and silent: not awaited, so the response is bounded by the
   // real borrow, not the mirror mint (Aave demo only).
-  const minted = realizedAmount(receipt)
+  const minted = receipt.borrowAmount
   if (isAaveMirrorMarket(market) && minted !== undefined && minted > 0n) {
     void mintMirrorUsdc(wallet, minted, receipt.transactionHash)
   }
@@ -213,7 +207,7 @@ export async function closePosition(
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.closePosition({ ...rest, market })
   // Close repays the debt, so mirror the repaid amount as a removal.
-  const removed = realizedAmount(receipt)
+  const removed = receipt.borrowAmount
   if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
     void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
   }
@@ -271,7 +265,7 @@ export async function repay(
   // Remove the repaid amount of USDC_DEMO after the real Aave repay confirms.
   // Best-effort: if the user spent their USDC_DEMO down the transfer reverts
   // and is logged, leaving the deferred reconciliation to repair drift.
-  const removed = realizedAmount(receipt)
+  const removed = receipt.borrowAmount
   if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
     void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
   }
