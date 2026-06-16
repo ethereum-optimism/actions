@@ -35,7 +35,7 @@ function pollingIntervalForChain(chainId: SupportedChainId): number {
 
 /**
  * viem chain definitions for SDK-supported chains that the Superchain-only
- * `@eth-optimism/viem/chains` registry (`chainById`) does not include — the
+ * `@eth-optimism/viem/chains` registry (`chainById`) does not include: the
  * Ethereum L1 chains. Used as a fallback so settlement-layer reads (notably
  * ENS resolution, which runs on Ethereum mainnet) can be configured with an
  * operator-trusted RPC instead of relying on a public fallback.
@@ -50,7 +50,7 @@ const L1_VIEM_CHAINS: Partial<Record<SupportedChainId, Chain>> = {
  * Superchain registry and falling back to the Ethereum L1 definitions in
  * {@link L1_VIEM_CHAINS}. Returns `undefined` when the id is unknown to both.
  */
-function viemChainFor(chainId: SupportedChainId): Chain | undefined {
+export function viemChainFor(chainId: SupportedChainId): Chain | undefined {
   return chainById[chainId] ?? L1_VIEM_CHAINS[chainId]
 }
 
@@ -181,7 +181,11 @@ export class ChainManager {
    * @returns Chain object containing chain details
    */
   getChain(chainId: SupportedChainId): Chain {
-    return viemChainFor(chainId) as Chain
+    const chain = viemChainFor(chainId)
+    if (!chain) {
+      throw new ChainNotSupportedError({ chainId })
+    }
+    return chain
   }
 
   /**
