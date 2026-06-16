@@ -8,44 +8,6 @@ import * as borrowService from './borrow.js'
 
 vi.mock('../config/actions.js', () => ({
   getActions: vi.fn(),
-  borrowMarketAllowlist: {
-    morpho: {
-      marketAllowlist: [
-        {
-          kind: 'morpho-blue' as const,
-          marketId: ('0x' + 'a'.repeat(64)) as `0x${string}`,
-          chainId: 84532 as never,
-          name: 'Demo dUSDC / OP',
-          collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
-          borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
-          marketParams: {
-            loanToken: '0x0',
-            collateralToken: '0x0',
-            oracle: '0x0',
-            irm: '0x0',
-            lltv: 0n,
-          },
-        },
-      ],
-    },
-    aave: {
-      marketAllowlist: [
-        {
-          kind: 'aave-v3' as const,
-          marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
-          chainId: 11155420 as never,
-          name: 'Aave ETH / USDC',
-          collateralAsset: { metadata: { symbol: 'ETH' } },
-          borrowAsset: { metadata: { symbol: 'USDC' } },
-          aave: {
-            debtReserve: '0x0',
-            collateralReserve: '0x0',
-            collateralUsesWethGateway: true,
-          },
-        },
-      ],
-    },
-  },
 }))
 
 vi.mock('./wallet.js', () => ({
@@ -59,6 +21,37 @@ vi.mock('./mirror.js', () => ({
 
 vi.mock('../utils/explorers.js', () => ({
   getBlockExplorerUrls: vi.fn(() => []),
+}))
+
+vi.mock('../config/markets.js', () => ({
+  MorphoUSDCBorrowOPDemo: {
+    kind: 'morpho-blue' as const,
+    marketId: ('0x' + 'a'.repeat(64)) as `0x${string}`,
+    chainId: 84532 as never,
+    name: 'Demo dUSDC / OP',
+    collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
+    borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
+    marketParams: {
+      loanToken: '0x0',
+      collateralToken: '0x0',
+      oracle: '0x0',
+      irm: '0x0',
+      lltv: 0n,
+    },
+  },
+  AaveETHBorrowUSDCDemo: {
+    kind: 'aave-v3' as const,
+    marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+    chainId: 11155420 as never,
+    name: 'Aave ETH / USDC',
+    collateralAsset: { metadata: { symbol: 'ETH' } },
+    borrowAsset: { metadata: { symbol: 'USDC' } },
+    aave: {
+      debtReserve: '0x0',
+      collateralReserve: '0x0',
+      collateralUsesWethGateway: true,
+    },
+  },
 }))
 
 const mockBorrowProvider = {

@@ -19,7 +19,11 @@ import {
   ProviderNotConfiguredError,
 } from '@eth-optimism/actions-sdk'
 
-import { borrowMarketAllowlist, getActions } from '@/config/actions.js'
+import { getActions } from '@/config/actions.js'
+import {
+  AaveETHBorrowUSDCDemo,
+  MorphoUSDCBorrowOPDemo,
+} from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
 import { getWallet } from '@/services/wallet.js'
@@ -32,11 +36,10 @@ function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
   return market.kind === 'aave-v3'
 }
 
-// Flattened from the single source in `config/actions.ts` so the SDK config
-// and these `(chainId, marketId)` lookups never drift.
-const BORROW_MARKETS: BorrowMarketConfig[] = Object.values(
-  borrowMarketAllowlist,
-).flatMap((provider) => provider.marketAllowlist)
+const BORROW_MARKETS: BorrowMarketConfig[] = [
+  MorphoUSDCBorrowOPDemo,
+  AaveETHBorrowUSDCDemo,
+]
 
 export type BorrowReceiptWithUrls = BorrowReceipt & {
   blockExplorerUrls: string[]

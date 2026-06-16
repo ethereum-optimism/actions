@@ -14,15 +14,6 @@ import {
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
-export const borrowMarketAllowlist = {
-  morpho: {
-    marketAllowlist: [MorphoUSDCBorrowOPDemo],
-  },
-  aave: {
-    marketAllowlist: [AaveETHBorrowUSDCDemo],
-  },
-}
-
 export function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
     wallet: {
@@ -51,7 +42,14 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
         marketAllowlist: [AaveETH],
       },
     },
-    borrow: borrowMarketAllowlist,
+    borrow: {
+      morpho: {
+        marketAllowlist: [MorphoUSDCBorrowOPDemo],
+      },
+      aave: {
+        marketAllowlist: [AaveETHBorrowUSDCDemo],
+      },
+    },
     swap: {
       uniswap: {
         defaultSlippage: 0.005, // 0.5%
