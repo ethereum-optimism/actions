@@ -30,12 +30,8 @@ export const AaveETH: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
-// Real Aave V3 borrow market on Optimism Sepolia: real ETH collateral, real
-// USDC debt. The Aave OP Sepolia pool has only USDC and WETH reserves, so USDC
-// is the sole borrowable asset. Synthetic `marketId` derived from the
-// (chain, WETH, USDC) triple. Mirrors the backend's `AaveETHBorrowUSDCDemo`; the
-// frontend-wallet path borrows real USDC directly via the SDK (no USDC_DEMO
-// mirror, which is backend-only).
+// Aave V3 on Optimism Sepolia: ETH collateral, USDC debt (the only borrowable reserve).
+// marketId derived from (chain, WETH, USDC); borrows real USDC via the SDK, not USDC_DEMO.
 const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
 const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
 
@@ -96,13 +92,7 @@ export function borrowCollateralVault(marketId: {
   )?.marketParams.collateralToken
 }
 
-/**
- * The Morpho borrow market whose collateral is the given lend vault, matched by
- * the vault address (the market's `collateralToken`). Lets the lend flow pledge
- * freshly-minted vault shares as borrow collateral so collateral tracks the
- * lend position. Returns undefined for non-Morpho lends (e.g. Aave, which
- * supplies collateral at lend time and needs no chaining).
- */
+/** Morpho borrow market that uses the given vault as collateral; undefined for non-Morpho lends (e.g. Aave). */
 export function morphoBorrowMarketForVault(
   vaultAddress: string,
   chainId: number,

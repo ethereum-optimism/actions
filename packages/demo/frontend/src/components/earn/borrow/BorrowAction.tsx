@@ -74,11 +74,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     [markets, selectedLendPosition],
   )
 
-  // Active market for the form: a market whose collateral matches the chosen
-  // lend position (eligibleMarkets). Prefer the globally-selected market when
-  // it is one of those, otherwise fall back to the first eligible market. This
-  // keeps the form bound to the selected lend position rather than the global
-  // default, so switching collateral always re-targets the matching market.
+  // Prefer the globally-selected market if eligible, otherwise fall back to the first match.
   const borrowMarket: BorrowMarket | null =
     eligibleMarkets.find(
       (m) =>
@@ -144,9 +140,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     positionUsd(activePosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
 
-  // Collateral is what currently backs the loan; borrowing never pledges more
-  // (collateral changes only via lend / withdraw). A fresh open has no position
-  // yet, so it uses the lend balance it is about to supply as collateral.
+  // Use current collateral when a position exists; otherwise use the lend balance (fresh open).
   const projectionCollateralUsd =
     currentCollUsd > 0 ? currentCollUsd : lendCollateralUsd
 
@@ -156,9 +150,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const amountUsd = amountNum * amountAssetPriceUsd
 
-  // Quote preview still gates the CTA on a settled quote, but health is
-  // computed locally from stub prices (see useBorrowProjection), so the
-  // quote's oracle-priced ltv/HF are not used for display.
+  // Gates the CTA on a settled quote; health display uses local stub prices (see useBorrowProjection).
   const { isPreviewLoading } = useBorrowQuotePreview({
     activeMarket,
     amountNum,
@@ -242,10 +234,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     !wouldLiquidate &&
     !inBufferZone &&
     !isPreviewLoading &&
-    // Repay needs enough debt-asset balance to burn; entry is clamped to
-    // maxRepayable, so this only blocks the zero-balance case.
     !cannotRepay &&
-    // Nothing to repay once the loan is fully cleared.
     !(isRepay && outstandingDebt <= 0)
 
   const handleCtaClick = () => {

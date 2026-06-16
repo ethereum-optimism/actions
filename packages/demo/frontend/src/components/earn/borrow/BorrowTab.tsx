@@ -78,8 +78,7 @@ export function BorrowTab() {
 
   const hasCollateral = !isInitialLoad && positionsWithDeposits.length > 0
 
-  // Active Positions lists open loans only: drop positions with no real debt
-  // (collateral-only markets, or fully repaid down to interest dust).
+  // Exclude collateral-only or fully-repaid positions (below dust threshold).
   const activeBorrowPositions = useMemo(
     () =>
       borrowPositions.filter(

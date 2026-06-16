@@ -156,16 +156,13 @@ export function useBorrowProvider(
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Shares the lend provider's `['tokenBalances']` cache entry (same query key)
-  // so the repay gate reads the live USDC_DEMO balance. No activity logging here
-  // to avoid double-counting the lend side's getBalance entry.
+  // Shares the lend provider's `['tokenBalances']` cache entry; no activity logging to avoid double-counting.
   const { data: tokenBalances } = useTokenBalances({
     getTokenBalances: operations.getTokenBalances,
     isReady: () => walletAddress !== null,
   })
 
-  // Post-tx balance re-poll timers; tracked so they can be cancelled on unmount
-  // rather than firing on a stale closure after the borrow tab is gone.
+  // Tracked so timers can be cancelled on unmount rather than firing on a stale closure.
   const repollTimers = useRef<number[]>([])
   useEffect(
     () => () => {
@@ -321,10 +318,7 @@ export function useBorrowProvider(
           return isEmptyPosition(next) ? filtered : [...filtered, next]
         })
       }
-      // Base Sepolia RPC lags tx confirmation, and the USDC_DEMO mirror settles
-      // separately, so a single refetch often reads pre-change state and
-      // re-caches it until a page reload. Re-poll across the settle window so
-      // the nav balance and positions reliably reflect the borrow/repay.
+      // Re-poll across the settle window: Base Sepolia RPC lags and the USDC_DEMO mirror settles separately.
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       for (const delay of [3000, 7000, 12000]) {
         const id = window.setTimeout(() => {
@@ -356,8 +350,7 @@ export function useBorrowProvider(
   useEffect(() => {
     const handlePositionsChanged = () => {
       void fetchPositionsRef.current(walletAddress)
-      // The mirror mint/remove and reconcile fire this event; refresh balances
-      // so the nav and gating pick up the USDC_DEMO change.
+      // Refresh balances so the nav and gating pick up the USDC_DEMO mirror change.
       void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
     }
     window.addEventListener(

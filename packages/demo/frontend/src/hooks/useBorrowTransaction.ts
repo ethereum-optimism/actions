@@ -74,11 +74,7 @@ export function useBorrowTransaction() {
     try {
       let receipt
       if (mode === 'borrow') {
-        // A fresh open supplies the lend position as collateral; a top-up
-        // borrows against existing collateral and never pledges more
-        // (collateral changes only via lend / withdraw). Aave always has
-        // collateral from its lend supply, so it always takes the borrow-only
-        // path.
+        // Fresh open pledges the lend position; top-up (or Aave, which supplies collateral at lend time) skips pledging.
         const isTopUp = currentCollUsd > 0
         const freshOpenCollateralRaw = selectedLendPosition.depositedSharesRaw
         if (

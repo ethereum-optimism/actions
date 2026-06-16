@@ -5,12 +5,7 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 
-/**
- * Raw USDC_DEMO token operations on Base Sepolia. The demo USDC is a mintable
- * mock with no `burn`, so callers mint to a wallet and "burn" by transferring
- * to a sink. These wrap the `encodeFunctionData` + gasless `sendBatch` pair so
- * callers (mirror accounting, the mint faucet) don't hand-roll the calldata.
- */
+// USDC_DEMO token helpers on Base Sepolia: mintable mock with no burn, so removal = transfer to sink.
 
 function sendUsdcDemoCall(
   wallet: SmartWallet,

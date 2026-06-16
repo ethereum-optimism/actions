@@ -5,23 +5,10 @@ import { formatUnits } from 'viem'
 
 import { mintUsdcDemo, transferUsdcDemo } from '@/services/usdcDemo.js'
 
-/**
- * Demo-only "mirror" accounting for the Aave borrow flow.
- *
- * Aave is a shared protocol pool, so the demo borrows real USDC on OP Sepolia
- * but keeps the demo economy coherent by mirroring that borrow as `USDC_DEMO`
- * on Base Sepolia: mint on borrow, remove on repay. This lives entirely in the
- * demo backend; the SDK `AaveBorrowProvider` only ever touches real Aave.
- *
- * `DemoUSDC.mint` is permissionless and the demo wallet is server-custodied
- * with gasless `sendBatch`, so the backend drives both legs through the user's
- * own wallet with no extra signature. The token has no `burn`, so "removal" is
- * a transfer to a dead sink address rather than a true burn.
- *
- * Both legs are best-effort and silent: they fire after the real Aave tx, do
- * not block the borrow/repay response, never surface as user-facing activity,
- * and are observable only through operator logs.
- */
+// Demo-only mirror accounting: after each real Aave borrow/repay on OP Sepolia,
+// mint/remove an equivalent USDC_DEMO on Base Sepolia. DemoUSDC.mint is
+// permissionless; removal transfers to a dead sink (no burn). Both legs are
+// best-effort and silent: fire-and-forget, never block the response.
 
 /** Dead sink for mirror removals (DemoUSDC has no burn function). */
 const MIRROR_SINK_ADDRESS =
@@ -50,11 +37,7 @@ function logMirror(
   }
 }
 
-/**
- * Mint `amountWei` of `USDC_DEMO` to the user's wallet on Base Sepolia after a
- * real Aave borrow. Best-effort: resolves once the mirror tx settles, swallows
- * and logs failures so it can never reject into the borrow response path.
- */
+/** Mint USDC_DEMO to the wallet after a real Aave borrow. Best-effort: swallows and logs failures. */
 export async function mintMirrorUsdc(
   wallet: SmartWallet,
   amountWei: bigint,
@@ -77,12 +60,7 @@ export async function mintMirrorUsdc(
   }
 }
 
-/**
- * Remove `amountWei` of `USDC_DEMO` from the user's wallet on Base Sepolia
- * after a real Aave repay, by transferring it to the dead sink. The amount is
- * bounded by the caller to the repaid amount (never the full balance).
- * Best-effort and silent, like the mint leg.
- */
+/** Transfer USDC_DEMO to the dead sink after a real Aave repay. Best-effort: swallows and logs failures. */
 export async function removeMirrorUsdc(
   wallet: SmartWallet,
   amountWei: bigint,

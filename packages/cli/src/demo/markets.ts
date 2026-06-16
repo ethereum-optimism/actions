@@ -37,14 +37,7 @@ export const AaveETH: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
-/**
- * @description Real Aave V3 borrow market on Optimism Sepolia: real ETH
- * collateral, real USDC debt. Synthetic `marketId` derived from the
- * (chain, WETH, USDC) triple since Aave has no params-hash market id.
- * Mirrored from `packages/demo/backend/src/config/markets.ts`. The CLI uses
- * the SDK provider directly, so there is no USDC_DEMO mirror here (that lives
- * only in the demo backend); the CLI borrows real USDC on OP Sepolia.
- */
+// Aave V3 on OP Sepolia: real ETH collateral, real USDC debt. CLI borrows real USDC directly (no USDC_DEMO mirror).
 const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
 const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
 

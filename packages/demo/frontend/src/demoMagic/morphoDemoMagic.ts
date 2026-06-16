@@ -1,12 +1,4 @@
-/**
- * Morpho demo magic: pledge unpledged lend shares as borrow collateral.
- *
- * The demo splits a Morpho "lend then borrow against it" flow across a lend
- * vault and a separate borrow market whose collateral is the vault share. Lent
- * shares sit in the vault, not the borrow market, so on the borrow tab we pledge
- * the unpledged balance in the background, making collateral track the lend
- * position. Pledged once per market per mount; a reload re-checks.
- */
+// Morpho demo magic: auto-pledges unpledged lend-vault shares as borrow collateral, once per market per mount.
 
 import { useEffect, useRef } from 'react'
 

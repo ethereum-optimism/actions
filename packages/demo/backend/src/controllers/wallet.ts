@@ -114,8 +114,7 @@ export class WalletController {
     const {
       params: { chainId, marketId: marketIdHex },
     } = validation.data
-    // The path carries only chainId and marketId, so resolve the full id
-    // (with its `kind`) from the backend allowlist.
+    // Resolve kind from the allowlist; it is not trusted from the path.
     const marketId = borrowService.resolveBorrowMarketId(chainId, marketIdHex)
 
     const authResult = requireAuth(c)

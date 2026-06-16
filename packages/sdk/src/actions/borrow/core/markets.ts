@@ -1,13 +1,7 @@
 import type { BorrowProviderName } from '@/types/actions.js'
 import type { BorrowMarketId } from '@/types/borrow/index.js'
 
-/**
- * The borrow provider that services a given market `kind`. The `kind`
- * discriminant is the source of truth for routing; the provider name is
- * derived for display/output rather than stored on every market config. The
- * exhaustive `Record` keeps this in lockstep with `BorrowMarketId['kind']` so a
- * new market variant fails to compile until it is mapped.
- */
+// Exhaustive map from market kind to provider name; compile error on missing variant.
 const BORROW_PROVIDER_BY_KIND: Record<
   BorrowMarketId['kind'],
   BorrowProviderName

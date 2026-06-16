@@ -191,9 +191,7 @@ describe('Borrow Service', () => {
   })
 
   describe('resolveBorrowMarketId', () => {
-    // The wallet-position path carries only chain + id hex, so kind is
-    // recovered from the allowlist. Guard against re-introducing a hardcoded
-    // morpho-blue assumption that would mis-route aave-v3 position reads.
+    // Guards against hardcoding morpho-blue kind, which would mis-route aave-v3 position reads.
     it('recovers the aave-v3 kind from chain + id alone', () => {
       const result = borrowService.resolveBorrowMarketId(
         11155420 as never,

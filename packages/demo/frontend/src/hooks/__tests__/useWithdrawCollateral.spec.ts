@@ -32,8 +32,7 @@ function render(amountValue: number) {
       amount: String(amountValue),
       amountValue,
       maxAmount: '100',
-      // Fully pledged: nothing sits unpledged in the vault.
-      directDepositedAmount: '0',
+      directDepositedAmount: '0', // fully pledged, nothing in the vault directly
     }),
   )
 }

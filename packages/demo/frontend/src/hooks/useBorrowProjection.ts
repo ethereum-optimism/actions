@@ -59,11 +59,7 @@ export function useBorrowProjection({
     maxLtv,
   ])
 
-  // The whole demo is stub-priced, so health is computed from one source (the
-  // local stub projection) for both current and projected. The SDK quote's
-  // ltv/HF use each protocol's real on-chain oracle, which would fight the stub
-  // display (e.g. Aave's ETH oracle vs the $1770 stub) and make borrowing move
-  // the bar the wrong way.
+  // Stub-priced demo: use only the local projection (not the SDK quote's oracle-based LTV, which fights the $1770 stub price).
   const currentLtv = currentCollUsd > 0 ? currentBorrUsd / currentCollUsd : 0
   const projectedLtv =
     localProjection && localProjection.kind === 'projected'

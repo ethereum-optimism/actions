@@ -3,11 +3,7 @@ import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { isEthSymbol } from './assetUtils'
 
-/**
- * Numeric wallet balance for an asset, matched by symbol across chains. Returns
- * the asset's total balance in human-readable units, or 0 when absent. The
- * borrow repay gate uses this to cap repayment at the held debt-asset balance.
- */
+/** Wallet balance for an asset matched by symbol; returns human-readable total or 0 when absent. */
 export function assetBalanceAmount(
   tokenBalances: readonly TokenBalance[] | undefined,
   asset: Asset | null,

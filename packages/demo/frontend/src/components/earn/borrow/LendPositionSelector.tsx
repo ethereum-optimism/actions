@@ -62,8 +62,7 @@ export function LendPositionSelector({
 }
 
 function LendPositionRow({ position }: { position: MarketPosition }) {
-  // depositedAmount is in asset units, so price it before displaying USD
-  // (e.g. 0.01 ETH -> ~$30, not $0.01).
+  // depositedAmount is in asset units; multiply by stub price to get USD.
   const depositedUsd =
     parseFloat(position.depositedAmount || '0') *
     stubPriceUsd(position.asset.metadata.symbol)

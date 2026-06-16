@@ -16,8 +16,7 @@ import type { BorrowPosition, MarketPosition } from '@/types/market'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import { BorrowAction } from './BorrowAction'
 
-// Render-only test: stub the transaction/projection hooks so the form's
-// market selection depends purely on context + the selected lend position.
+// Stub transaction/projection hooks so tests exercise market selection and repay gating only.
 vi.mock('@/hooks/useBorrowTransaction', () => ({
   useBorrowTransaction: () => ({
     isExecuting: false,
@@ -78,8 +77,7 @@ const morphoMarket = {
 } as unknown as BorrowMarket
 
 const aaveMarket = {
-  // The real mirror-market id, so demoMagic.isMirrorMarket matches it (the
-  // repay gate swaps to USDC_DEMO only for this specific market).
+  // Real mirror-market id so isMirrorMarket matches and repay gates on USDC_DEMO.
   marketId: {
     kind: AaveETHBorrowUSDCDemo.kind,
     marketId: AaveETHBorrowUSDCDemo.marketId,
@@ -133,8 +131,7 @@ const aaveDebtPosition = buildBorrowMarketPosition({
   healthFactor: 1.5,
 }) as BorrowPosition
 
-// The Aave demo borrows real USDC but the user holds/spends USDC_DEMO (the
-// mirror mints/burns it), so the repay gate reads the held USDC_DEMO balance.
+// Repay gate reads USDC_DEMO balance (the mirror asset), not the borrowed USDC.
 function usdcDemoBalance(amount: number): TokenBalance {
   const raw = BigInt(Math.round(amount * 1e6))
   return {
@@ -148,8 +145,7 @@ function usdcDemoBalance(amount: number): TokenBalance {
 describe('BorrowAction market binding', () => {
   it('borrows USDC against an ETH lend position even when the global default is the Morpho (OP) market', () => {
     render(<BorrowAction selectedLendPosition={ethLendPosition} />, {
-      // selectedMarket defaults to the Morpho market (m[0]); the form must
-      // still target the Aave market because the chosen collateral is ETH.
+      // Global default is Morpho (m[0]); ETH collateral must still bind to the Aave market.
       wrapper: makeBorrowContextWrapper(ctx(morphoMarket)),
     })
     expect(screen.getByText('USDC')).toBeInTheDocument()
@@ -165,8 +161,7 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     fireEvent.click(screen.getByText('Repay'))
   }
 
-  // The mode toggle and the CTA both read "Repay" in repay mode; the CTA is
-  // the last one in DOM order.
+  // Both the mode toggle and CTA read "Repay"; target the last button in DOM order.
   const repayCta = () => {
     const buttons = screen.getAllByRole('button', { name: 'Repay' })
     return buttons[buttons.length - 1]

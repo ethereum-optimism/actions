@@ -8,9 +8,7 @@ import { displaySymbol } from '@/utils/tokenDisplay'
 import { stubPriceUsd } from '@/utils/stubPrices'
 import { InfoTooltip } from '../InfoTooltip'
 
-// `collateralValueUsd` is `amount * stubPrice` (see BorrowAction /
-// useWithdrawCollateral), so dividing by the same price recovers the asset
-// amount. Trim to 4 decimals without trailing zeros (e.g. 0.02, 112).
+// Recovers asset amount from USD value (valueUsd / stubPrice), trimmed to 4 decimals.
 function formatCollateralAmount(valueUsd: number, symbol: string): string {
   const price = stubPriceUsd(symbol)
   if (price <= 0) return `$${valueUsd.toFixed(2)}`

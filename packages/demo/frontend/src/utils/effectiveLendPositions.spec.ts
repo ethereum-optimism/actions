@@ -73,8 +73,7 @@ describe('buildEffectiveLendPositions', () => {
       [],
       [buildBorrowMarketPosition({ collateralAmountFormatted: '40.0172' })],
     )
-    // 40.0172 must floor to 40.01, not round up to 40.02 (which would let the
-    // withdraw Max exceed the actual collateral).
+    // Must floor to 40.01, not round up to 40.02 (rounding up would let withdraw Max exceed actual collateral).
     expect(position.depositedAmount).toBe('40.01')
   })
 
@@ -108,7 +107,7 @@ describe('buildEffectiveLendPositions', () => {
       marketId: aaveMarket.marketId,
       provider: 'aave',
     })
-    // The Aave borrow position reports the same ETH aToken balance as collateral.
+    // Aave borrow reports the same ETH aToken balance as collateral (must not be double-counted).
     const aaveBorrow = buildBorrowMarketPosition({
       marketId: { kind: 'aave-v3', marketId: '0xaave', chainId: 11155420 },
       collateralAsset: ethAsset,
