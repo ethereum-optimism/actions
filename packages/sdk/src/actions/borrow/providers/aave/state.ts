@@ -28,6 +28,7 @@ import type {
  * Decode the packed Aave reserve `configuration.data` bitmap.
  * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
  * bonus, 48-55 decimals; all in basis points except decimals.
+ * https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/configuration/ReserveConfiguration.sol
  */
 export function decodeReserveConfig(data: bigint): {
   ltvBps: bigint
@@ -60,6 +61,8 @@ interface DecodedReserveData {
  * `getReserveData` returns a flat tuple. Pull out the fields the borrow
  * provider needs by their documented positions: configuration bitmap (0),
  * variable borrow rate (4), aToken address (8), variable debt token (10).
+ * Positions follow the `ReserveData` struct field order:
+ * https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/types/DataTypes.sol
  */
 function decodeReserveData(reserve: RawReserveData): DecodedReserveData {
   return {
