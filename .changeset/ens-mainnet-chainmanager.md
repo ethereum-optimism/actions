@@ -1,5 +1,5 @@
 ---
-'@eth-optimism/actions-sdk': patch
+'@eth-optimism/actions-sdk': minor
 ---
 
 Allow Ethereum L1 chains (mainnet, sepolia) in `ChainManager`.

@@ -4,6 +4,7 @@ import { unichain } from 'viem/chains'
 import { type MockedFunction, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import { viemChainFor } from '@/services/ChainManager.js'
 
 export interface MockChainManagerConfig {
@@ -87,7 +88,7 @@ export class MockChainManager {
   getChain(chainId: SupportedChainId): Chain {
     const chain = viemChainFor(chainId)
     if (!chain) {
-      throw new Error(`Chain ${chainId} is not supported`)
+      throw new ChainNotSupportedError({ chainId })
     }
     return chain
   }

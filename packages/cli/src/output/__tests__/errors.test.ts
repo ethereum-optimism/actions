@@ -1,4 +1,4 @@
-import { EnsResolutionError } from '@eth-optimism/actions-sdk'
+import { EnsResolutionError, EnsRpcError } from '@eth-optimism/actions-sdk'
 import { BaseError } from 'viem'
 import { describe, expect, it } from 'vitest'
 
@@ -71,6 +71,20 @@ describe('toCliError', () => {
     expect(err.code).toBe('validation')
     expect(err.retryable).toBe(false)
     expect(err.details).toEqual({ input: 'nope.eth' })
+  })
+
+  it('maps a transient ENS RPC failure to retryable network, not validation', () => {
+    // EnsRpcError is the transient counterpart to EnsResolutionError: a timeout
+    // or 5xx from the mainnet RPC must stay retryable so an agent retries
+    // rather than giving up as if the name were permanently bad. This pins the
+    // classification against a future refactor making EnsRpcError an
+    // ActionsError (which would otherwise reclassify it to non-retryable).
+    const err = toCliError(
+      new EnsRpcError('ENS text record lookup failed', 'vitalik.eth'),
+    )
+    expect(err.code).toBe('network')
+    expect(err.retryable).toBe(true)
+    expect(err.details).toEqual({ input: 'vitalik.eth' })
   })
 
   it('maps an unknown error to retryable network', () => {

@@ -91,4 +91,19 @@ describe('ENS text formatters', () => {
     })
     expect(lines.join('')).not.toContain(ESC)
   })
+
+  it('strips control bytes from a forward-resolved name', () => {
+    // resolve echoes the name the caller passed (or the SDK normalized); it is
+    // still rendered through sanitizeEnsText so a control-byte-bearing name
+    // cannot inject escapes into the `name -> address` line.
+    const lines = capture()
+    printOutput('ensResolve', {
+      name: `evil${ESC}[2J.eth` as `${string}.${string}`,
+      address: VITALIK,
+    })
+    const out = lines.join('')
+    expect(out).not.toContain(ESC)
+    expect(out).toContain('evil')
+    expect(out).toContain(VITALIK)
+  })
 })

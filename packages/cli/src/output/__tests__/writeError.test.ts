@@ -131,6 +131,23 @@ describe('writeError', () => {
     expect(() => JSON.parse(text)).toThrow()
   })
 
+  it('strips terminal control bytes from the text-mode error line', () => {
+    // SDK errors quote attacker-controlled on-chain ENS text in their message
+    // (e.g. EnsResolutionError on an address whose reverse record embeds an
+    // ANSI clear-screen + OSC title-rewrite). The human-readable error line
+    // must not pass those escapes through to the terminal. The --json path is
+    // covered separately: JSON.stringify escapes control characters.
+    setJsonMode(false)
+    const malicious =
+      'ENS name "evil\u001b[2J\u001b]0;pwned\u0007.eth" is invalid'
+    writeError(new CliError('validation', malicious))
+    const text = String(stderrSpy.mock.calls[0]?.[0])
+    expect(text).not.toContain('\u001b')
+    expect(text).not.toContain('\u0007')
+    expect(text).toContain('evil')
+    expect(text).toContain('.eth')
+  })
+
   it('swallows EPIPE from the stderr write', () => {
     stderrSpy.mockImplementationOnce(() => {
       const e: NodeJS.ErrnoException = new Error('epipe')

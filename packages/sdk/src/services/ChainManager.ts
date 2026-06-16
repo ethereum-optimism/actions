@@ -46,9 +46,15 @@ const L1_VIEM_CHAINS: Partial<Record<SupportedChainId, Chain>> = {
 }
 
 /**
- * Resolve the viem {@link Chain} for a supported chain id, preferring the
- * Superchain registry and falling back to the Ethereum L1 definitions in
- * {@link L1_VIEM_CHAINS}. Returns `undefined` when the id is unknown to both.
+ * @description Resolves the viem {@link Chain} for a supported chain id,
+ * preferring the Superchain registry (`chainById`) and falling back to the
+ * Ethereum L1 definitions in {@link L1_VIEM_CHAINS}.
+ * @param chainId - A {@link SupportedChainId} to resolve.
+ * @returns The viem {@link Chain}, or `undefined` when the id is unknown to
+ * both registries.
+ * @internal Not part of the public SDK surface; exported only so
+ * `MockChainManager` can mirror `ChainManager`'s resolution logic. No stability
+ * guarantee.
  */
 export function viemChainFor(chainId: SupportedChainId): Chain | undefined {
   return chainById[chainId] ?? L1_VIEM_CHAINS[chainId]
@@ -179,6 +185,8 @@ export class ChainManager {
    * Get chain information for a specific chain ID
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
+   * @throws {ChainNotSupportedError} When `chainId` is resolvable by neither
+   * the Superchain registry nor the Ethereum L1 fallback.
    */
   getChain(chainId: SupportedChainId): Chain {
     const chain = viemChainFor(chainId)

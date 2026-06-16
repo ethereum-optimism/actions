@@ -13,6 +13,7 @@ import { mainnet, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig, PimlicoBundlerConfig } from '@/types/chain.js'
 
@@ -113,6 +114,17 @@ describe('ChainManager', () => {
       ])
       expect(mgr.getChain(mainnet.id).id).toBe(mainnet.id)
       expect(mgr.tryGetPublicClient(mainnet.id)?.chain?.id).toBe(mainnet.id)
+    })
+  })
+
+  describe('getChain', () => {
+    it('throws ChainNotSupportedError for an id unknown to both registries', () => {
+      // getChain previously returned chainById[id] typed as Chain but actually
+      // undefined for unknown ids, silently handing viem an undefined chain.
+      // It now throws the typed error so callers fail loudly.
+      expect(() =>
+        chainManager.getChain(99999 as unknown as SupportedChainId),
+      ).toThrow(ChainNotSupportedError)
     })
   })
 
