@@ -50,8 +50,6 @@ export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
   name: 'Aave ETH / USDC',
   collateralAsset: ETH,
   borrowAsset: USDC,
-  borrowProvider: 'aave',
-  lendProvider: 'aave',
   aave: {
     debtReserve: AAVE_OP_SEPOLIA_USDC,
     collateralReserve: AAVE_OP_SEPOLIA_WETH,
@@ -67,8 +65,6 @@ export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   name: 'Demo dUSDC / OP',
   collateralAsset: USDC_DEMO,
   borrowAsset: OP_DEMO,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams: {
     loanToken: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8' as Address,
     collateralToken: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as Address,

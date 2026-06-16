@@ -1,7 +1,6 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { BorrowProviderName, LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 
 /**
@@ -72,14 +71,6 @@ export interface BorrowMarketConfigMetadata {
   collateralAsset: Asset
   /** Asset borrowed from the market */
   borrowAsset: Asset
-  /** Borrow provider that services this market */
-  borrowProvider: BorrowProviderName
-  /**
-   * Lend provider that issues the collateral token, when collateral is a
-   * yield-bearing receipt (e.g. a Morpho vault share). Informational; lets
-   * frontends coordinate cross-namespace flows.
-   */
-  lendProvider?: LendProviderName
   /**
    * Optional per-market override for `BorrowSettings.healthBufferPct`
    * Frontends use the resolved value to compute the safe-ceiling LTV;

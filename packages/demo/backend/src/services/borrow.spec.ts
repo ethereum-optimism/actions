@@ -35,8 +35,6 @@ vi.mock('../config/markets.js', async () => {
       name: 'Demo dUSDC / OP',
       collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
       borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
-      borrowProvider: 'morpho',
-      lendProvider: 'morpho',
       marketParams: {
         loanToken: '0x0',
         collateralToken: '0x0',
@@ -52,8 +50,6 @@ vi.mock('../config/markets.js', async () => {
       name: 'Aave ETH / USDC',
       collateralAsset: { metadata: { symbol: 'ETH' } },
       borrowAsset: { metadata: { symbol: 'USDC' } },
-      borrowProvider: 'aave',
-      lendProvider: 'aave',
       aave: {
         debtReserve: '0x0',
         collateralReserve: '0x0',
@@ -186,7 +182,6 @@ describe('Borrow Service', () => {
         chainId: 11155420 as never,
       })
       expect(result.kind).toBe('aave-v3')
-      expect(result.borrowProvider).toBe('aave')
     })
 
     it('does not cross-match an aave id against a morpho-blue kind', () => {

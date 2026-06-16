@@ -41,8 +41,6 @@ export const market: MorphoBorrowMarketConfig = {
   name: 'Test market',
   collateralAsset,
   borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams,
 }
 

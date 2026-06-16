@@ -37,8 +37,6 @@ const aaveMarket: AaveBorrowMarketConfig = {
     address: { [OPS]: USDC },
     metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
   } satisfies Asset,
-  borrowProvider: 'aave',
-  lendProvider: 'aave',
   aave: {
     debtReserve: USDC,
     collateralReserve: WETH,

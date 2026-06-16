@@ -59,8 +59,6 @@ export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
   name: 'Aave ETH / USDC',
   collateralAsset: ETH,
   borrowAsset: USDC,
-  borrowProvider: 'aave',
-  lendProvider: 'aave',
   aave: {
     debtReserve: AAVE_OP_SEPOLIA_USDC,
     collateralReserve: AAVE_OP_SEPOLIA_WETH,
@@ -74,8 +72,7 @@ export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
  * oracle, irm, lltv). Mirrored from `packages/demo/backend/src/config/markets.ts`
  * so the CLI operates against the same demo market the backend does. Collateral
  * is the Gauntlet USDC vault share (a Morpho vault token), and the borrow asset
- * is OP_DEMO; `lendProvider: 'morpho'` is informational so frontends can wire
- * the supply leg through the same protocol.
+ * is OP_DEMO.
  */
 export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
@@ -85,8 +82,6 @@ export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   name: 'Demo dUSDC / OP',
   collateralAsset: USDC_DEMO,
   borrowAsset: OP_DEMO,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams: {
     loanToken: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
     collateralToken: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1',

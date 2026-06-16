@@ -13,7 +13,7 @@ describe('resolveBorrowMarket', () => {
   it('matches by exact .name', () => {
     const market = resolveBorrowMarket('Demo dUSDC / OP', markets)
     expect(market.name).toBe('Demo dUSDC / OP')
-    expect(market.borrowProvider).toBe('morpho')
+    expect(market.kind).toBe('morpho-blue')
   })
 
   it('matches case-insensitively and ignores hyphens / spaces', () => {
