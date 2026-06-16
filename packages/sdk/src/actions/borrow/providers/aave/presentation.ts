@@ -1,6 +1,9 @@
 import { type Address, formatUnits } from 'viem'
 
-import { assembleBorrowQuote } from '@/actions/borrow/core/quote.js'
+import {
+  assembleBorrowQuote,
+  type QuoteAmounts,
+} from '@/actions/borrow/core/quote.js'
 import type {
   AaveBorrowMarketConfig,
   BorrowAction,
@@ -228,7 +231,7 @@ export interface AssembleAaveQuoteArgs {
   positionBefore: AavePositionState
   positionAfter: AavePositionState
   transactions: TransactionData[]
-  quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  quoteAmounts: QuoteAmounts
   approvalsSkipped: boolean
   recipient: Address
   quoteExpirationSeconds: number

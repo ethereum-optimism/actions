@@ -1,5 +1,6 @@
 import type { PublicClient } from 'viem'
 
+import type { QuoteAmounts } from '@/actions/borrow/core/quote.js'
 import { encodeAaveBorrow } from '@/actions/borrow/providers/aave/calldata.js'
 import {
   type AavePositionState,
@@ -64,7 +65,7 @@ function finalizePlan(
     debtDelta: bigint
     transactions: TransactionData[]
     approvalsSkipped: boolean
-    quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+    quoteAmounts: QuoteAmounts
   },
 ): AaveQuoteArgs {
   return {

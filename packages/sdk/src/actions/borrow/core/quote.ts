@@ -8,6 +8,11 @@ import type {
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
+/** At least one of the two amounts; which one is action-dependent. */
+export type QuoteAmounts =
+  | { borrowAmountRaw: bigint; collateralAmountRaw?: bigint }
+  | { collateralAmountRaw: bigint; borrowAmountRaw?: bigint }
+
 export interface AssembleBorrowQuoteArgs {
   provider: BorrowProviderName
   action: BorrowAction
@@ -16,7 +21,7 @@ export interface AssembleBorrowQuoteArgs {
   positionBefore: BorrowMarketPosition | null
   /** Converted position after the action lands on-chain. */
   positionAfter: BorrowMarketPosition
-  quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  quoteAmounts: QuoteAmounts
   transactions: TransactionData[]
   approvalsSkipped: boolean
   healthBufferPct: number

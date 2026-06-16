@@ -2,6 +2,7 @@ import type { AccrualPosition, Market, MarketId } from '@morpho-org/blue-sdk'
 import { type Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import type { QuoteAmounts } from '@/actions/borrow/core/quote.js'
 import {
   buildMorphoCollateralApproval,
   encodeMorphoRepay,
@@ -376,7 +377,7 @@ interface AssembleMorphoQuoteArgs {
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   transactions: TransactionData[]
-  quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  quoteAmounts: QuoteAmounts
   approvalsSkipped: boolean
 }
 
