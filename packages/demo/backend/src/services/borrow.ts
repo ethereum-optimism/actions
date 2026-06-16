@@ -84,9 +84,8 @@ export function resolveMarketConfig(
 }
 
 // Recover the full `BorrowMarketId` (including `kind`) for a market addressed
-// only by chain + id hex, as the wallet-position path carries it. The `kind` is
-// resolved from the backend allowlist rather than trusted from the request, so
-// an aave-v3 market is not mis-tagged as morpho-blue.
+// only by chain + id hex, as the wallet-position path carries it. The `kind`
+// comes from the backend allowlist, not the request.
 export function resolveBorrowMarketId(
   chainId: SupportedChainId,
   marketIdHex: BorrowMarketId['marketId'],

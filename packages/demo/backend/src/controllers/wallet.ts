@@ -114,8 +114,8 @@ export class WalletController {
     const {
       params: { chainId, marketId: marketIdHex },
     } = validation.data
-    // Recover `kind` from the backend allowlist; the path carries only chain +
-    // id, and assuming morpho-blue would mis-route an aave-v3 position read.
+    // The path carries only chainId and marketId, so resolve the full id
+    // (with its `kind`) from the backend allowlist.
     const marketId = borrowService.resolveBorrowMarketId(chainId, marketIdHex)
 
     const authResult = requireAuth(c)
