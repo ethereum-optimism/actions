@@ -95,13 +95,13 @@ export async function buildAaveOpenQuoteArgs(
   const txs: TransactionData[] = []
   let approvalsSkipped = true
   if (collateral > 0n) {
-    const deposit = await buildAaveCollateralDeposit(
+    const deposit = await buildAaveCollateralDeposit({
       client,
-      market,
-      collateral,
-      params.walletAddress,
-      params.approvalMode,
-    )
+      config: market,
+      amount: collateral,
+      user: params.walletAddress,
+      approvalMode: params.approvalMode,
+    })
     txs.push(...deposit.txs)
     approvalsSkipped = deposit.approvalsSkipped
   }
@@ -131,14 +131,14 @@ export async function buildAaveRepayQuoteArgs(
     market,
     params.walletAddress,
   )
-  const { txs, approvalsSkipped, repayAmount } = await buildAaveRepay(
+  const { txs, approvalsSkipped, repayAmount } = await buildAaveRepay({
     client,
-    market,
-    params.amount,
-    current.debtAmount,
-    params.walletAddress,
-    params.approvalMode,
-  )
+    config: market,
+    amount: params.amount,
+    currentDebt: current.debtAmount,
+    user: params.walletAddress,
+    approvalMode: params.approvalMode,
+  })
   return finalizePlan(market, current, prices, {
     action: 'repay',
     collateralDelta: 0n,
@@ -169,13 +169,13 @@ export async function buildAaveDepositCollateralQuoteArgs(
     market,
     params.walletAddress,
   )
-  const { txs, approvalsSkipped } = await buildAaveCollateralDeposit(
+  const { txs, approvalsSkipped } = await buildAaveCollateralDeposit({
     client,
-    market,
-    amountWei,
-    params.walletAddress,
-    params.approvalMode,
-  )
+    config: market,
+    amount: amountWei,
+    user: params.walletAddress,
+    approvalMode: params.approvalMode,
+  })
   return finalizePlan(market, current, prices, {
     action: 'depositCollateral',
     collateralDelta: amountWei,
@@ -203,14 +203,14 @@ export async function buildAaveWithdrawCollateralQuoteArgs(
   if (isMax && current.collateralAmount === 0n) {
     throw new EmptyPositionError({ operation: 'withdrawCollateral' })
   }
-  const txs = await buildAaveCollateralWithdraw(
+  const txs = await buildAaveCollateralWithdraw({
     client,
-    market,
+    config: market,
     amount,
     isMax,
-    params.walletAddress,
-    params.approvalMode,
-  )
+    user: params.walletAddress,
+    approvalMode: params.approvalMode,
+  })
   return finalizePlan(market, current, prices, {
     action: 'withdrawCollateral',
     collateralDelta: -amount,
@@ -232,14 +232,14 @@ export async function buildAaveCloseQuoteArgs(
     market,
     params.walletAddress,
   )
-  const repay = await buildAaveRepay(
+  const repay = await buildAaveRepay({
     client,
-    market,
-    params.borrowAmount,
-    current.debtAmount,
-    params.walletAddress,
-    params.approvalMode,
-  )
+    config: market,
+    amount: params.borrowAmount,
+    currentDebt: current.debtAmount,
+    user: params.walletAddress,
+    approvalMode: params.approvalMode,
+  })
   const txs = [...repay.txs]
 
   let collateralDelta = 0n
@@ -253,14 +253,14 @@ export async function buildAaveCloseQuoteArgs(
     // withdraw-all leg would revert, so the repay proceeds on its own.
     if (!(isMax && current.collateralAmount === 0n)) {
       collateralDelta = -withdrawAmount
-      const withdrawTxs = await buildAaveCollateralWithdraw(
+      const withdrawTxs = await buildAaveCollateralWithdraw({
         client,
-        market,
-        withdrawAmount,
+        config: market,
+        amount: withdrawAmount,
         isMax,
-        params.walletAddress,
-        params.approvalMode,
-      )
+        user: params.walletAddress,
+        approvalMode: params.approvalMode,
+      })
       // Native-ETH withdraws prepend a gateway aToken approval.
       withdrawApprovalsSkipped = withdrawTxs.length === 1
       txs.push(...withdrawTxs)

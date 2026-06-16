@@ -26,6 +26,14 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 
+/** Shared inputs for the Aave write-leg builders. */
+interface AaveWriteContext {
+  client: PublicClient
+  config: AaveBorrowMarketConfig
+  user: Address
+  approvalMode: ApprovalMode
+}
+
 /**
  * Resolve `AmountWeiOrMax` to a wei amount. `max` returns `fallbackMax` (the
  * live balance) for projection; callers send `maxUint256` on-chain.
@@ -73,12 +81,9 @@ async function ensureSpenderApproval(
  * approval), an ERC-20 reserve via Pool.supply with an approval when needed.
  */
 export async function buildAaveCollateralDeposit(
-  client: PublicClient,
-  config: AaveBorrowMarketConfig,
-  amount: bigint,
-  user: Address,
-  approvalMode: ApprovalMode,
+  params: AaveWriteContext & { amount: bigint },
 ): Promise<{ txs: TransactionData[]; approvalsSkipped: boolean }> {
+  const { client, config, amount, user, approvalMode } = params
   if (config.aave.collateralUsesWethGateway) {
     return {
       txs: [encodeAaveDepositETH(config, amount, user)],
@@ -104,13 +109,9 @@ export async function buildAaveCollateralDeposit(
  * allowance is short; the direct Pool.withdraw path needs none.
  */
 export async function buildAaveCollateralWithdraw(
-  client: PublicClient,
-  config: AaveBorrowMarketConfig,
-  amount: bigint,
-  isMax: boolean,
-  user: Address,
-  approvalMode: ApprovalMode,
+  params: AaveWriteContext & { amount: bigint; isMax: boolean },
 ): Promise<TransactionData[]> {
+  const { client, config, amount, isMax, user, approvalMode } = params
   const onChainAmount = isMax ? maxUint256 : amount
   if (!config.aave.collateralUsesWethGateway) {
     return [encodeAaveWithdraw(config, onChainAmount, user)]
@@ -145,17 +146,13 @@ export async function buildAaveCollateralWithdraw(
  * @throws EmptyPositionError when a max repay targets a zero-debt position.
  */
 export async function buildAaveRepay(
-  client: PublicClient,
-  config: AaveBorrowMarketConfig,
-  amount: AmountWeiOrMax,
-  currentDebt: bigint,
-  user: Address,
-  approvalMode: ApprovalMode,
+  params: AaveWriteContext & { amount: AmountWeiOrMax; currentDebt: bigint },
 ): Promise<{
   txs: TransactionData[]
   approvalsSkipped: boolean
   repayAmount: bigint
 }> {
+  const { client, config, amount, currentDebt, user, approvalMode } = params
   const { amount: repayAmount, isMax } = resolveAaveAmount(amount, currentDebt)
   if (isMax && currentDebt === 0n) {
     throw new EmptyPositionError({ operation: 'repay' })
