@@ -35,20 +35,20 @@ async function sendMirrorTx(
   action: 'mint' | 'remove',
   amountWei: bigint,
 ): Promise<void> {
-  const usdcDemo = getAssetAddress(USDC_DEMO, baseSepolia.id)
-  const data =
-    action === 'mint'
-      ? encodeFunctionData({
-          abi: mintableErc20Abi,
-          functionName: 'mint',
-          args: [wallet.address, amountWei],
-        })
-      : encodeFunctionData({
-          abi: mintableErc20Abi,
-          functionName: 'transfer',
-          args: [MIRROR_SINK_ADDRESS, amountWei],
-        })
   try {
+    const usdcDemo = getAssetAddress(USDC_DEMO, baseSepolia.id)
+    const data =
+      action === 'mint'
+        ? encodeFunctionData({
+            abi: mintableErc20Abi,
+            functionName: 'mint',
+            args: [wallet.address, amountWei],
+          })
+        : encodeFunctionData({
+            abi: mintableErc20Abi,
+            functionName: 'transfer',
+            args: [MIRROR_SINK_ADDRESS, amountWei],
+          })
     await wallet.sendBatch([{ to: usdcDemo, data, value: 0n }], baseSepolia.id)
     console.info('[mirror] settled', {
       scope: 'aave-borrow-mirror',
