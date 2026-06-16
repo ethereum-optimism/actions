@@ -195,6 +195,36 @@ describe('Borrow Service', () => {
     })
   })
 
+  describe('resolveBorrowMarketId', () => {
+    // The wallet-position path carries only chain + id hex, so kind is
+    // recovered from the allowlist. Guard against re-introducing a hardcoded
+    // morpho-blue assumption that would mis-route aave-v3 position reads.
+    it('recovers the aave-v3 kind from chain + id alone', () => {
+      const result = borrowService.resolveBorrowMarketId(
+        11155420 as never,
+        ('0x' + 'c'.repeat(64)) as `0x${string}`,
+      )
+      expect(result.kind).toBe('aave-v3')
+    })
+
+    it('recovers the morpho-blue kind from chain + id alone', () => {
+      const result = borrowService.resolveBorrowMarketId(
+        84532 as never,
+        ('0x' + 'A'.repeat(64)) as `0x${string}`,
+      )
+      expect(result.kind).toBe('morpho-blue')
+    })
+
+    it('throws MarketNotAllowedError for an unknown market', () => {
+      expect(() =>
+        borrowService.resolveBorrowMarketId(
+          84532 as never,
+          ('0x' + 'b'.repeat(64)) as `0x${string}`,
+        ),
+      ).toThrow()
+    })
+  })
+
   describe('openPosition', () => {
     const fullParams = {
       idToken: 'idtok',

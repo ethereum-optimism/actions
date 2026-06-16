@@ -10,6 +10,7 @@ import {
   ChainIdStringSchema,
 } from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
+import * as borrowService from '@/services/borrow.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
 import type { GetWalletResponse } from '@/types/service.js'
@@ -113,11 +114,9 @@ export class WalletController {
     const {
       params: { chainId, marketId: marketIdHex },
     } = validation.data
-    const marketId = {
-      kind: 'morpho-blue' as const,
-      marketId: marketIdHex,
-      chainId,
-    }
+    // Recover `kind` from the backend allowlist; the path carries only chain +
+    // id, and assuming morpho-blue would mis-route an aave-v3 position read.
+    const marketId = borrowService.resolveBorrowMarketId(chainId, marketIdHex)
 
     const authResult = requireAuth(c)
     if ('error' in authResult) return authResult.error

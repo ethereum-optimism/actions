@@ -83,6 +83,33 @@ export function resolveMarketConfig(
   return config
 }
 
+// Recover the full `BorrowMarketId` (including `kind`) for a market addressed
+// only by chain + id hex, as the wallet-position path carries it. The `kind` is
+// resolved from the backend allowlist rather than trusted from the request, so
+// an aave-v3 market is not mis-tagged as morpho-blue.
+export function resolveBorrowMarketId(
+  chainId: SupportedChainId,
+  marketIdHex: BorrowMarketId['marketId'],
+): BorrowMarketId {
+  const config = BORROW_MARKETS.find(
+    (m) =>
+      m.chainId === chainId &&
+      m.marketId.toLowerCase() === marketIdHex.toLowerCase(),
+  )
+  if (!config) {
+    throw new MarketNotAllowedError({
+      address: marketIdHex,
+      chainId,
+      reason: 'Market not in backend allowlist',
+    })
+  }
+  return {
+    kind: config.kind,
+    marketId: config.marketId,
+    chainId: config.chainId,
+  }
+}
+
 export async function getMarkets(
   params: GetBorrowMarketsParams = {},
 ): Promise<BorrowMarket[]> {
