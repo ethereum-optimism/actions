@@ -9,6 +9,8 @@ import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralInternalParams,
   BorrowDepositCollateralParams,
+  BorrowInternalBaseParams,
+  BorrowOpenPositionBaseParams,
   BorrowOpenPositionInternalParams,
   BorrowOpenPositionParams,
   BorrowRepayInternalParams,
@@ -73,52 +75,55 @@ export function buildClosePositionInternalParams(
   }
 }
 
-export function buildDepositCollateralInternalParams(
-  params: BorrowDepositCollateralParams,
+/**
+ * Shared builder for the single-amount actions. Deposit and withdraw measure
+ * `amount` in the collateral asset; repay measures it in the borrow asset.
+ */
+function buildSingleAmountInternalParams(
+  params: BorrowOpenPositionBaseParams & { amount: AmountOrMax },
   base: ResolvedBorrowBaseParams,
-): BorrowDepositCollateralInternalParams {
+  decimals: number,
+): BorrowInternalBaseParams & { amount: AmountWeiOrMax } {
   return {
     market: params.market,
     walletAddress: base.walletAddress,
     options: params.options,
     approvalMode: base.approvalMode,
-    amount: toAmountWeiOrMax(
-      params.amount,
-      params.market.collateralAsset.metadata.decimals,
-    ),
+    amount: toAmountWeiOrMax(params.amount, decimals),
   }
+}
+
+export function buildDepositCollateralInternalParams(
+  params: BorrowDepositCollateralParams,
+  base: ResolvedBorrowBaseParams,
+): BorrowDepositCollateralInternalParams {
+  return buildSingleAmountInternalParams(
+    params,
+    base,
+    params.market.collateralAsset.metadata.decimals,
+  )
 }
 
 export function buildWithdrawCollateralInternalParams(
   params: BorrowWithdrawCollateralParams,
   base: ResolvedBorrowBaseParams,
 ): BorrowWithdrawCollateralInternalParams {
-  return {
-    market: params.market,
-    walletAddress: base.walletAddress,
-    options: params.options,
-    approvalMode: base.approvalMode,
-    amount: toAmountWeiOrMax(
-      params.amount,
-      params.market.collateralAsset.metadata.decimals,
-    ),
-  }
+  return buildSingleAmountInternalParams(
+    params,
+    base,
+    params.market.collateralAsset.metadata.decimals,
+  )
 }
 
 export function buildRepayInternalParams(
   params: BorrowRepayParams,
   base: ResolvedBorrowBaseParams,
 ): BorrowRepayInternalParams {
-  return {
-    market: params.market,
-    walletAddress: base.walletAddress,
-    options: params.options,
-    approvalMode: base.approvalMode,
-    amount: toAmountWeiOrMax(
-      params.amount,
-      params.market.borrowAsset.metadata.decimals,
-    ),
-  }
+  return buildSingleAmountInternalParams(
+    params,
+    base,
+    params.market.borrowAsset.metadata.decimals,
+  )
 }
 
 function toAmountWei(amount: Amount, decimals: number): bigint {

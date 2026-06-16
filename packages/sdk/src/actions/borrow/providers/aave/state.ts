@@ -1,4 +1,9 @@
-import { type Address, erc20Abi, type PublicClient } from 'viem'
+import {
+  type Address,
+  type ContractFunctionReturnType,
+  erc20Abi,
+  type PublicClient,
+} from 'viem'
 
 import {
   ADDRESSES_PROVIDER_ABI,
@@ -13,31 +18,91 @@ import {
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 
-import {
-  type AaveMarketState,
-  type AavePositionState,
-  type AaveReservePrices,
-  decodeReserveConfig,
+import type {
+  AaveMarketState,
+  AavePositionState,
+  AaveReservePrices,
 } from './presentation.js'
+
+/**
+ * Decode the packed Aave reserve `configuration.data` bitmap.
+ * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
+ * bonus, 48-55 decimals; all in basis points except decimals.
+ * https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/configuration/ReserveConfiguration.sol
+ */
+export function decodeReserveConfig(data: bigint): {
+  ltvBps: bigint
+  liquidationThresholdBps: bigint
+  liquidationBonusBps: bigint
+  decimals: number
+} {
+  return {
+    ltvBps: data & 0xffffn,
+    liquidationThresholdBps: (data >> 16n) & 0xffffn,
+    liquidationBonusBps: (data >> 32n) & 0xffffn,
+    decimals: Number((data >> 48n) & 0xffn),
+  }
+}
+
+type RawReserveData = ContractFunctionReturnType<
+  typeof POOL_GET_RESERVE_DATA_ABI,
+  'view',
+  'getReserveData'
+>
+
+interface DecodedReserveData {
+  configData: bigint
+  variableBorrowRateRay: bigint
+  aToken: Address
+  variableDebtToken: Address
+}
 
 /**
  * `getReserveData` returns a flat tuple. Pull out the fields the borrow
  * provider needs by their documented positions: configuration bitmap (0),
  * variable borrow rate (4), aToken address (8), variable debt token (10).
+ * Positions follow the `ReserveData` struct field order:
+ * https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/types/DataTypes.sol
  */
-function decodeReserveData(
-  reserve: readonly [{ data: bigint }, ...unknown[]],
-): {
-  configData: bigint
-  variableBorrowRateRay: bigint
-  aToken: Address
-  variableDebtToken: Address
-} {
+function decodeReserveData(reserve: RawReserveData): DecodedReserveData {
   return {
     configData: reserve[0].data,
-    variableBorrowRateRay: reserve[4] as bigint,
-    aToken: reserve[8] as Address,
-    variableDebtToken: reserve[10] as Address,
+    variableBorrowRateRay: reserve[4],
+    aToken: reserve[8],
+    variableDebtToken: reserve[10],
+  }
+}
+
+/** A `getReserveData(asset)` multicall contract spec against the pool. */
+function reserveDataCall(pool: Address, asset: Address) {
+  return {
+    address: pool,
+    abi: POOL_GET_RESERVE_DATA_ABI,
+    functionName: 'getReserveData',
+    args: [asset],
+  } as const
+}
+
+/**
+ * Read and decode both the debt and collateral reserves' `getReserveData`
+ * in one multicall. Shared by the reserve-only read paths; the position
+ * read inlines the same two calls so it can batch `getUserAccountData`.
+ */
+async function readBothReserveData(
+  client: PublicClient,
+  pool: Address,
+  config: AaveBorrowMarketConfig,
+): Promise<{ debt: DecodedReserveData; collateral: DecodedReserveData }> {
+  const [debtRaw, collateralRaw] = await client.multicall({
+    allowFailure: false,
+    contracts: [
+      reserveDataCall(pool, config.aave.debtReserve),
+      reserveDataCall(pool, config.aave.collateralReserve),
+    ],
+  })
+  return {
+    debt: decodeReserveData(debtRaw),
+    collateral: decodeReserveData(collateralRaw),
   }
 }
 
@@ -52,26 +117,8 @@ export async function fetchAaveMarketState(
   config: AaveBorrowMarketConfig,
 ): Promise<AaveMarketState> {
   const pool = requireAavePoolAddress(config.chainId)
-  const [debtReserveRaw, collateralReserveRaw] = await client.multicall({
-    allowFailure: false,
-    contracts: [
-      {
-        address: pool,
-        abi: POOL_GET_RESERVE_DATA_ABI,
-        functionName: 'getReserveData',
-        args: [config.aave.debtReserve],
-      },
-      {
-        address: pool,
-        abi: POOL_GET_RESERVE_DATA_ABI,
-        functionName: 'getReserveData',
-        args: [config.aave.collateralReserve],
-      },
-    ],
-  })
-
-  const debtReserve = decodeReserveData(debtReserveRaw)
-  const collateralReserve = decodeReserveData(collateralReserveRaw)
+  const { debt: debtReserve, collateral: collateralReserve } =
+    await readBothReserveData(client, pool, config)
   const collateralConfig = decodeReserveConfig(collateralReserve.configData)
 
   const [totalBorrowed, totalCollateral] = await client.multicall({
@@ -116,18 +163,8 @@ export async function fetchAavePositionState(
     await client.multicall({
       allowFailure: false,
       contracts: [
-        {
-          address: pool,
-          abi: POOL_GET_RESERVE_DATA_ABI,
-          functionName: 'getReserveData',
-          args: [config.aave.debtReserve],
-        },
-        {
-          address: pool,
-          abi: POOL_GET_RESERVE_DATA_ABI,
-          functionName: 'getReserveData',
-          args: [config.aave.collateralReserve],
-        },
+        reserveDataCall(pool, config.aave.debtReserve),
+        reserveDataCall(pool, config.aave.collateralReserve),
         {
           address: pool,
           abi: POOL_ACCOUNT_ABI,
@@ -185,26 +222,10 @@ export async function fetchAaveReserveTokens(
   config: AaveBorrowMarketConfig,
 ): Promise<{ aToken: Address; variableDebtToken: Address }> {
   const pool = requireAavePoolAddress(config.chainId)
-  const [debtReserveRaw, collateralReserveRaw] = await client.multicall({
-    allowFailure: false,
-    contracts: [
-      {
-        address: pool,
-        abi: POOL_GET_RESERVE_DATA_ABI,
-        functionName: 'getReserveData',
-        args: [config.aave.debtReserve],
-      },
-      {
-        address: pool,
-        abi: POOL_GET_RESERVE_DATA_ABI,
-        functionName: 'getReserveData',
-        args: [config.aave.collateralReserve],
-      },
-    ],
-  })
+  const { debt, collateral } = await readBothReserveData(client, pool, config)
   return {
-    aToken: decodeReserveData(collateralReserveRaw).aToken,
-    variableDebtToken: decodeReserveData(debtReserveRaw).variableDebtToken,
+    aToken: collateral.aToken,
+    variableDebtToken: debt.variableDebtToken,
   }
 }
 
@@ -213,7 +234,7 @@ export async function fetchAaveReserveTokens(
  * Resolves the oracle via the pool addresses provider, then reads both prices.
  * Used by the write path to project the resulting position's health factor.
  */
-export async function fetchAavePrices(
+async function fetchAavePrices(
   client: PublicClient,
   config: AaveBorrowMarketConfig,
 ): Promise<AaveReservePrices> {
@@ -245,4 +266,20 @@ export async function fetchAavePrices(
   })
 
   return { collateralPrice, debtPrice }
+}
+
+/**
+ * Read the caller's position and the reserve prices in parallel. Both feed
+ * `projectAavePositionState`, so every write path fetches them together.
+ */
+export async function fetchAaveStateAndPrices(
+  client: PublicClient,
+  config: AaveBorrowMarketConfig,
+  user: Address,
+): Promise<{ current: AavePositionState; prices: AaveReservePrices }> {
+  const [current, prices] = await Promise.all([
+    fetchAavePositionState(client, config, user),
+    fetchAavePrices(client, config),
+  ])
+  return { current, prices }
 }

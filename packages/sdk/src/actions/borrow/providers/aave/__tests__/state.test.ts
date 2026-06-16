@@ -1,7 +1,11 @@
-import type { Address, PublicClient } from 'viem'
+import { type Address, type PublicClient, zeroAddress } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  MOCK_USDC_ADDRESS as USDC,
+  MOCK_WETH_ADDRESS as WETH,
+} from '@/__mocks__/MockAssets.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import {
   fetchAaveMarketState,
@@ -10,8 +14,6 @@ import {
 import type { Asset } from '@/types/asset.js'
 import type { AaveBorrowMarketConfig } from '@/types/borrow/index.js'
 
-const WETH = '0x4200000000000000000000000000000000000006' as Address
-const USDC = '0x5fd84259d66Cd46123540766Be93DFE6D43130D7' as Address
 const A_WETH = '0x00000000000000000000000000000000000Aae71' as Address
 const VAR_DEBT_USDC = '0x00000000000000000000000000000000000aDeb7' as Address
 
@@ -58,7 +60,6 @@ function reserveData(opts: {
   aToken?: Address
   variableDebtToken?: Address
 }) {
-  const z = '0x0000000000000000000000000000000000000000' as Address
   return [
     { data: opts.configBitmap ?? 0n }, // 0 configuration
     0n, // 1 liquidityIndex
@@ -68,10 +69,10 @@ function reserveData(opts: {
     0n, // 5 currentStableBorrowRate
     0, // 6 lastUpdateTimestamp
     0, // 7 id
-    opts.aToken ?? z, // 8 aTokenAddress
-    z, // 9 stableDebtTokenAddress
-    opts.variableDebtToken ?? z, // 10 variableDebtTokenAddress
-    z, // 11 interestRateStrategyAddress
+    opts.aToken ?? zeroAddress, // 8 aTokenAddress
+    zeroAddress, // 9 stableDebtTokenAddress
+    opts.variableDebtToken ?? zeroAddress, // 10 variableDebtTokenAddress
+    zeroAddress, // 11 interestRateStrategyAddress
     0n, // 12 accruedToTreasury
     0n, // 13 unbacked
     0n, // 14 isolationModeTotalDebt
@@ -149,5 +150,36 @@ describe('fetchAavePositionState', () => {
     expect(state.liquidationThresholdBps).toBe(8250n)
     expect(state.totalCollateralBase).toBe(3000n)
     expect(state.totalDebtBase).toBe(1000n)
+  })
+
+  it('falls back to the aggregate threshold when the reserve config reads zero', async () => {
+    const user = '0x000000000000000000000000000000000000beef' as Address
+    // LTV + bonus + decimals set, but the liquidation-threshold bits (16-31)
+    // are zeroed, so the reserve read is 0 and the aggregate must win.
+    const zeroThresholdBitmap = 8000n | (10500n << 32n) | (18n << 48n)
+    const aggregateThreshold = 7000n
+    const client = makeClient((contracts) => {
+      if (contracts[0].functionName === 'getReserveData') {
+        return [
+          reserveData({
+            variableBorrowRate: VARIABLE_BORROW_RATE,
+            variableDebtToken: VAR_DEBT_USDC,
+          }),
+          reserveData({ configBitmap: zeroThresholdBitmap, aToken: A_WETH }),
+          [
+            3000n,
+            1000n,
+            0n,
+            aggregateThreshold,
+            8000n,
+            1_500_000_000_000_000_000n,
+          ],
+        ]
+      }
+      return [10n ** 18n, 1_000_000_000n]
+    })
+
+    const state = await fetchAavePositionState(client, config, user)
+    expect(state.liquidationThresholdBps).toBe(aggregateThreshold)
   })
 })

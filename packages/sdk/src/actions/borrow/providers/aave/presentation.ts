@@ -1,59 +1,48 @@
-import { formatUnits } from 'viem'
+import { type Address, formatUnits } from 'viem'
 
+import {
+  assembleBorrowQuote,
+  type QuoteAmounts,
+} from '@/actions/borrow/core/quote.js'
 import type {
   AaveBorrowMarketConfig,
+  BorrowAction,
   BorrowMarket,
   BorrowMarketPosition,
+  BorrowQuote,
 } from '@/types/borrow/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 
-/** Aave stores interest rates in ray (27 decimals). */
+// Aave fixed-point units: ray 1e27, wad 1e18, bps 1e4 (= 100%).
+// https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/math/WadRayMath.sol
 const RAY = 10n ** 27n
-/** Aave stores LTV / threshold / bonus in basis points (1e4 = 100%). */
 const BPS = 10000n
+// Scale a bigint ratio into 1e6 fixed point before converting to a JS number,
+// preserving 6 decimals without floating-point division on bigints.
+const FRACTION_SCALE = 1_000_000n
 
-/** Convert a ray-scaled rate (APR) to a decimal fraction (e.g. 0.035). */
+/** Ray rate to decimal fraction (e.g. 0.035). */
 export function rayToFraction(ray: bigint): number {
-  // Scale to 1e6 fixed point before going to Number to keep precision.
-  return Number((ray * 1_000_000n) / RAY) / 1_000_000
+  return Number((ray * FRACTION_SCALE) / RAY) / Number(FRACTION_SCALE)
 }
 
-/** Convert a basis-point value to a decimal fraction (e.g. 8250 -> 0.825). */
+/** Basis points to decimal fraction (e.g. 8250 -> 0.825). */
 export function bpsToFraction(bps: bigint): number {
   return Number(bps) / Number(BPS)
 }
 
 /**
- * Liquidation bonus as a decimal (e.g. 10500 bps -> 0.05). Aave encodes the
- * bonus as a multiplier over 100%, so subtract one whole unit. Clamped at 0
- * for a misconfigured or frozen reserve that reports a sub-100% (or zero) bonus.
+ * Liquidation bonus as a decimal (10500 bps -> 0.05). Aave encodes it as a
+ * multiplier over 100%, so subtract one unit. Clamped at 0 for a sub-100% bonus.
+ * https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/configuration/ReserveConfiguration.sol
  */
 export function liquidationBonusFraction(bonusBps: bigint): number {
   return bonusBps > BPS ? bpsToFraction(bonusBps - BPS) : 0
 }
 
-/** Convert a 1e18-scaled value (Aave health factor) to a decimal fraction. */
-export function wad18ToNumber(wad: bigint): number {
-  return Number((wad * 1_000_000n) / 10n ** 18n) / 1_000_000
-}
-
-/**
- * Decode the packed Aave reserve `configuration.data` bitmap.
- * @description Bits 0-15 LTV, 16-31 liquidation threshold, 32-47 liquidation
- * bonus, 48-55 decimals; all in basis points except decimals. Kept here next
- * to its only consumers; promote to a shared module if a second caller appears.
- */
-export function decodeReserveConfig(data: bigint): {
-  ltvBps: bigint
-  liquidationThresholdBps: bigint
-  liquidationBonusBps: bigint
-  decimals: number
-} {
-  return {
-    ltvBps: data & 0xffffn,
-    liquidationThresholdBps: (data >> 16n) & 0xffffn,
-    liquidationBonusBps: (data >> 32n) & 0xffffn,
-    decimals: Number((data >> 48n) & 0xffn),
-  }
+/** Wad (1e18) value to decimal fraction. */
+function wad18ToNumber(wad: bigint): number {
+  return Number((wad * FRACTION_SCALE) / 10n ** 18n) / Number(FRACTION_SCALE)
 }
 
 /**
@@ -105,7 +94,11 @@ export interface AavePositionState {
   debtAmount: bigint
   /** Aggregate health factor from `getUserAccountData` (1e18 scaled). */
   healthFactorWad: bigint
-  /** Aggregate current liquidation threshold from `getUserAccountData` (bps). */
+  /**
+   * Collateral reserve liquidation threshold (bps) — same semantics as
+   * `AaveMarketState.liquidationThresholdBps`, but falls back to the aggregate
+   * `getUserAccountData` threshold when the reserve config reads zero.
+   */
   liquidationThresholdBps: bigint
   /** Collateral reserve liquidation bonus (bps). */
   liquidationBonusBps: bigint
@@ -164,7 +157,7 @@ function max0(value: bigint): bigint {
   return value < 0n ? 0n : value
 }
 
-export function adaptAaveBorrowMarket(
+export function toAaveBorrowMarket(
   config: AaveBorrowMarketConfig,
   state: AaveMarketState,
   healthBufferPct: number,
@@ -187,7 +180,7 @@ export function adaptAaveBorrowMarket(
   }
 }
 
-export function adaptAaveBorrowPosition(
+export function toAaveBorrowPosition(
   config: AaveBorrowMarketConfig,
   state: AavePositionState,
 ): BorrowMarketPosition {
@@ -200,8 +193,9 @@ export function adaptAaveBorrowPosition(
   })
   const ltv =
     hasDebt && state.totalCollateralBase > 0n
-      ? Number((state.totalDebtBase * 1_000_000n) / state.totalCollateralBase) /
-        1_000_000
+      ? Number(
+          (state.totalDebtBase * FRACTION_SCALE) / state.totalCollateralBase,
+        ) / Number(FRACTION_SCALE)
       : null
   return {
     marketId: {
@@ -229,4 +223,44 @@ export function adaptAaveBorrowPosition(
     ltv,
     maxLtv: bpsToFraction(state.liquidationThresholdBps),
   }
+}
+
+export interface AssembleAaveQuoteArgs {
+  action: BorrowAction
+  market: AaveBorrowMarketConfig
+  positionBefore: AavePositionState
+  positionAfter: AavePositionState
+  transactions: TransactionData[]
+  quoteAmounts: QuoteAmounts
+  approvalsSkipped: boolean
+  recipient: Address
+  quoteExpirationSeconds: number
+  healthBufferPct: number
+}
+
+/**
+ * Assemble a `BorrowQuote` from a projected before/after Aave position. The
+ * caller supplies the resolved settings (`quoteExpirationSeconds`,
+ * `healthBufferPct`) so this stays a pure presentation function.
+ */
+export function assembleAaveBorrowQuote(
+  args: AssembleAaveQuoteArgs,
+): BorrowQuote {
+  const hasBefore =
+    args.positionBefore.collateralAmount > 0n ||
+    args.positionBefore.debtAmount > 0n
+  return assembleBorrowQuote({
+    provider: 'aave',
+    action: args.action,
+    recipient: args.recipient,
+    positionBefore: hasBefore
+      ? toAaveBorrowPosition(args.market, args.positionBefore)
+      : null,
+    positionAfter: toAaveBorrowPosition(args.market, args.positionAfter),
+    quoteAmounts: args.quoteAmounts,
+    transactions: args.transactions,
+    approvalsSkipped: args.approvalsSkipped,
+    healthBufferPct: args.healthBufferPct,
+    quoteExpirationSeconds: args.quoteExpirationSeconds,
+  })
 }

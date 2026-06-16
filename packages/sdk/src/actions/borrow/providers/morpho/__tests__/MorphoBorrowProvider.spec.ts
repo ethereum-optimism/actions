@@ -153,10 +153,14 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       cm,
     )
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const results = await provider.getMarkets()
 
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe(market.name)
+    // The dropped market is logged so a shrinking list traces to the fault.
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    errorSpy.mockRestore()
   })
 })
 
@@ -388,15 +392,24 @@ describe('MorphoBorrowProvider - repay', () => {
       amount: { max: true },
     })
     expect(quote.action).toBe('repay')
-    expect(quote.execution.transactions).toHaveLength(2)
-    expect(quote.execution.approvalsSkipped).toBe(false)
+    // Ample allowance covers the live debt, so no approval is prepended.
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    const decoded = decodeFunctionData({
+      abi: blueAbi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('repay')
+    // Shares-based path: assets arg is 0, shares arg carries the position.
+    expect(decoded.args?.[1]).toBe(0n)
+    expect(decoded.args?.[2]).toBe(oneEth * 3n)
   })
 
-  it('prepends a max approval for shares-based repay when allowance is finite', async () => {
+  it('prepends a bounded (non-max) approval for shares-based repay in exact mode', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({
         borrowShares: oneEth * 3n,
-        allowance: oneEth * 3n,
+        allowance: 0n,
       }),
     )
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -407,6 +420,33 @@ describe('MorphoBorrowProvider - repay', () => {
     })
 
     expect(quote.execution.transactions).toHaveLength(2)
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    // Exact mode bounds the approval to the live-debt snapshot, never maxUint256.
+    expect(decoded.args?.[1]).not.toBe(maxUint256)
+    expect(decoded.args?.[1]).toBe(quote.borrowAmountRaw)
+  })
+
+  it('uses a max approval for shares-based repay when approvalMode is max', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        borrowShares: oneEth * 3n,
+        allowance: 0n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider(
+      { marketAllowlist: [market], approvalMode: 'max' },
+      cm,
+    )
+    const quote = await provider.repay({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+
     const decoded = decodeFunctionData({
       abi: erc20Abi,
       data: quote.execution.transactions[0].data,
@@ -522,12 +562,12 @@ describe('MorphoBorrowProvider - closePosition', () => {
     ).rejects.toBeInstanceOf(EmptyPositionError)
   })
 
-  it('uses a max approval for shares-based close when allowance is finite', async () => {
+  it('uses a bounded (non-max) approval for shares-based close in exact mode', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({
         collateral: oneEth * 2n,
         borrowShares: oneEth,
-        allowance: oneEth,
+        allowance: 0n,
       }),
     )
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -543,7 +583,9 @@ describe('MorphoBorrowProvider - closePosition', () => {
       data: quote.execution.transactions[0].data,
     })
     expect(decoded.functionName).toBe('approve')
-    expect(decoded.args?.[1]).toBe(maxUint256)
+    // Exact mode bounds the approval to the live-debt snapshot, never maxUint256.
+    expect(decoded.args?.[1]).not.toBe(maxUint256)
+    expect(decoded.args?.[1]).toBe(quote.borrowAmountRaw)
   })
 
   it('supports max borrow with an exact collateral withdrawal', async () => {

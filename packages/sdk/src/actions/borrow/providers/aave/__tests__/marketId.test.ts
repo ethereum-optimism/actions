@@ -1,14 +1,14 @@
-import type { Address } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
+import {
+  MOCK_OP_ADDRESS as OP,
+  MOCK_USDC_ADDRESS as USDC,
+  MOCK_WETH_ADDRESS as WETH,
+} from '@/__mocks__/MockAssets.js'
 import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'
 import type { BorrowMarketId } from '@/types/borrow/index.js'
-
-const WETH = '0x4200000000000000000000000000000000000006' as Address
-const USDC = '0x5fd84259d66Cd46123540766Be93DFE6D43130D7' as Address
-const OP = '0x4200000000000000000000000000000000000042' as Address
 
 describe('computeAaveBorrowMarketId', () => {
   it('is deterministic for the same inputs', () => {

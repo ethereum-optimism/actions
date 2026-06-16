@@ -97,14 +97,8 @@ export const ORACLE_ABI = parseAbi([
   'function getAssetPrice(address asset) view returns (uint256)',
 ])
 
-/**
- * Aave WrappedTokenGatewayV3 ABI - native ETH deposit, withdraw, borrow, repay.
- * `borrowETH` requires prior `approveDelegation` on the variable debt token;
- * `repayETH` sends the repayment as `msg.value`.
- */
+/** Aave WrappedTokenGatewayV3 ABI - native ETH collateral deposit and withdraw. */
 export const WETH_GATEWAY_ABI = parseAbi([
   'function depositETH(address pool, address onBehalfOf, uint16 referralCode) payable',
   'function withdrawETH(address pool, uint256 amount, address to)',
-  'function borrowETH(address pool, uint256 amount, uint256 interestRateMode, uint16 referralCode)',
-  'function repayETH(address pool, uint256 amount, uint256 rateMode, address onBehalfOf) payable',
 ])

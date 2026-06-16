@@ -91,7 +91,11 @@ export interface BorrowMarketConfigMetadata {
 /**
  * Discriminated config describing a single borrow market.
  * @description Each variant pairs a `BorrowMarketId` with the protocol-specific
- * configuration the provider needs to build calldata and read state.
+ * configuration the provider needs to build calldata and read state. The params
+ * live under a protocol-named key (`marketParams` for Morpho, `aave` for Aave)
+ * rather than a shared `params` field on purpose: the two shapes are unrelated
+ * (a single Morpho market vs. a synthetic Aave reserve pair), and the named key
+ * makes the discriminant obvious at the call site without reading `kind`.
  */
 export type BorrowMarketConfig =
   | (BorrowMarketIdBase &

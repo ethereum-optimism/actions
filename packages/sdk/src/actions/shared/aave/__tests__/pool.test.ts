@@ -1,11 +1,7 @@
 import { decodeFunctionData, encodeFunctionData, getAddress } from 'viem'
 import { describe, expect, it } from 'vitest'
 
-import {
-  POOL_ABI,
-  POOL_ACCOUNT_ABI,
-  WETH_GATEWAY_ABI,
-} from '@/actions/shared/aave/abis/pool.js'
+import { POOL_ABI, POOL_ACCOUNT_ABI } from '@/actions/shared/aave/abis/pool.js'
 
 // Checksummed so they match the addresses viem returns from decodeFunctionData.
 const ASSET = getAddress('0x00000000000000000000000000000000000a55e7')
@@ -55,29 +51,5 @@ describe('shared aave pool abi', () => {
       }),
     })
     expect(reservesList.functionName).toBe('getReservesList')
-  })
-
-  it('round-trips native borrow and repay gateway fragments', () => {
-    const borrow = decodeFunctionData({
-      abi: WETH_GATEWAY_ABI,
-      data: encodeFunctionData({
-        abi: WETH_GATEWAY_ABI,
-        functionName: 'borrowETH',
-        args: [ASSET, 1000n, 2n, 0],
-      }),
-    })
-    expect(borrow.functionName).toBe('borrowETH')
-    expect(borrow.args).toEqual([ASSET, 1000n, 2n, 0])
-
-    const repay = decodeFunctionData({
-      abi: WETH_GATEWAY_ABI,
-      data: encodeFunctionData({
-        abi: WETH_GATEWAY_ABI,
-        functionName: 'repayETH',
-        args: [ASSET, 1000n, 2n, USER],
-      }),
-    })
-    expect(repay.functionName).toBe('repayETH')
-    expect(repay.args).toEqual([ASSET, 1000n, 2n, USER])
   })
 })

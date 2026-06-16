@@ -13,7 +13,7 @@ import {
   buildFrontendWalletOperations,
 } from './frontendWalletOperations'
 import { buildBorrowQuote } from '@/test-utils/borrowFixtures'
-import { MorphoBorrowDemo } from '@/constants/markets'
+import { MorphoUSDCBorrowOPDemo } from '@/constants/markets'
 
 const CHAIN_ID = 84532 as SupportedChainId
 const TOKEN_IN = '0x1111111111111111111111111111111111111111' as Address
@@ -40,9 +40,9 @@ const assetOut: Asset = {
 }
 
 const borrowMarketId = {
-  kind: MorphoBorrowDemo.kind,
-  marketId: MorphoBorrowDemo.marketId,
-  chainId: MorphoBorrowDemo.chainId,
+  kind: MorphoUSDCBorrowOPDemo.kind,
+  marketId: MorphoUSDCBorrowOPDemo.marketId,
+  chainId: MorphoUSDCBorrowOPDemo.chainId,
 } as const
 
 describe('buildFrontendWalletOperations', () => {
@@ -188,14 +188,14 @@ describe('buildFrontendWalletOperations', () => {
       marketId: borrowMarketId,
       borrowAmount: { amount: 5 },
       collateralAmount: { amount: 10 },
-      market: MorphoBorrowDemo,
+      market: MorphoUSDCBorrowOPDemo,
       walletAddress: wallet.address,
     })
     expect(openPosition).toHaveBeenCalledWith({
       marketId: borrowMarketId,
       borrowAmount: { amount: 5 },
       collateralAmount: { amount: 10 },
-      market: MorphoBorrowDemo,
+      market: MorphoUSDCBorrowOPDemo,
       walletAddress: wallet.address,
     })
   })
@@ -256,7 +256,7 @@ describe('buildFrontendWalletOperations', () => {
     expect(repay).toHaveBeenCalledWith({
       marketId: borrowMarketId,
       amount: { amount: 3 },
-      market: MorphoBorrowDemo,
+      market: MorphoUSDCBorrowOPDemo,
       walletAddress: wallet.address,
     })
     expect(result).toBe(receipt)

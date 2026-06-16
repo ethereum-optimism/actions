@@ -22,7 +22,7 @@ import {
 import { getActions } from '@/config/actions.js'
 import {
   AaveETHBorrowUSDCDemo,
-  MorphoUSDCBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
 } from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
@@ -37,7 +37,7 @@ function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
 }
 
 const BORROW_MARKETS: BorrowMarketConfig[] = [
-  MorphoUSDCBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
   AaveETHBorrowUSDCDemo,
 ]
 

@@ -8,7 +8,7 @@ import { env } from './env.js'
 import {
   AaveETH,
   AaveETHBorrowUSDCDemo,
-  MorphoUSDCBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
   MorphoUSDCLendDemo,
 } from './markets.js'
 
@@ -44,7 +44,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     },
     borrow: {
       morpho: {
-        marketAllowlist: [MorphoUSDCBorrowDemo],
+        marketAllowlist: [MorphoUSDCBorrowOPDemo],
       },
       aave: {
         marketAllowlist: [AaveETHBorrowUSDCDemo],

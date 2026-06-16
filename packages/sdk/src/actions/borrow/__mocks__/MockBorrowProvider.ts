@@ -1,10 +1,7 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import {
-  requireAllowlistedBorrowMarketConfig,
-  validateBorrowWalletAddress,
-} from '@/actions/borrow/core/validations.js'
+import { requireAllowlistedBorrowMarketConfig } from '@/actions/borrow/core/validations.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -28,7 +25,10 @@ import type {
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviderName } from '@/types/providers.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateWalletAddress,
+} from '@/utils/validation.js'
 
 export interface MockBorrowProviderConfig {
   supportedChains: number[]
@@ -122,6 +122,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       .mockImplementation(this.defaultGetPosition.bind(this))
   }
 
+  public get marketKind(): BorrowMarketId['kind'] {
+    return this.mockConfig.provider === 'aave' ? 'aave-v3' : 'morpho-blue'
+  }
+
   protocolSupportedChainIds(): number[] {
     return this.mockConfig.supportedChains
   }
@@ -193,7 +197,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private defaultGetPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     const config = this.findConfig(params.marketId)
     return Promise.resolve(this.emptyPosition(config))
   }
@@ -205,7 +209,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       walletAddress?: `0x${string}`
     },
   ): Promise<BorrowQuote> {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     const config = this.findConfig(params.market)
     const now = Math.floor(Date.now() / 1000)
     const position = this.emptyPosition(config)
@@ -215,6 +219,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         marketId: config.marketId,
         chainId: config.chainId,
       },
+      recipient: params.walletAddress,
       action,
       positionBefore: null,
       positionAfter: position,

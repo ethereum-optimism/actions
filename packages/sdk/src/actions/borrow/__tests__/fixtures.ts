@@ -74,6 +74,7 @@ export function makeBorrowQuote(
   }
   return {
     marketId: id,
+    recipient: walletAddress,
     action: 'open',
     positionBefore: null,
     positionAfter: {

@@ -83,7 +83,7 @@ describe('UniswapSwapProvider', () => {
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
-        walletAddress: '0xwallet' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -101,7 +101,7 @@ describe('UniswapSwapProvider', () => {
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
-        walletAddress: '0xwallet' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
       })
 
       // Mock readContract returns 0n (no allowance), so approvals should be needed
@@ -120,7 +120,8 @@ describe('UniswapSwapProvider', () => {
           assetIn: USDC,
           assetOut: OP,
           chainId: CHAIN_ID,
-          walletAddress: '0xwallet' as Address,
+          walletAddress:
+            '0x4444444444444444444444444444444444444444' as Address,
         }),
       ).rejects.toThrow('fee and tickSpacing must be configured')
     })

@@ -4,13 +4,13 @@ import {
   borrowCollateralVault,
   GauntletUSDCDemo,
   morphoBorrowMarketForVault,
-  MorphoBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
 } from './markets'
 
 describe('borrowCollateralVault', () => {
   it('resolves the demo borrow market to its on-chain vault collateralToken', () => {
-    expect(borrowCollateralVault(MorphoBorrowDemo)).toBe(
-      MorphoBorrowDemo.marketParams.collateralToken,
+    expect(borrowCollateralVault(MorphoUSDCBorrowOPDemo)).toBe(
+      MorphoUSDCBorrowOPDemo.marketParams.collateralToken,
     )
   })
 
@@ -27,8 +27,8 @@ describe('borrowCollateralVault', () => {
   it('returns undefined when the chainId does not match', () => {
     expect(
       borrowCollateralVault({
-        kind: MorphoBorrowDemo.kind,
-        marketId: MorphoBorrowDemo.marketId,
+        kind: MorphoUSDCBorrowOPDemo.kind,
+        marketId: MorphoUSDCBorrowOPDemo.marketId,
         chainId: 999999,
       }),
     ).toBeUndefined()
@@ -41,7 +41,7 @@ describe('morphoBorrowMarketForVault', () => {
       GauntletUSDCDemo.address,
       GauntletUSDCDemo.chainId,
     )
-    expect(borrowMarket?.marketId).toBe(MorphoBorrowDemo.marketId)
+    expect(borrowMarket?.marketId).toBe(MorphoUSDCBorrowOPDemo.marketId)
   })
 
   it('returns undefined for an Aave lend market (no chaining needed)', () => {

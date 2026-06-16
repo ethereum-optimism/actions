@@ -117,7 +117,8 @@ describe('SwapProvider', () => {
           assetIn: MockUSDC,
           assetOut: MockWETH,
           chainId: 84532 as SupportedChainId,
-          walletAddress: '0x1234' as Address,
+          walletAddress:
+            '0x4444444444444444444444444444444444444444' as Address,
         }),
       ).rejects.toThrow('Either amountIn or amountOut must be provided')
     })
@@ -130,7 +131,8 @@ describe('SwapProvider', () => {
           assetIn: MockUSDC,
           assetOut: MockWETH,
           chainId: 999 as SupportedChainId,
-          walletAddress: '0x1234' as Address,
+          walletAddress:
+            '0x4444444444444444444444444444444444444444' as Address,
         }),
       ).rejects.toThrow('Chain 999 is not supported')
     })
@@ -148,7 +150,8 @@ describe('SwapProvider', () => {
           assetIn: unsupportedAsset,
           assetOut: MockWETH,
           chainId: 84532 as SupportedChainId,
-          walletAddress: '0x1234' as Address,
+          walletAddress:
+            '0x4444444444444444444444444444444444444444' as Address,
         }),
       ).rejects.toThrow('not supported on chain')
     })
@@ -160,7 +163,7 @@ describe('SwapProvider', () => {
         assetIn: MockUSDC,
         assetOut: MockWETH,
         chainId: 84532 as SupportedChainId,
-        walletAddress: '0x1234' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
         slippage: 0.02,
       })
       expect(result).toBeDefined()
@@ -178,7 +181,7 @@ describe('SwapProvider', () => {
         assetIn: MockUSDC,
         assetOut: MockWETH,
         chainId: 84532 as SupportedChainId,
-        walletAddress: '0x1234' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
       })
       const afterTime = Math.floor(Date.now() / 1000) + 30
 
@@ -199,7 +202,7 @@ describe('SwapProvider', () => {
         assetIn: MockUSDC, // 6 decimals
         assetOut: MockWETH,
         chainId: 84532 as SupportedChainId,
-        walletAddress: '0x1234' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
       })
 
       expect(provider.mockExecute).toHaveBeenCalledWith(
@@ -216,7 +219,7 @@ describe('SwapProvider', () => {
         assetIn: MockUSDC,
         assetOut: MockWETH,
         chainId: 84532 as SupportedChainId,
-        walletAddress: '0x1234' as Address,
+        walletAddress: '0x4444444444444444444444444444444444444444' as Address,
       })
 
       expect(result.amountIn).toBeDefined()

@@ -2,7 +2,10 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { ApprovalMode } from '@/types/actions.js'
 import { resolveApprovalMode } from '@/utils/approve.js'
-import { resolveSupportedChainIds } from '@/utils/validation.js'
+import {
+  resolveSupportedChainIds,
+  validateChainSupported,
+} from '@/utils/validation.js'
 
 /** Minimal provider-config shape every action provider satisfies. */
 export interface BaseActionProviderConfig {
@@ -59,6 +62,15 @@ export abstract class BaseActionProvider<
 
   public isChainSupported(chainId: number): boolean {
     return (this.supportedChainIds() as readonly number[]).includes(chainId)
+  }
+
+  /**
+   * Assert a chain is in this provider's effective supported set, injecting
+   * `supportedChainIds()` so call sites don't repeat the plumbing.
+   * @throws ChainNotSupportedError when the chain is unsupported.
+   */
+  protected assertChainSupported(chainId: number): void {
+    validateChainSupported(chainId, this.supportedChainIds())
   }
 
   /**
