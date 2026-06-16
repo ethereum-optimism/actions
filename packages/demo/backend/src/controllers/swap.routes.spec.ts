@@ -1,4 +1,5 @@
 import {
+  ExactOutputNotSupportedError,
   ProviderNotConfiguredError,
   SameAssetError,
   SlippageOutOfRangeError,
@@ -111,6 +112,20 @@ describe('swap routes error mapping via global onError', () => {
     expect(res.status).toBe(400)
     const json = (await res.json()) as { error: string }
     expect(json.error).toBe('Slippage is out of the allowed range.')
+  })
+
+  it('maps ExactOutputNotSupportedError from GET /swap/quote to 400', async () => {
+    vi.mocked(swapService.getQuote).mockRejectedValue(
+      new ExactOutputNotSupportedError('uniswap'),
+    )
+    const res = await createApp().request(
+      `/swap/quote?tokenInAddress=${TOKEN_IN}&tokenOutAddress=${TOKEN_OUT}&chainId=${CHAIN_ID}&amountOut=0.5`,
+    )
+    expect(res.status).toBe(400)
+    const json = (await res.json()) as { error: string }
+    expect(json.error).toBe(
+      'Exact-output swaps are not supported by this provider.',
+    )
   })
 
   it('returns a generic 500 when the thrown error is unmapped', async () => {

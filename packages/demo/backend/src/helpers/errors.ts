@@ -30,9 +30,9 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { AuthContext } from '@/middleware/auth.js'
 
 /**
- * Thrown by borrow services when an authenticated request resolves to
- * no Privy wallet. Mapped to 404 by `mapSdkError`. Local to the backend
- * because the SDK doesn't model the wallet-lookup layer.
+ * Thrown by borrow, lend, and swap services when an authenticated request
+ * resolves to no Privy wallet. Mapped to 404 by `mapSdkError`. Local to the
+ * backend because the SDK doesn't model the wallet-lookup layer.
  */
 export class WalletNotFoundError extends Error {
   override name = 'WalletNotFoundError' as const
