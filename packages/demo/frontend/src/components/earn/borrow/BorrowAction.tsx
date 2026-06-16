@@ -18,7 +18,7 @@ import {
 } from '@/utils/borrowMath'
 import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
 import { assetBalanceAmount } from '@/utils/balanceMatching'
-import { USDC_DEMO } from '@/constants/markets'
+import { repayGateAsset } from '@/utils/demoMagic'
 import { sameMarketId } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
@@ -106,13 +106,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
-  // The Aave market borrows real USDC, but the demo economy runs on USDC_DEMO
-  // (the mirror mints it on borrow and burns it on repay). The user spends that
-  // USDC_DEMO via swap/lend, so gate the repay on the USDC_DEMO balance, not the
-  // parked real USDC the borrow leaves behind; otherwise a user who spent their
-  // USDC_DEMO sees "repay in full", repays, and the USDC_DEMO removal reverts.
-  const repayBalanceAsset =
-    activeMarket?.marketId.kind === 'aave-v3' ? USDC_DEMO : activeAsset
+  // Gate the repay on the asset the user actually holds (USDC_DEMO for the
+  // mirror market; see utils/demoMagic), not the position's real borrow asset.
+  const repayBalanceAsset = repayGateAsset(activeMarket, activeAsset)
 
   // Repaying burns the held debt-asset balance, so the repay amount is capped at
   // min(held balance, outstanding debt). The held balance gates the CTA and

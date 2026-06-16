@@ -7,6 +7,7 @@ import type {
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { describe, expect, it, vi } from 'vitest'
 
+import { AaveETHBorrowUSDCDemo } from '@/constants/markets'
 import {
   buildBorrowMarketPosition,
   makeBorrowContextWrapper,
@@ -77,7 +78,13 @@ const morphoMarket = {
 } as unknown as BorrowMarket
 
 const aaveMarket = {
-  marketId: { kind: 'aave-v3', marketId: '0x' + 'c'.repeat(64), chainId: OPS },
+  // The real mirror-market id, so demoMagic.isMirrorMarket matches it (the
+  // repay gate swaps to USDC_DEMO only for this specific market).
+  marketId: {
+    kind: AaveETHBorrowUSDCDemo.kind,
+    marketId: AaveETHBorrowUSDCDemo.marketId,
+    chainId: AaveETHBorrowUSDCDemo.chainId,
+  },
   name: 'Aave ETH / USDC',
   collateralAsset: ETH,
   borrowAsset: USDC,
