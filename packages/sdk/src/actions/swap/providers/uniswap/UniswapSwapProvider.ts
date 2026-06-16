@@ -72,6 +72,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       slippage: params.slippage,
       deadline: params.deadline,
       recipient: params.recipient,
+      walletAddress: params.walletAddress,
     })
     return this.buildSwapTransactions({
       ...swapQuote,
@@ -89,7 +90,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         slippage: quote.slippage,
         deadline: quote.deadline,
         recipient: quote.recipient,
-        walletAddress: quote.recipient,
+        walletAddress: quote.walletAddress,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
         approvalMode: resolveApprovalMode(
@@ -112,7 +113,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const publicClient = this.chainManager.getPublicClient(chainId)
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
-    const { slippage, now, deadline, recipient, amountInRaw } =
+    const { slippage, now, deadline, recipient, walletAddress, amountInRaw } =
       this.resolveQuoteDefaults(params)
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
 
@@ -183,6 +184,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       expiresAt: deadline,
       gasEstimate: quote.gasEstimate,
       recipient,
+      walletAddress,
     }
   }
 

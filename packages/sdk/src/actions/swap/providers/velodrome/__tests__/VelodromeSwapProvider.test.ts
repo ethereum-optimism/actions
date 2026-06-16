@@ -168,6 +168,65 @@ describe('VelodromeSwapProvider', () => {
         'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
       )
     })
+
+    it('reads token allowance against walletAddress, not recipient', async () => {
+      const recipient = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address
+      const owners: string[] = []
+      const mockPublicClient = {
+        readContract: vi
+          .fn()
+          .mockImplementation(
+            ({
+              functionName,
+              args,
+            }: {
+              functionName: string
+              args: unknown[]
+            }) => {
+              if (functionName === 'getAmountsOut')
+                return Promise.resolve([100000000n, 500000000000000000n])
+              if (functionName === 'allowance') {
+                owners.push((args[0] as string).toLowerCase())
+                return Promise.resolve(0n)
+              }
+              if (functionName === 'getPool')
+                return Promise.resolve(
+                  '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                )
+              return Promise.resolve(0n)
+            },
+          ),
+      } as unknown as PublicClient
+      const chainManager = {
+        getPublicClient: vi.fn().mockReturnValue(mockPublicClient),
+        tryGetPublicClient: vi.fn().mockReturnValue(undefined),
+        getSupportedChains: vi.fn().mockReturnValue([CHAIN_ID]),
+      } as unknown as ChainManager
+      const provider = new VelodromeSwapProvider(
+        {
+          defaultSlippage: 0.005,
+          marketAllowlist: [
+            { assets: [USDC, OP], stable: false, chainId: CHAIN_ID },
+          ],
+        },
+        chainManager,
+      )
+
+      await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: OP,
+        chainId: CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+        recipient,
+      })
+
+      expect(owners.length).toBeGreaterThan(0)
+      expect(owners).not.toContain(recipient.toLowerCase())
+      for (const owner of owners) {
+        expect(owner).toBe(MOCK_WALLET.toLowerCase())
+      }
+    })
   })
 
   describe('getQuote', () => {

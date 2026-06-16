@@ -256,6 +256,17 @@ export interface SwapQuote {
    */
   recipient: Address
   /**
+   * Allowance owner: the address whose ERC-20 / Permit2 allowances are read
+   * when building swap approvals. This is the executing wallet (signer / EOA),
+   * which is conceptually distinct from `recipient` (who receives the output
+   * tokens). For EOAs and current smart-wallet implementations the two always
+   * coincide, but they are decoupled here so allowance reads never depend on
+   * the recipient — see the discriminated execute paths in `SwapProvider`.
+   * Populated by the provider's `_getQuote`; for read-only quotes with no
+   * wallet context it falls back to `recipient`.
+   */
+  walletAddress: Address
+  /**
    * Per-call override for the approval-amount strategy. When set, the provider
    * uses this for the swap's approvals instead of the wallet-level config
    * default. When unset, the provider falls back to the wallet's

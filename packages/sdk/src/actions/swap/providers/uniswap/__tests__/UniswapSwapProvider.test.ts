@@ -125,6 +125,67 @@ describe('UniswapSwapProvider', () => {
         }),
       ).rejects.toThrow('fee and tickSpacing must be configured')
     })
+
+    it('reads Permit2/ERC-20 allowances against walletAddress, not recipient', async () => {
+      const wallet = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address
+      const recipient = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address
+      const owners: string[] = []
+      const mockPublicClient = {
+        simulateContract: vi.fn().mockResolvedValue({
+          result: [500000000000000000n, 150000n],
+        }),
+        readContract: vi
+          .fn()
+          .mockImplementation(
+            ({
+              functionName,
+              args,
+            }: {
+              functionName: string
+              args: unknown[]
+            }) => {
+              if (functionName === 'extsload')
+                return Promise.resolve(`0x${'0'.repeat(64)}`)
+              if (functionName === 'allowance') {
+                owners.push((args[0] as string).toLowerCase())
+                // Permit2 allowance has 3 args; ERC-20 allowance has 2
+                return Promise.resolve(args.length === 3 ? [0n, 0, 0] : 0n)
+              }
+              return Promise.resolve(0n)
+            },
+          ),
+      } as unknown as PublicClient
+      const chainManager = {
+        getPublicClient: vi.fn().mockReturnValue(mockPublicClient),
+        getSupportedChains: vi.fn().mockReturnValue([CHAIN_ID]),
+      } as unknown as ChainManager
+      const provider = new UniswapSwapProvider(
+        {
+          defaultSlippage: 0.005,
+          marketAllowlist: [
+            { assets: [USDC, OP], fee: 100, tickSpacing: 2, chainId: CHAIN_ID },
+          ],
+        },
+        chainManager,
+      )
+
+      await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: OP,
+        chainId: CHAIN_ID,
+        walletAddress: wallet,
+        recipient,
+      })
+
+      // Both the ERC-20→Permit2 and Permit2→router allowance reads must use the
+      // executing wallet as owner, never the (distinct) output recipient.
+      expect(owners.length).toBeGreaterThan(0)
+      expect(owners).not.toContain(recipient.toLowerCase())
+      for (const owner of owners) {
+        expect(owner).toBe(wallet.toLowerCase())
+      }
+    })
   })
 
   describe('getQuote', () => {

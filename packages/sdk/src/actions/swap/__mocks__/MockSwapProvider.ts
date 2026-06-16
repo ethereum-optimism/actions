@@ -5,6 +5,7 @@ import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -207,6 +208,9 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       expiresAt: deadline,
       gasEstimate: 150000n,
       recipient: (params.recipient ??
+        '0x0000000000000000000000000000000000000001') as Address,
+      walletAddress: ((params as SwapQuoteParamsResolved).walletAddress ??
+        params.recipient ??
         '0x0000000000000000000000000000000000000001') as Address,
     }
   }
