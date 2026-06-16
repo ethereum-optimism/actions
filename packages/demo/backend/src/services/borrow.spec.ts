@@ -430,6 +430,25 @@ describe('Borrow Service', () => {
       )
     })
 
+    it('removes USDC_DEMO after an aave close (full repay)', async () => {
+      const { removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.closePosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.closePosition({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        borrowAmount: { max: true },
+      })
+      expect(removeMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        1_000_000n,
+        '0xreal',
+      )
+    })
+
     it('does NOT mirror a morpho borrow or repay (regression)', async () => {
       const { mintMirrorUsdc, removeMirrorUsdc } = await import('./mirror.js')
       mockWalletBorrow.openPosition.mockResolvedValue({
