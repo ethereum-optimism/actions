@@ -14,6 +14,20 @@ import {
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
+/**
+ * Borrow markets the backend services, grouped by provider for the SDK config.
+ * The single source of truth: `createActionsConfig().borrow` reads it here and
+ * `services/borrow.ts` flattens it for `(chainId, marketId)` resolution.
+ */
+export const borrowMarketAllowlist = {
+  morpho: {
+    marketAllowlist: [MorphoUSDCBorrowOPDemo],
+  },
+  aave: {
+    marketAllowlist: [AaveETHBorrowUSDCDemo],
+  },
+}
+
 export function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
     wallet: {
@@ -42,14 +56,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
         marketAllowlist: [AaveETH],
       },
     },
-    borrow: {
-      morpho: {
-        marketAllowlist: [MorphoUSDCBorrowOPDemo],
-      },
-      aave: {
-        marketAllowlist: [AaveETHBorrowUSDCDemo],
-      },
-    },
+    borrow: borrowMarketAllowlist,
     swap: {
       uniswap: {
         defaultSlippage: 0.005, // 0.5%
