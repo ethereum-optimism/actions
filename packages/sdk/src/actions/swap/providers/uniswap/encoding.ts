@@ -35,6 +35,9 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
  */
 const NATIVE_CURRENCY = zeroAddress
 
+/** V4 pools/hops with no attached hook contract use address(0) for `hooks`. */
+const ZERO_HOOKS = zeroAddress
+
 /**
  * Resolve an asset to its V4 currency address (native ETH → address(0)).
  */
@@ -70,13 +73,8 @@ function resolvePoolParams(
   fee: number,
   tickSpacing: number,
 ): ResolvedPoolParams {
-  const tokenIn = isNativeAsset(assetIn)
-    ? NATIVE_CURRENCY
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? NATIVE_CURRENCY
-    : getAssetAddress(assetOut, chainId)
+  const tokenIn = getAssetCurrency(assetIn, chainId)
+  const tokenOut = getAssetCurrency(assetOut, chainId)
 
   // V4 requires sorted tokens: currency0 < currency1
   const [currency0, currency1] =
@@ -90,7 +88,7 @@ function resolvePoolParams(
     currency1,
     fee,
     tickSpacing,
-    hooks: '0x0000000000000000000000000000000000000000' as Address,
+    hooks: ZERO_HOOKS,
   }
 
   return { tokenIn, tokenOut, zeroForOne, poolKey }
@@ -120,6 +118,8 @@ interface ResolvedPathParams {
   currencyIn: Address
   currencyOut: Address
   path: PathKey[]
+  /** Asset chain oriented to the swap direction (in → out), for route display. */
+  routeAssets: Asset[]
 }
 
 /**
@@ -150,14 +150,32 @@ export function buildPath(
  */
 function resolvePathParams(
   assetIn: Asset,
+  assetOut: Asset,
   chainId: SupportedChainId,
   multiHop: MultiHopParams,
   isExactInput: boolean,
 ): ResolvedPathParams {
   // Orient the configured forward route to the actual swap direction (in → out).
   const inCurrency = getAssetCurrency(assetIn, chainId).toLowerCase()
-  const forward =
-    getAssetCurrency(multiHop.assets[0], chainId).toLowerCase() === inCurrency
+  const outCurrency = getAssetCurrency(assetOut, chainId).toLowerCase()
+  const origin = getAssetCurrency(multiHop.assets[0], chainId).toLowerCase()
+  const destination = getAssetCurrency(
+    multiHop.assets[multiHop.assets.length - 1],
+    chainId,
+  ).toLowerCase()
+
+  // The configured path must connect exactly the requested pair. Without this
+  // guard a pair-match on a wider config (e.g. an intermediate asset) would
+  // silently encode a swap to the wrong currency — a wrong byte here bare-reverts
+  // on-chain or delivers the wrong token.
+  const forward = inCurrency === origin && outCurrency === destination
+  const reverse = inCurrency === destination && outCurrency === origin
+  if (!forward && !reverse) {
+    throw new Error(
+      `multi-hop path endpoints (${origin} → ${destination}) do not match swap pair (${inCurrency} → ${outCurrency})`,
+    )
+  }
+
   const assets = forward ? multiHop.assets : [...multiHop.assets].reverse()
   const pools = forward ? multiHop.pools : [...multiHop.pools].reverse()
 
@@ -170,7 +188,7 @@ function resolvePathParams(
     intermediateCurrency: isExactInput ? currencies[i + 1] : currencies[i],
     fee: pool.fee,
     tickSpacing: pool.tickSpacing,
-    hooks: NATIVE_CURRENCY,
+    hooks: ZERO_HOOKS,
     hookData: '0x',
   }))
 
@@ -178,6 +196,7 @@ function resolvePathParams(
     currencyIn: currencies[0],
     currencyOut: currencies[n],
     path,
+    routeAssets: assets,
   }
 }
 
@@ -194,7 +213,11 @@ export interface GetQuoteParams {
   fee?: number
   /** Tick spacing for the pool. Required for single-hop swaps. */
   tickSpacing?: number
-  /** Multi-hop route. When set, overrides `fee`/`tickSpacing` single-hop quoting. */
+  /**
+   * Multi-hop route. When set, overrides `fee`/`tickSpacing` single-hop quoting.
+   * Note: multi-hop quotes report `priceImpact: 0` in v1 — a single mid-price
+   * across multiple pools is not derived. Use per-pool data in `route.pools`.
+   */
   multiHop?: MultiHopParams
 }
 
@@ -320,6 +343,7 @@ async function quoteMultiHop(
 ): Promise<QuoteAmounts> {
   const {
     assetIn,
+    assetOut,
     amountInRaw,
     amountOutRaw,
     chainId,
@@ -327,8 +351,9 @@ async function quoteMultiHop(
     quoterAddress,
   } = params
 
-  const { currencyIn, currencyOut, path } = resolvePathParams(
+  const { currencyIn, currencyOut, path, routeAssets } = resolvePathParams(
     assetIn,
+    assetOut,
     chainId,
     multiHop,
     isExactInput,
@@ -368,9 +393,7 @@ async function quoteMultiHop(
   const amountIn = isExactInput ? amountInRaw! : quoteResult.result[0]
   const amountOut = isExactInput ? quoteResult.result[0] : amountOutRaw!
 
-  // Orient the asset chain to the swap direction for the route's display path.
-  const forward = getAssetCurrency(multiHop.assets[0], chainId) === currencyIn
-  const routeAssets = forward ? multiHop.assets : [...multiHop.assets].reverse()
+  // routeAssets is already oriented to the swap direction by resolvePathParams.
   const pools: SwapMarketInfo[] = path.map((hop, i) => ({
     // Mirror single-hop's "input currency as address" choice for each hop.
     address: getAssetCurrency(routeAssets[i], chainId),
@@ -542,10 +565,11 @@ function encodeMultiHopActions(
   isExactInput: boolean,
   { minAmountOut, maxAmountIn }: SlippageBounds,
 ): EncodedActions {
-  const { amountInRaw, assetIn, chainId, quote } = params
+  const { amountInRaw, assetIn, assetOut, chainId, quote } = params
 
   const { currencyIn, currencyOut, path } = resolvePathParams(
     assetIn,
+    assetOut,
     chainId,
     multiHop,
     isExactInput,

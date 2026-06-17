@@ -118,6 +118,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       this.resolveQuoteDefaults(params)
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
 
+    // A configured 2+ hop path takes precedence over a direct pool for this pair.
     const multiHop: MultiHopParams | undefined =
       marketConfig.path && marketConfig.path.length >= 2
         ? buildPath(marketConfig.assets[0], marketConfig.path)
@@ -180,6 +181,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         routerAddress: addresses.universalRouter,
         value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
         providerContext: {
+          // For multi-hop routes this reports the first hop's pool params only;
+          // the full per-hop breakdown lives in `route.pools`.
           fee: marketConfig.fee ?? marketConfig.path?.[0]?.fee,
           tickSpacing:
             marketConfig.tickSpacing ?? marketConfig.path?.[0]?.tickSpacing,

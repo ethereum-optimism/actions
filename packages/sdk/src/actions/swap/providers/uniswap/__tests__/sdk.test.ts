@@ -45,6 +45,12 @@ const DAI: Asset = {
   metadata: { name: 'Dai Stablecoin', symbol: 'DAI', decimals: 18 },
 }
 
+const OP: Asset = {
+  type: 'erc20',
+  address: { 84532: '0x4444444444444444444444444444444444444444' as Address },
+  metadata: { name: 'Optimism', symbol: 'OP', decimals: 18 },
+}
+
 const QUOTER = '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba' as Address
 const POOL_MANAGER = '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address
 const CHAIN_ID = 84532 as SupportedChainId
@@ -640,6 +646,99 @@ describe('encodeUniversalRouterSwap — multi-hop', () => {
     // Exact-in path output currencies: [ETH→0x0, DAI]
     expect(p.path[0]!.intermediateCurrency).toBe(zeroAddress)
     expect(p.path[1]!.intermediateCurrency.toLowerCase()).toBe(addr(DAI))
+  })
+
+  it('throws when the path endpoints do not match the swap pair', () => {
+    // multiHop routes USDC→…→DAI, but the swap requests USDC→WETH (WETH is an
+    // intermediate, not an endpoint). Encoding must refuse rather than silently
+    // route to the wrong output currency.
+    expect(() =>
+      encodeUniversalRouterSwap({
+        amountInRaw: 100000000n,
+        assetIn: USDC,
+        assetOut: WETH,
+        slippage: 0.01,
+        deadline: 1700000000,
+        recipient: '0xrecipient' as Address,
+        chainId: CHAIN_ID,
+        quote: baseQuote,
+        universalRouterAddress: '0xrouter' as Address,
+        multiHop,
+      }),
+    ).toThrow(/path endpoints/)
+  })
+
+  it('encodes a 3-hop exact-in path with correct per-hop indexing', () => {
+    const threeHop: MultiHopParams = {
+      assets: [USDC, WETH, DAI, OP],
+      pools: [
+        { fee: 500, tickSpacing: 10 },
+        { fee: 3000, tickSpacing: 60 },
+        { fee: 100, tickSpacing: 1 },
+      ],
+    }
+
+    const calldata = encodeUniversalRouterSwap({
+      amountInRaw: 100000000n,
+      assetIn: USDC,
+      assetOut: OP,
+      slippage: 0.01,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: { ...baseQuote, route: { path: [USDC, OP], pools: [] } },
+      universalRouterAddress: '0xrouter' as Address,
+      multiHop: threeHop,
+    })
+
+    const { actions, params } = decodeV4Swap(calldata)
+    expect(actions).toBe('0x070c0f')
+
+    const [decoded] = decodeAbiParameters(EXACT_INPUT_PARAMS, params[0]!)
+    const p = decoded as {
+      currencyIn: string
+      path: ReadonlyArray<{ intermediateCurrency: string; fee: number }>
+    }
+    expect(p.currencyIn.toLowerCase()).toBe(addr(USDC))
+    // Exact-in lists each hop's output; final hop's output is OP.
+    expect(p.path.map((h) => h.intermediateCurrency.toLowerCase())).toEqual([
+      addr(WETH),
+      addr(DAI),
+      addr(OP),
+    ])
+    expect(p.path.map((h) => h.fee)).toEqual([500, 3000, 100])
+  })
+
+  it('encodes exact-out in the reverse direction (0x09, input-currency path)', () => {
+    const calldata = encodeUniversalRouterSwap({
+      amountOutRaw: 50000000n,
+      assetIn: DAI, // reverse of configured USDC → … → DAI
+      assetOut: USDC,
+      slippage: 0.01,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: { ...baseQuote, route: { path: [DAI, USDC], pools: [] } },
+      universalRouterAddress: '0xrouter' as Address,
+      multiHop,
+    })
+
+    const { actions, params } = decodeV4Swap(calldata)
+    expect(actions).toBe('0x090c0f')
+
+    const [decoded] = decodeAbiParameters(EXACT_OUTPUT_PARAMS, params[0]!)
+    const p = decoded as {
+      currencyOut: string
+      path: ReadonlyArray<{ intermediateCurrency: string; fee: number }>
+    }
+    // Reversed chain [DAI, WETH, USDC]; exact-out lists hop INPUT currencies
+    // [DAI, WETH] with reversed pool fees [3000, 500]; currencyOut = USDC.
+    expect(p.currencyOut.toLowerCase()).toBe(addr(USDC))
+    expect(p.path.map((h) => h.intermediateCurrency.toLowerCase())).toEqual([
+      addr(DAI),
+      addr(WETH),
+    ])
+    expect(p.path.map((h) => h.fee)).toEqual([3000, 500])
   })
 })
 
