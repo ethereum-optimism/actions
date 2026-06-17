@@ -9,16 +9,23 @@ import {
 
 import {
   CURRENCY_AMOUNT_PARAMS,
+  EXACT_INPUT_PARAMS,
   EXACT_INPUT_SINGLE_PARAMS,
+  EXACT_OUTPUT_PARAMS,
   EXACT_OUTPUT_SINGLE_PARAMS,
   EXTSLOAD_ABI,
   POOL_KEY_ABI_TYPE,
   QUOTER_ABI,
   UNIVERSAL_ROUTER_ABI,
 } from '@/actions/swap/providers/uniswap/abis.js'
+import type { UniswapPathHop } from '@/actions/swap/providers/uniswap/types.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
+import type {
+  SwapMarketInfo,
+  SwapPrice,
+  SwapRoute,
+} from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
@@ -27,6 +34,15 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
  * @see https://github.com/Uniswap/v4-core/blob/main/src/types/Currency.sol
  */
 const NATIVE_CURRENCY = zeroAddress
+
+/**
+ * Resolve an asset to its V4 currency address (native ETH → address(0)).
+ */
+function getAssetCurrency(asset: Asset, chainId: SupportedChainId): Address {
+  return isNativeAsset(asset)
+    ? NATIVE_CURRENCY
+    : getAssetAddress(asset, chainId)
+}
 
 /**
  * Resolved V4 pool parameters
@@ -80,6 +96,91 @@ function resolvePoolParams(
   return { tokenIn, tokenOut, zeroForOne, poolKey }
 }
 
+/**
+ * A configured multi-hop route, oriented forward from `assets[0]` to the last asset.
+ * `pools[i]` is the V4 pool connecting `assets[i]` and `assets[i + 1]`.
+ */
+export interface MultiHopParams {
+  /** Full forward asset chain: `[origin, ...intermediates, destination]`. */
+  assets: Asset[]
+  /** Per-segment pool params; length === `assets.length - 1`. */
+  pools: Array<{ fee: number; tickSpacing: number }>
+}
+
+/** A single V4 PathKey, ready for ABI encoding. */
+interface PathKey {
+  intermediateCurrency: Address
+  fee: number
+  tickSpacing: number
+  hooks: Address
+  hookData: Hex
+}
+
+interface ResolvedPathParams {
+  currencyIn: Address
+  currencyOut: Address
+  path: PathKey[]
+}
+
+/**
+ * Build a hooks-free multi-hop route config from per-hop config entries.
+ * `origin` is the path's starting asset (`config.assets[0]`); `hops` are the
+ * output-first segments from {@link UniswapPathHop}.
+ */
+export function buildPath(
+  origin: Asset,
+  hops: UniswapPathHop[],
+): MultiHopParams {
+  return {
+    assets: [origin, ...hops.map((h) => h.asset)],
+    pools: hops.map((h) => ({ fee: h.fee, tickSpacing: h.tickSpacing })),
+  }
+}
+
+/**
+ * Resolve a configured forward route into V4 PathKeys oriented for the actual
+ * swap direction and amount kind.
+ *
+ * V4 consumes the path differently per amount kind: exact-input iterates the
+ * path forward (each `intermediateCurrency` is a hop's **output**), while
+ * exact-output iterates it backward (each `intermediateCurrency` is a hop's
+ * **input**). The fee/tickSpacing stay positionally aligned with the pools in
+ * both cases.
+ * @see https://github.com/Uniswap/v4-periphery/blob/main/src/libraries/PathKey.sol
+ */
+function resolvePathParams(
+  assetIn: Asset,
+  chainId: SupportedChainId,
+  multiHop: MultiHopParams,
+  isExactInput: boolean,
+): ResolvedPathParams {
+  // Orient the configured forward route to the actual swap direction (in → out).
+  const inCurrency = getAssetCurrency(assetIn, chainId).toLowerCase()
+  const forward =
+    getAssetCurrency(multiHop.assets[0], chainId).toLowerCase() === inCurrency
+  const assets = forward ? multiHop.assets : [...multiHop.assets].reverse()
+  const pools = forward ? multiHop.pools : [...multiHop.pools].reverse()
+
+  // currencies[i] = currency at chain position i; pools[i] connects i and i+1.
+  const currencies = assets.map((a) => getAssetCurrency(a, chainId))
+  const n = pools.length
+
+  const path: PathKey[] = pools.map((pool, i) => ({
+    // exact-in lists the hop's output (C[i+1]); exact-out lists its input (C[i]).
+    intermediateCurrency: isExactInput ? currencies[i + 1] : currencies[i],
+    fee: pool.fee,
+    tickSpacing: pool.tickSpacing,
+    hooks: NATIVE_CURRENCY,
+    hookData: '0x',
+  }))
+
+  return {
+    currencyIn: currencies[0],
+    currencyOut: currencies[n],
+    path,
+  }
+}
+
 export interface GetQuoteParams {
   assetIn: Asset
   assetOut: Asset
@@ -89,16 +190,52 @@ export interface GetQuoteParams {
   publicClient: PublicClient
   quoterAddress: Address
   poolManagerAddress: Address
-  /** Fee tier in pips (e.g. 100 = 0.01%) */
-  fee: number
-  /** Tick spacing for the pool */
-  tickSpacing: number
+  /** Fee tier in pips (e.g. 100 = 0.01%). Required for single-hop swaps. */
+  fee?: number
+  /** Tick spacing for the pool. Required for single-hop swaps. */
+  tickSpacing?: number
+  /** Multi-hop route. When set, overrides `fee`/`tickSpacing` single-hop quoting. */
+  multiHop?: MultiHopParams
 }
 
 /**
- * Get a swap quote from the Quoter contract
+ * Get a swap quote from the Quoter contract.
+ * Routes through V4's path-based quoter when `multiHop` is supplied, otherwise
+ * quotes a single direct pool.
  */
 export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
+  const { assetIn, assetOut, amountInRaw, multiHop } = params
+  const isExactInput = amountInRaw !== undefined
+
+  const { amountIn, amountOut, gasEstimate, priceImpact, route } = multiHop
+    ? await quoteMultiHop(params, multiHop, isExactInput)
+    : await quoteSingleHop(params, isExactInput)
+
+  return {
+    price: calculatePrice(amountIn, amountOut, assetIn, assetOut),
+    priceInverse: calculatePrice(amountOut, amountIn, assetOut, assetIn),
+    amountIn: parseFloat(formatUnits(amountIn, assetIn.metadata.decimals)),
+    amountOut: parseFloat(formatUnits(amountOut, assetOut.metadata.decimals)),
+    amountInRaw: amountIn,
+    amountOutRaw: amountOut,
+    priceImpact,
+    route,
+    gasEstimate,
+  }
+}
+
+interface QuoteAmounts {
+  amountIn: bigint
+  amountOut: bigint
+  gasEstimate: bigint
+  priceImpact: number
+  route: SwapRoute
+}
+
+async function quoteSingleHop(
+  params: GetQuoteParams,
+  isExactInput: boolean,
+): Promise<QuoteAmounts> {
   const {
     assetIn,
     assetOut,
@@ -112,6 +249,10 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     tickSpacing,
   } = params
 
+  if (fee === undefined || tickSpacing === undefined) {
+    throw new Error('fee and tickSpacing are required for single-hop quoting')
+  }
+
   const { tokenIn, zeroForOne, poolKey } = resolvePoolParams(
     assetIn,
     assetOut,
@@ -119,8 +260,6 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     fee,
     tickSpacing,
   )
-
-  const isExactInput = amountInRaw !== undefined
 
   // Read pool mid-price and quote in parallel — no extra sequential RPC call
   const [sqrtPriceX96, quoteResult] = await Promise.all([
@@ -134,7 +273,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
             {
               poolKey,
               zeroForOne,
-              exactAmount: amountInRaw,
+              exactAmount: amountInRaw!,
               hookData: '0x' as `0x${string}`,
             },
           ],
@@ -154,40 +293,98 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
         }),
   ])
 
-  const amountIn = isExactInput ? amountInRaw : quoteResult.result[0]
+  const amountIn = isExactInput ? amountInRaw! : quoteResult.result[0]
   const amountOut = isExactInput ? quoteResult.result[0] : amountOutRaw!
-  const gasEstimate = quoteResult.result[1]
-
-  const price = calculatePrice(amountIn, amountOut, assetIn, assetOut)
-  const priceInverse = calculatePrice(amountOut, amountIn, assetOut, assetIn)
-  const priceImpact = calculatePriceImpact({
-    sqrtPriceX96,
-    amountIn,
-    amountOut,
-    zeroForOne,
-  })
-
-  const route: SwapRoute = {
-    path: [assetIn, assetOut],
-    pools: [
-      {
-        address: tokenIn,
-        fee,
-        version: 'v4',
-      },
-    ],
-  }
 
   return {
-    price,
-    priceInverse,
-    amountIn: parseFloat(formatUnits(amountIn, assetIn.metadata.decimals)),
-    amountOut: parseFloat(formatUnits(amountOut, assetOut.metadata.decimals)),
-    amountInRaw: amountIn,
-    amountOutRaw: amountOut,
-    priceImpact,
-    route,
-    gasEstimate,
+    amountIn,
+    amountOut,
+    gasEstimate: quoteResult.result[1],
+    priceImpact: calculatePriceImpact({
+      sqrtPriceX96,
+      amountIn,
+      amountOut,
+      zeroForOne,
+    }),
+    route: {
+      path: [assetIn, assetOut],
+      pools: [{ address: tokenIn, fee, version: 'v4' }],
+    },
+  }
+}
+
+async function quoteMultiHop(
+  params: GetQuoteParams,
+  multiHop: MultiHopParams,
+  isExactInput: boolean,
+): Promise<QuoteAmounts> {
+  const {
+    assetIn,
+    amountInRaw,
+    amountOutRaw,
+    chainId,
+    publicClient,
+    quoterAddress,
+  } = params
+
+  const { currencyIn, currencyOut, path } = resolvePathParams(
+    assetIn,
+    chainId,
+    multiHop,
+    isExactInput,
+  )
+
+  // Separate calls per function name keep viem's arg-type inference happy.
+  // viem 2.x mis-infers a dynamic `tuple[]` arg as `never[]`; the PathKey shape
+  // is validated at encode time via EXACT_INPUT_PARAMS / EXACT_OUTPUT_PARAMS, so
+  // we cast only the `path` field while keeping the other args type-checked.
+  const pathArg = path as never[]
+  const quoteResult = isExactInput
+    ? await publicClient.simulateContract({
+        address: quoterAddress,
+        abi: QUOTER_ABI,
+        functionName: 'quoteExactInput',
+        args: [
+          {
+            exactCurrency: currencyIn,
+            path: pathArg,
+            exactAmount: amountInRaw!,
+          },
+        ],
+      })
+    : await publicClient.simulateContract({
+        address: quoterAddress,
+        abi: QUOTER_ABI,
+        functionName: 'quoteExactOutput',
+        args: [
+          {
+            exactCurrency: currencyOut,
+            path: pathArg,
+            exactAmount: amountOutRaw!,
+          },
+        ],
+      })
+
+  const amountIn = isExactInput ? amountInRaw! : quoteResult.result[0]
+  const amountOut = isExactInput ? quoteResult.result[0] : amountOutRaw!
+
+  // Orient the asset chain to the swap direction for the route's display path.
+  const forward = getAssetCurrency(multiHop.assets[0], chainId) === currencyIn
+  const routeAssets = forward ? multiHop.assets : [...multiHop.assets].reverse()
+  const pools: SwapMarketInfo[] = path.map((hop, i) => ({
+    // Mirror single-hop's "input currency as address" choice for each hop.
+    address: getAssetCurrency(routeAssets[i], chainId),
+    fee: hop.fee,
+    version: 'v4',
+  }))
+
+  return {
+    amountIn,
+    amountOut,
+    gasEstimate: quoteResult.result[1],
+    // Mid-price across multiple pools is not derived in v1; report 0 impact.
+    priceImpact: 0,
+    route: { path: routeAssets, pools },
   }
 }
 
@@ -202,10 +399,12 @@ export interface EncodeSwapParams {
   chainId: SupportedChainId
   quote: SwapPrice
   universalRouterAddress: Address
-  /** Fee tier in pips (e.g. 100 = 0.01%) */
-  fee: number
-  /** Tick spacing for the pool */
-  tickSpacing: number
+  /** Fee tier in pips (e.g. 100 = 0.01%). Required for single-hop swaps. */
+  fee?: number
+  /** Tick spacing for the pool. Required for single-hop swaps. */
+  tickSpacing?: number
+  /** Multi-hop route. When set, encodes a path-based swap instead of single-hop. */
+  multiHop?: MultiHopParams
 }
 
 // V4 Universal Router command
@@ -213,85 +412,42 @@ const V4_SWAP = 0x10
 
 // V4 action types
 const SWAP_EXACT_IN_SINGLE = 0x06
+const SWAP_EXACT_IN = 0x07
 const SWAP_EXACT_OUT_SINGLE = 0x08
+const SWAP_EXACT_OUT = 0x09
 const SETTLE_ALL = 0x0c
 const TAKE_ALL = 0x0f
 
+/** Pack V4 action bytes into a single hex string (e.g. [0x06,0x0c,0x0f] → "0x060c0f"). */
+function encodeActions(actions: number[]): Hex {
+  return `0x${actions.map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
+}
+
 /**
  * Encode Universal Router V4 swap calldata
- * @description Builds calldata for executing a V4 swap through Universal Router
+ * @description Builds calldata for executing a V4 swap through Universal Router.
+ * Routes through V4's path-based actions when `multiHop` is supplied, otherwise
+ * encodes a single direct pool.
  */
 export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
-  const {
-    amountInRaw,
-    assetIn,
-    assetOut,
-    slippage,
-    deadline,
-    chainId,
-    quote,
-    fee,
-    tickSpacing,
-  } = params
-
-  const { tokenIn, tokenOut, zeroForOne, poolKey } = resolvePoolParams(
-    assetIn,
-    assetOut,
-    chainId,
-    fee,
-    tickSpacing,
-  )
-
+  const { amountInRaw, slippage, quote, multiHop, deadline } = params
   const isExactInput = amountInRaw !== undefined
 
-  let actions: Hex
-  let actionParams: Hex[]
+  const minAmountOut =
+    (quote.amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+  const maxAmountIn =
+    quote.amountInRaw +
+    (quote.amountInRaw * BigInt(Math.round(slippage * 10000))) / 10000n
 
-  if (isExactInput) {
-    const minAmountOut =
-      (quote.amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
-
-    actions =
-      `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
-
-    actionParams = [
-      encodeAbiParameters(EXACT_INPUT_SINGLE_PARAMS, [
-        {
-          poolKey,
-          zeroForOne,
-          amountIn: amountInRaw,
-          amountOutMinimum: minAmountOut,
-          hookData: '0x',
-        },
-      ]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInRaw]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
-    ]
-  } else {
-    const maxAmountIn =
-      quote.amountInRaw +
-      (quote.amountInRaw * BigInt(Math.round(slippage * 10000))) / 10000n
-
-    actions =
-      `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
-
-    actionParams = [
-      encodeAbiParameters(EXACT_OUTPUT_SINGLE_PARAMS, [
-        {
-          poolKey,
-          zeroForOne,
-          amountOut: quote.amountOutRaw,
-          amountInMaximum: maxAmountIn,
-          hookData: '0x',
-        },
-      ]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
-        tokenOut,
-        quote.amountOutRaw,
-      ]),
-    ]
-  }
+  const { actions, actionParams } = multiHop
+    ? encodeMultiHopActions(params, multiHop, isExactInput, {
+        minAmountOut,
+        maxAmountIn,
+      })
+    : encodeSingleHopActions(params, isExactInput, {
+        minAmountOut,
+        maxAmountIn,
+      })
 
   // Encode V4_SWAP input: abi.encode(bytes actions, bytes[] params)
   const v4SwapInput = encodeAbiParameters(
@@ -308,6 +464,132 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
       BigInt(deadline),
     ],
   })
+}
+
+interface SlippageBounds {
+  minAmountOut: bigint
+  maxAmountIn: bigint
+}
+
+interface EncodedActions {
+  actions: Hex
+  actionParams: Hex[]
+}
+
+function encodeSingleHopActions(
+  params: EncodeSwapParams,
+  isExactInput: boolean,
+  { minAmountOut, maxAmountIn }: SlippageBounds,
+): EncodedActions {
+  const { amountInRaw, assetIn, assetOut, chainId, quote, fee, tickSpacing } =
+    params
+
+  if (fee === undefined || tickSpacing === undefined) {
+    throw new Error('fee and tickSpacing are required for single-hop encoding')
+  }
+
+  const { tokenIn, tokenOut, zeroForOne, poolKey } = resolvePoolParams(
+    assetIn,
+    assetOut,
+    chainId,
+    fee,
+    tickSpacing,
+  )
+
+  if (isExactInput) {
+    return {
+      actions: encodeActions([SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL]),
+      actionParams: [
+        encodeAbiParameters(EXACT_INPUT_SINGLE_PARAMS, [
+          {
+            poolKey,
+            zeroForOne,
+            amountIn: amountInRaw!,
+            amountOutMinimum: minAmountOut,
+            hookData: '0x',
+          },
+        ]),
+        encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInRaw!]),
+        encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
+      ],
+    }
+  }
+
+  return {
+    actions: encodeActions([SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL]),
+    actionParams: [
+      encodeAbiParameters(EXACT_OUTPUT_SINGLE_PARAMS, [
+        {
+          poolKey,
+          zeroForOne,
+          amountOut: quote.amountOutRaw,
+          amountInMaximum: maxAmountIn,
+          hookData: '0x',
+        },
+      ]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
+        tokenOut,
+        quote.amountOutRaw,
+      ]),
+    ],
+  }
+}
+
+function encodeMultiHopActions(
+  params: EncodeSwapParams,
+  multiHop: MultiHopParams,
+  isExactInput: boolean,
+  { minAmountOut, maxAmountIn }: SlippageBounds,
+): EncodedActions {
+  const { amountInRaw, assetIn, chainId, quote } = params
+
+  const { currencyIn, currencyOut, path } = resolvePathParams(
+    assetIn,
+    chainId,
+    multiHop,
+    isExactInput,
+  )
+
+  if (isExactInput) {
+    return {
+      actions: encodeActions([SWAP_EXACT_IN, SETTLE_ALL, TAKE_ALL]),
+      actionParams: [
+        encodeAbiParameters(EXACT_INPUT_PARAMS, [
+          {
+            currencyIn,
+            path,
+            amountIn: amountInRaw!,
+            amountOutMinimum: minAmountOut,
+          },
+        ]),
+        encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [currencyIn, amountInRaw!]),
+        encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
+          currencyOut,
+          minAmountOut,
+        ]),
+      ],
+    }
+  }
+
+  return {
+    actions: encodeActions([SWAP_EXACT_OUT, SETTLE_ALL, TAKE_ALL]),
+    actionParams: [
+      encodeAbiParameters(EXACT_OUTPUT_PARAMS, [
+        {
+          currencyOut,
+          path,
+          amountOut: quote.amountOutRaw,
+          amountInMaximum: maxAmountIn,
+        },
+      ]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [currencyIn, maxAmountIn]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
+        currencyOut,
+        quote.amountOutRaw,
+      ]),
+    ],
+  }
 }
 
 function calculatePrice(
