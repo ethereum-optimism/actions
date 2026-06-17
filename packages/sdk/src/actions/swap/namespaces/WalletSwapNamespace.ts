@@ -3,7 +3,10 @@ import { isAddressEqual } from 'viem'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
+import {
+  QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+} from '@/core/error/errors.js'
 import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { RecipientResolver } from '@/services/nameservices/ens/utils.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -90,8 +93,16 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * quote's recipient differs from `wallet.address`; silently swapping
    * recipients would route output tokens to the wrong address on routers that
    * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   *
+   * Also guards the case where a price-only quote (from
+   * `actions.swap.getQuote`) reaches `execute`: it carries `quotedAt` (so it
+   * routes here) but has no `recipient`, so it fails loudly with a clear
+   * domain error instead of a cryptic address-comparison crash.
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
+    if (!quote.recipient) {
+      throw new QuoteRecipientMissingError()
+    }
     if (!isAddressEqual(quote.recipient, this.wallet.address)) {
       throw new QuoteRecipientMismatchError({
         quoteRecipient: quote.recipient,

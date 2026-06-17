@@ -5,6 +5,7 @@ import { createMockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvide
 import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { QuoteRecipientMissingError } from '@/core/error/errors.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 describe('WalletSwapNamespace', () => {
@@ -250,7 +251,9 @@ describe('WalletSwapNamespace', () => {
         chainId: 84532 as SupportedChainId,
       })
 
-      await expect(namespace.execute(priceQuote)).rejects.toThrow()
+      await expect(namespace.execute(priceQuote)).rejects.toThrow(
+        QuoteRecipientMissingError,
+      )
       expect(provider.mockExecute).not.toHaveBeenCalled()
     })
   })

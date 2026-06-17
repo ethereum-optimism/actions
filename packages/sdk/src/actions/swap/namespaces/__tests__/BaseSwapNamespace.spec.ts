@@ -97,6 +97,10 @@ describe('BaseSwapNamespace', () => {
 
       // Should pick velodrome because 1.8 > 1.2 (higher amountOut)
       expect(result.provider).toBe('velodrome')
+      // The price-routing branch returns through toPriceQuote too — still no
+      // sentinel recipient leak.
+      expect(result).not.toHaveProperty('recipient')
+      expect(result).not.toHaveProperty('execution')
     })
 
     it('skips providers that fail to quote', async () => {
@@ -203,6 +207,13 @@ describe('BaseSwapNamespace', () => {
       expect(quotes).toHaveLength(2)
       expect(quotes[0].provider).toBe('velodrome')
       expect(quotes[1].provider).toBe('uniswap')
+      // The plural path strips through the same toPriceQuote — no element may
+      // leak the sentinel recipient or execution data.
+      for (const quote of quotes) {
+        expect(quote).not.toHaveProperty('execution')
+        expect(quote).not.toHaveProperty('recipient')
+        expect(quote).not.toHaveProperty('approvalMode')
+      }
     })
 
     it('skips failed providers and returns successful ones', async () => {
