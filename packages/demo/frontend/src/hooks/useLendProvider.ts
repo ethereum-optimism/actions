@@ -177,10 +177,17 @@ export function useLendProvider({
   const refreshAllPositions = useCallback(async () => {
     if (!ready || markets.length === 0) return
     // One SDK call aggregates every market/provider position (see #14),
-    // replacing the per-market getPosition fan-out.
-    const positions = await operations.getPositions()
-    seedPositionCache(queryClient, positions)
-    setMarketPositions(buildFundedPositions(markets, positions))
+    // replacing the per-market getPosition fan-out. Kept best-effort: the
+    // event-driven caller invokes this as `void`, so a refresh failure must
+    // log rather than surface as an unhandled rejection (the old per-market
+    // fan-out swallowed errors the same way).
+    try {
+      const positions = await operations.getPositions()
+      seedPositionCache(queryClient, positions)
+      setMarketPositions(buildFundedPositions(markets, positions))
+    } catch (error) {
+      console.error('Error refreshing positions:', error)
+    }
   }, [markets, operations, queryClient, ready, setMarketPositions])
 
   // Fetch available markets on mount
