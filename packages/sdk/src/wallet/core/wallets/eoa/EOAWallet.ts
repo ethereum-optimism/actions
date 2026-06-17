@@ -85,7 +85,7 @@ export abstract class EOAWallet extends Wallet {
    * cheap (sign + `eth_sendRawTransaction`). All receipts are then awaited
    * together via `Promise.all`; the receipt wait (~one block per tx) is the
    * dominant cost, so overlapping the waits collapses `M` sequential waits into
-   * roughly a single wait — the perf win this method exists for.
+   * roughly a single wait, the perf win this method exists for.
    *
    * Receipts are returned in input order: `receipts[i]` corresponds to
    * `transactionData[i]`.
@@ -109,7 +109,7 @@ export abstract class EOAWallet extends Wallet {
    * This matches the previous behaviour.
    *
    * A reverted-but-mined transaction does not throw (`waitForTransactionReceipt`
-   * resolves with `status: 'reverted'`) and does not stop later transactions —
+   * resolves with `status: 'reverted'`) and does not stop later transactions:
    * they were already broadcast with valid sequential nonces and will execute
    * regardless. Callers must inspect each returned receipt's `status`. The
    * previous implementation did not gate on revert either, so it also let later

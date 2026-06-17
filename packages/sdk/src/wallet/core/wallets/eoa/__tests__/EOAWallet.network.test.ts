@@ -48,10 +48,11 @@ const RECIPIENTS: Address[] = [
 describe('EOAWallet.sendBatch (network fork)', () => {
   let fork: AnvilFork
   let wallet: LocalWallet
+  let chainManager: ChainManager
 
   beforeAll(async () => {
     fork = await startAnvilFork(BASE_SEPOLIA_RPC, ANVIL_PORT)
-    const chainManager = new ChainManager([
+    chainManager = new ChainManager([
       { chainId: BASE_SEPOLIA_ID, rpcUrls: [fork.rpcUrl] },
     ])
     const account = privateKeyToAccount(ANVIL_ACCOUNTS.ACCOUNT_0)
@@ -91,7 +92,7 @@ describe('EOAWallet.sendBatch (network fork)', () => {
 
     // Nonces are strictly sequential in submission order, proving the
     // sequential-broadcast invariant held against a real RPC.
-    const publicClient = wallet['chainManager'].getPublicClient(BASE_SEPOLIA_ID)
+    const publicClient = chainManager.getPublicClient(BASE_SEPOLIA_ID)
     const nonces = await Promise.all(
       receipts.map(async (r) => {
         const tx = await publicClient.getTransaction({
