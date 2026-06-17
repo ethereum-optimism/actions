@@ -207,10 +207,9 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       expiresAt: deadline,
       gasEstimate: 150000n,
       recipient: (params.recipient ??
+        params.walletAddress ??
         '0x0000000000000000000000000000000000000001') as Address,
-      walletAddress: (params.walletAddress ??
-        params.recipient ??
-        '0x0000000000000000000000000000000000000001') as Address,
+      walletAddress: params.walletAddress,
     }
   }
 

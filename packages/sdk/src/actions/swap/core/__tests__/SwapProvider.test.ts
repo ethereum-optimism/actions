@@ -258,6 +258,22 @@ describe('SwapProvider', () => {
         chainId: 84532 as SupportedChainId,
       })
       expect(quote.recipient).toBe('0x0000000000000000000000000000000000000001')
+      expect(quote.walletAddress).toBeUndefined()
+    })
+
+    it('defaults quote.recipient to walletAddress when provided', async () => {
+      const provider = new MockSwapProvider()
+      const walletAddress =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        walletAddress,
+      })
+      expect(quote.recipient).toBe(walletAddress)
+      expect(quote.walletAddress).toBe(walletAddress)
     })
 
     it('throws if quote.recipient is missing (chokepoint guard)', async () => {

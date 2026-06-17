@@ -73,7 +73,7 @@ export interface GetSwapMarketsParams {
 }
 
 /**
- * Parameters for a wallet swap — what the developer passes.
+ * Parameters for a wallet swap, what the developer passes.
  * Exactly one of amountIn or amountOut must be provided.
  */
 export interface WalletSwapParams {
@@ -91,7 +91,10 @@ export interface WalletSwapParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
-  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  /**
+   * Recipient address or ENS name (e.g. "vitalik.eth").
+   * Wallet namespaces default this to wallet address.
+   */
   recipient?: Address | EnsName
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
@@ -166,7 +169,10 @@ export interface SwapQuoteParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp */
   deadline?: number
-  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  /**
+   * Recipient address or ENS name (e.g. "vitalik.eth").
+   * Wallet namespaces default this to wallet address.
+   */
   recipient?: Address | EnsName
   /**
    * Wallet address expected to execute the quote and own the input tokens.
@@ -210,11 +216,11 @@ export interface SwapQuote {
   chainId: SupportedChainId
 
   // ── Amounts (Raw = on-chain precision, number = display approximation) ──
-  /** Human-readable input amount (display only — use amountInRaw for precision) */
+  /** Human-readable input amount (display only, use amountInRaw for precision) */
   amountIn: number
   /** Input amount as raw bigint (native decimals). Source of truth. */
   amountInRaw: bigint
-  /** Human-readable expected output (display only — use amountOutRaw for precision) */
+  /** Human-readable expected output (display only, use amountOutRaw for precision) */
   amountOut: number
   /** Expected output as raw bigint. Source of truth. */
   amountOutRaw: bigint

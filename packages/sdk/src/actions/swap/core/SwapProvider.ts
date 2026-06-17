@@ -265,7 +265,8 @@ export abstract class SwapProvider<
   /**
    * Resolve common quote parameters with provider defaults.
    * @param params - Raw quote params from the user
-   * @returns Resolved slippage, deadline, recipient, wallet address, amountInRaw, and current timestamp
+   * @returns Resolved slippage, deadline, recipient, optional wallet address,
+   * amountInRaw, and current timestamp
    */
   protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
@@ -273,7 +274,7 @@ export abstract class SwapProvider<
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
     const recipient =
       params.recipient ?? params.walletAddress ?? UNIVERSAL_ROUTER_MSG_SENDER
-    const walletAddress = params.walletAddress ?? recipient
+    const walletAddress = params.walletAddress
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
   }

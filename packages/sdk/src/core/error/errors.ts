@@ -349,8 +349,8 @@ export class QuoteRecipientMismatchError extends ActionsError {
 
 /**
  * Thrown when a provider's `_getQuote` returns a quote without a `recipient`.
- * The base namespace requires every quote to be wallet-bound before approvals
- * or calldata are built.
+ * Providers must populate the output recipient before approvals or calldata
+ * are built.
  */
 export class QuoteRecipientMissingError extends ActionsError {
   override name = 'QuoteRecipientMissingError' as const
