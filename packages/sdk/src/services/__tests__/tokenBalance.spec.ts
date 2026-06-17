@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 import { erc20Abi } from 'viem'
-import { base, optimism, unichain } from 'viem/chains'
+import { base, celo, optimism, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
@@ -180,5 +180,63 @@ describe('fetchBalances', () => {
     })
     expect(usdc.chains).toEqual({})
     expect(usdc.totalBalanceRaw).toBe(0n)
+  })
+
+  it('reads native ETH on supported chains absent from the asset address map', async () => {
+    // celo is a supported chain but has no entry in ETH.address; the native
+    // balance must still be read (matching the previous unconditional fan-out).
+    const cm = new MockChainManager({
+      supportedChains: [celo.id],
+      defaultBalance: 1000000n,
+    }) as unknown as ChainManager
+
+    const [eth] = await fetchBalances(cm, walletAddress, [ETH])
+
+    expect(eth.chains).toEqual({
+      [celo.id]: { balance: 0.000000000001, balanceRaw: 1000000n },
+    })
+    expect(eth.totalBalanceRaw).toBe(1000000n)
+  })
+
+  it('targets the chain-configured Multicall3 address when present', async () => {
+    const custom = '0x000000000000000000000000000000000000cafe' as Address
+    vi.spyOn(chainManager as any, 'getChain').mockReturnValue({
+      contracts: { multicall3: { address: custom } },
+    })
+
+    await fetchBalances(chainManager, walletAddress, [ETH])
+
+    const client = chainManager.getPublicClient(unichain.id)
+    const contracts = vi.mocked(client.multicall).mock.calls[0][0]
+      .contracts as any[]
+    expect(contracts[0].address).toBe(custom)
+  })
+
+  it('rejects when a chain multicall fails at the transport level', async () => {
+    const client = chainManager.getPublicClient(unichain.id)
+    vi.mocked(client.multicall).mockRejectedValueOnce(
+      new Error('transport down'),
+    )
+
+    await expect(
+      fetchBalances(chainManager, walletAddress, [ETH]),
+    ).rejects.toThrow('transport down')
+  })
+
+  it('aggregates only succeeding chains when one chain inner call fails', async () => {
+    const cm = multiChainManager()
+    const opClient = cm.getPublicClient(optimism.id)
+    vi.mocked(opClient.multicall).mockResolvedValueOnce([
+      { status: 'failure', error: new Error('reverted') },
+    ] as any)
+
+    const [usdc] = await fetchBalances(cm, walletAddress, [MockUSDCAsset], {
+      chainIds: [optimism.id, base.id],
+    })
+
+    expect(usdc.chains).toEqual({
+      [base.id]: { balance: 1, balanceRaw: 1000000n },
+    })
+    expect(usdc.totalBalanceRaw).toBe(1000000n)
   })
 })

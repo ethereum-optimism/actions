@@ -125,7 +125,7 @@ async function fetchChainBalances(
 
   results.forEach((result, index) => {
     if (result.status === 'success') {
-      balances.set(entries[index].asset, result.result as bigint)
+      balances.set(entries[index].asset, result.result)
     }
   })
 
@@ -143,10 +143,12 @@ function balanceContract(
   walletAddress: Address,
 ): BalanceContract | undefined {
   const tokenAddress = asset.address[chainId]
-  if (!tokenAddress) {
-    return undefined
-  }
 
+  // Native assets exist on every chain, so read them via Multicall3's
+  // `getEthBalance` regardless of whether the per-chain address map lists this
+  // chain. This matches the previous unconditional native-balance fan-out;
+  // gating on the address map would silently drop native balances on supported
+  // chains that have no entry in the asset's address map (e.g. celo, superseed).
   if (asset.type === 'native' || tokenAddress === 'native') {
     return {
       address: multicall3Address(chainManager, chainId),
@@ -154,6 +156,10 @@ function balanceContract(
       functionName: 'getEthBalance',
       args: [walletAddress],
     }
+  }
+
+  if (!tokenAddress) {
+    return undefined
   }
 
   return {
