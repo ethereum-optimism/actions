@@ -1,8 +1,8 @@
 import type {
+  PriceQuote,
   SupportedChainId,
   SwapMarket,
   SwapProviderName,
-  SwapQuote,
   SwapReceipt,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
@@ -42,7 +42,7 @@ export async function getMarkets(
   return await actions.swap.getMarkets(chainId ? { chainId } : {})
 }
 
-export async function getQuote(params: PriceParams): Promise<SwapQuote> {
+export async function getQuote(params: PriceParams): Promise<PriceQuote> {
   const {
     tokenInAddress,
     tokenOutAddress,

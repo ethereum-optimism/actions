@@ -44,73 +44,6 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
   }
 
   /**
-   * Get a swap quote with pre-built execution data.
-   * When `routing: 'price'` is set in settings and no explicit provider is requested,
-   * fetches quotes from all eligible providers in parallel and returns the best price.
-   * @param params - Quote parameters (assets, amounts, chain, optional provider)
-   * @returns The best available SwapQuote
-   */
-  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    const recipient = await this.resolveRecipient(params.recipient)
-    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
-
-    // Explicit provider — skip routing
-    if (resolved.provider) {
-      return this.resolveProvider(
-        resolved.provider,
-        resolved.assetIn,
-        resolved.assetOut,
-        resolved.chainId,
-      ).getQuote(resolved)
-    }
-
-    // Price routing — quote all eligible providers, return best
-    if (this.settings?.routing === 'price') {
-      return this.getBestQuote(resolved)
-    }
-
-    // No routing — resolve single provider via fallback logic
-    return this.resolveProvider(
-      undefined,
-      resolved.assetIn,
-      resolved.assetOut,
-      resolved.chainId,
-    ).getQuote(resolved)
-  }
-
-  /**
-   * Fetch quotes from all providers with the wallet address as recipient.
-   * Unlike getQuote(), returns all successful quotes instead of just the best.
-   * If an explicit provider is specified, returns a single-element array from that provider.
-   * @param params - Quote parameters (assets, amounts, chain, optional provider)
-   * @returns Array of SwapQuotes sorted by amountOut descending (best first)
-   */
-  async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
-    const recipient = await this.resolveRecipient(params.recipient)
-    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
-
-    if (resolved.provider) {
-      return [
-        await this.resolveProvider(
-          resolved.provider,
-          resolved.assetIn,
-          resolved.assetOut,
-          resolved.chainId,
-        ).getQuote(resolved),
-      ]
-    }
-
-    const quotes = await this.fetchAllQuotes(resolved)
-    return quotes.sort((a, b) =>
-      a.amountOutRaw > b.amountOutRaw
-        ? -1
-        : a.amountOutRaw < b.amountOutRaw
-          ? 1
-          : 0,
-    )
-  }
-
-  /**
    * Get a specific swap market by ID.
    * @param params - Market identifier (poolId + chainId)
    * @param provider - Optional provider name to query directly instead of searching all
@@ -151,6 +84,80 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
       this.getAllProviders().map((p) => p.getMarkets(params)),
     )
     return results.flat()
+  }
+
+  /**
+   * Resolve a full, executable swap quote (recipient + pre-built execution data).
+   * When `routing: 'price'` is set in settings and no explicit provider is requested,
+   * fetches quotes from all eligible providers in parallel and returns the best price.
+   *
+   * Protected because the two namespaces expose different public surfaces:
+   * `ActionsSwapNamespace` strips the result to a {@link PriceQuote} (no wallet
+   * bound), while `WalletSwapNamespace` returns the full {@link SwapQuote}.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns The best available SwapQuote
+   */
+  protected async resolveQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const recipient = await this.resolveRecipient(params.recipient)
+    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
+
+    // Explicit provider — skip routing
+    if (resolved.provider) {
+      return this.resolveProvider(
+        resolved.provider,
+        resolved.assetIn,
+        resolved.assetOut,
+        resolved.chainId,
+      ).getQuote(resolved)
+    }
+
+    // Price routing — quote all eligible providers, return best
+    if (this.settings?.routing === 'price') {
+      return this.getBestQuote(resolved)
+    }
+
+    // No routing — resolve single provider via fallback logic
+    return this.resolveProvider(
+      undefined,
+      resolved.assetIn,
+      resolved.assetOut,
+      resolved.chainId,
+    ).getQuote(resolved)
+  }
+
+  /**
+   * Fetch quotes from all providers. Unlike resolveQuote(), returns all
+   * successful quotes instead of just the best. If an explicit provider is
+   * specified, returns a single-element array from that provider.
+   *
+   * Protected for the same reason as {@link resolveQuote}: each namespace maps
+   * the result to its own public quote type.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns Array of SwapQuotes sorted by amountOut descending (best first)
+   */
+  protected async resolveQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    const recipient = await this.resolveRecipient(params.recipient)
+    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
+
+    if (resolved.provider) {
+      return [
+        await this.resolveProvider(
+          resolved.provider,
+          resolved.assetIn,
+          resolved.assetOut,
+          resolved.chainId,
+        ).getQuote(resolved),
+      ]
+    }
+
+    const quotes = await this.fetchAllQuotes(resolved)
+    return quotes.sort((a, b) =>
+      a.amountOutRaw > b.amountOutRaw
+        ? -1
+        : a.amountOutRaw < b.amountOutRaw
+          ? 1
+          : 0,
+    )
   }
 
   /**

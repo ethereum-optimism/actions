@@ -1,9 +1,9 @@
 import type {
   Asset,
   LendMarketPosition,
+  PriceQuote,
   SupportedChainId,
   SwapMarket,
-  SwapQuote,
   TokenBalance,
   LendMarket,
   LendTransactionReceipt,
@@ -217,7 +217,7 @@ class ActionsApiClient extends BaseApiClient {
     }
 
     const { result } = await this.request<{
-      result: Serialized<SwapQuote>
+      result: Serialized<PriceQuote>
     }>(`/swap/quote?${params}`, {
       method: 'GET',
       headers,

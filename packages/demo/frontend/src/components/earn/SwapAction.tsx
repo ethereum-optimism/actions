@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type {
+  PriceQuote,
   SupportedChainId,
   SwapMarket,
-  SwapQuote,
 } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
@@ -31,7 +31,7 @@ import ArrowDownIcon from '@/components/icons/ArrowDownIcon'
 interface SwapActionProps {
   assets: SwapAsset[]
   isLoadingBalances: boolean
-  onSwap: (quote: SwapQuote) => Promise<{
+  onSwap: (quote: PriceQuote) => Promise<{
     blockExplorerUrl?: string
   }>
   onGetQuote: (params: {
@@ -40,7 +40,7 @@ interface SwapActionProps {
     chainId: SupportedChainId
     amountIn?: number
     amountOut?: number
-  }) => Promise<SwapQuote | null>
+  }) => Promise<PriceQuote | null>
   isExecuting: boolean
   selectedProvider?: string | null
   swapMarkets?: SwapMarket[]
@@ -234,7 +234,7 @@ export function SwapAction({
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState('')
   const [editDirection, setEditDirection] = useState<'in' | 'out'>('in')
-  const [quote, setQuote] = useState<SwapQuote | null>(null)
+  const [quote, setQuote] = useState<PriceQuote | null>(null)
   const [isLoadingPrice, setIsLoadingPrice] = useState(false)
 
   // Modal states

@@ -187,15 +187,20 @@ export interface SwapQuoteExecution {
 }
 
 /**
- * A complete swap quote: pricing, amounts, and pre-built execution data.
- * Pass to execute() to skip re-quoting.
+ * A price-only swap quote: pricing, amounts, route, and metadata — with **no**
+ * execution data and **no** recipient. Returned by `actions.swap.getQuote`
+ * (no wallet bound). Structurally un-executable: there is no `execution`
+ * calldata and no `recipient` to leak. For display, accounting, or analytics.
+ *
+ * To execute, re-quote via `wallet.swap.getQuote(...)`, which binds the quote
+ * to the wallet and returns a full {@link SwapQuote}.
  *
  * **Precision note:** `Raw` fields (bigint) are the on-chain source of truth.
  * Number fields (`amountIn`, `amountOut`, `price`, etc.) are display approximations
  * derived via `formatUnits` → `parseFloat`. For tokens with many significant digits,
  * numbers may lose precision. Use `Raw` fields for any math that matters.
  */
-export interface SwapQuote {
+export interface PriceQuote {
   // ── What you're swapping ──
   /** Token being sold */
   assetIn: Asset
@@ -230,10 +235,6 @@ export interface SwapQuote {
   /** Route taken for the swap */
   route: SwapRoute
 
-  // ── Execution ──
-  /** Pre-built transaction data. Pass quote to execute() to use. */
-  execution: SwapQuoteExecution
-
   // ── Metadata ──
   /** Provider that generated this quote */
   provider: SwapProviderName
@@ -247,6 +248,17 @@ export interface SwapQuote {
   expiresAt: number
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
+}
+
+/**
+ * A complete, executable swap quote: a {@link PriceQuote} plus pre-built
+ * execution data and a concrete recipient. Returned by `wallet.swap.getQuote`
+ * (bound to the wallet). Pass to `wallet.swap.execute()` to skip re-quoting.
+ */
+export interface SwapQuote extends PriceQuote {
+  // ── Execution ──
+  /** Pre-built transaction data. Pass quote to execute() to use. */
+  execution: SwapQuoteExecution
   /**
    * Recipient address baked into execution.swapCalldata at quote time.
    * Required. To execute a quote on a wallet, the quote must have been

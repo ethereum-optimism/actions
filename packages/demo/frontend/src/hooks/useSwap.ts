@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  PriceQuote,
   SupportedChainId,
   SwapMarket,
-  SwapQuote,
 } from '@eth-optimism/actions-sdk/react'
 
 import type { Address } from 'viem'
@@ -96,7 +96,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
   }, [activeTab, refetchSwapAssets])
 
   const handleSwap = useCallback(
-    async (quote: SwapQuote) => {
+    async (quote: PriceQuote) => {
       if (isSwapping) return
       setIsSwapping(true)
       try {

@@ -34,21 +34,22 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   }
 
   /**
-   * Get a swap quote with the wallet address as recipient.
+   * Get a full, executable swap quote with the wallet address as recipient.
    * Ensures calldata is encoded for the real wallet, not a placeholder.
    */
-  override async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    return super.getQuote({
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    return this.resolveQuote({
       ...params,
       recipient: params.recipient ?? this.wallet.address,
     })
   }
 
   /**
-   * Get quotes from all providers with the wallet address as recipient.
+   * Get full, executable quotes from all providers with the wallet address as
+   * recipient.
    */
-  override async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
-    return super.getQuotes({
+  async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    return this.resolveQuotes({
       ...params,
       recipient: params.recipient ?? this.wallet.address,
     })
