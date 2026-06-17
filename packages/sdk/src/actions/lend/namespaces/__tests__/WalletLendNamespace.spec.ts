@@ -201,6 +201,22 @@ describe('WalletLendNamespace', () => {
     })
   })
 
+  describe('getPositions', () => {
+    it("fetches positions for the wallet's own address", async () => {
+      const namespace = new WalletLendNamespace(
+        { morpho: mockProvider },
+        mockWallet,
+      )
+      const spy = vi.spyOn(mockProvider, 'getPositions')
+
+      const positions = await namespace.getPositions()
+
+      expect(positions).toHaveLength(1)
+      expect(positions[0].marketId.address).toBe(mockMarketId.address)
+      expect(spy).toHaveBeenCalledWith(mockWalletAddress, {})
+    })
+  })
+
   it('should store the wallet reference', () => {
     const namespace = new WalletLendNamespace(
       { morpho: mockProvider },

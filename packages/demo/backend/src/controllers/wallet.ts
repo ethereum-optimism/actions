@@ -24,6 +24,16 @@ const LendPositionRequestSchema = z.object({
   }),
 })
 
+const LendPositionsRequestSchema = z.object({
+  query: z.object({
+    chainId: z
+      .string()
+      .regex(/^\d+$/, 'chainId must be a positive integer')
+      .optional(),
+    nonZeroOnly: z.enum(['true', 'false']).optional(),
+  }),
+})
+
 const BorrowPositionRequestSchema = z.object({
   params: z.object({
     chainId: ChainIdStringSchema,
@@ -102,6 +112,36 @@ export class WalletController {
     }
     const position = await walletService.getLendPosition({ marketId, wallet })
     return c.json({ result: position })
+  }
+
+  /**
+   * GET - All lend positions for a wallet across configured markets/providers.
+   * Optional `chainId` / `nonZeroOnly` query params flow through to the SDK's
+   * `wallet.lend.getPositions` (`GetPositionsParams`).
+   */
+  async getLendPositions(c: Context) {
+    const validation = await validateRequest(c, LendPositionsRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      query: { chainId, nonZeroOnly },
+    } = validation.data
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const positions = await walletService.getLendPositions({
+      wallet,
+      params: {
+        chainId: chainId ? (Number(chainId) as SupportedChainId) : undefined,
+        nonZeroOnly: nonZeroOnly === 'true',
+      },
+    })
+    return c.json({ result: positions })
   }
 
   /**

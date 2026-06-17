@@ -24,6 +24,85 @@ import type { LendExecutePositionParams } from '@/types/api'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
+import type { MarketInfo } from '@/components/earn/MarketSelector'
+import type { MarketPosition } from '@/types/market'
+
+/**
+ * Find the position whose market matches `marketId` (case-insensitive on the
+ * address). `getPositions` returns one entry per configured market, so this is
+ * how a market view-model is reunited with its on-chain balance.
+ */
+function findPosition(
+  positions: LendMarketPosition[],
+  marketId: { address: string; chainId: number },
+): LendMarketPosition | undefined {
+  return positions.find(
+    (p) =>
+      p.marketId.address.toLowerCase() === marketId.address.toLowerCase() &&
+      p.marketId.chainId === marketId.chainId,
+  )
+}
+
+/**
+ * Build the `MarketPosition` view-model from a market and its on-chain
+ * position. Shared by the mount-time load and the post-trade refresh so both
+ * render identical shapes from a single `getPositions` call.
+ */
+function toMarketPosition(
+  market: MarketInfo,
+  position: LendMarketPosition,
+): MarketPosition {
+  return {
+    marketName: market.name,
+    marketLogo: market.logo,
+    networkName: market.networkName,
+    networkLogo: market.networkLogo,
+    asset: market.asset,
+    assetLogo: market.assetLogo,
+    apy: market.apy,
+    depositedAmount: position.balanceFormatted,
+    directDepositedAmount: position.balanceFormatted,
+    depositedShares: position.sharesFormatted,
+    depositedSharesRaw: position.shares,
+    directDepositedShares: position.sharesFormatted,
+    directDepositedSharesRaw: position.shares,
+    pledgedCollateralAmount: null,
+    isLoadingApy: false,
+    isLoadingPosition: false,
+    marketId: market.marketId,
+    provider: market.provider,
+  }
+}
+
+/** Seed the per-market position cache so single-market queries don't re-fetch. */
+function seedPositionCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  positions: LendMarketPosition[],
+): void {
+  for (const position of positions) {
+    queryClient.setQueryData(
+      ['position', position.marketId.address, position.marketId.chainId],
+      position,
+    )
+  }
+}
+
+/** Join configured markets to their positions, keeping only funded markets. */
+function buildFundedPositions(
+  markets: MarketInfo[],
+  positions: LendMarketPosition[],
+): MarketPosition[] {
+  return markets
+    .map((market) => ({
+      market,
+      position: findPosition(positions, market.marketId),
+    }))
+    .filter(
+      (entry): entry is { market: MarketInfo; position: LendMarketPosition } =>
+        entry.position !== undefined && entry.position.balance > 0n,
+    )
+    .map((entry) => toMarketPosition(entry.market, entry.position))
+}
 
 /**
  * Operations interface for wallet interactions
@@ -33,6 +112,10 @@ export interface EarnOperations {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
+  getPositions: (params?: {
+    chainId?: SupportedChainId
+    nonZeroOnly?: boolean
+  }) => Promise<LendMarketPosition[]>
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (
     params: LendExecutePositionParams,
@@ -93,51 +176,11 @@ export function useLendProvider({
 
   const refreshAllPositions = useCallback(async () => {
     if (!ready || markets.length === 0) return
-    const results = await Promise.all(
-      markets.map(async (market) => {
-        try {
-          const position = await operations.getPosition({
-            address: market.marketId.address as Address,
-            chainId: market.marketId.chainId as SupportedChainId,
-          })
-          queryClient.setQueryData(
-            ['position', market.marketId.address, market.marketId.chainId],
-            position,
-          )
-          return { market, position }
-        } catch {
-          return null
-        }
-      }),
-    )
-
-    setMarketPositions(
-      results
-        .filter(
-          (result): result is NonNullable<typeof result> => result !== null,
-        )
-        .filter((result) => result.position.balance > 0n)
-        .map(({ market, position }) => ({
-          marketName: market.name,
-          marketLogo: market.logo,
-          networkName: market.networkName,
-          networkLogo: market.networkLogo,
-          asset: market.asset,
-          assetLogo: market.assetLogo,
-          apy: market.apy,
-          depositedAmount: position.balanceFormatted,
-          directDepositedAmount: position.balanceFormatted,
-          depositedShares: position.sharesFormatted,
-          depositedSharesRaw: position.shares,
-          directDepositedShares: position.sharesFormatted,
-          directDepositedSharesRaw: position.shares,
-          pledgedCollateralAmount: null,
-          isLoadingApy: false,
-          isLoadingPosition: false,
-          marketId: market.marketId,
-          provider: market.provider,
-        })),
-    )
+    // One SDK call aggregates every market/provider position (see #14),
+    // replacing the per-market getPosition fan-out.
+    const positions = await operations.getPositions()
+    seedPositionCache(queryClient, positions)
+    setMarketPositions(buildFundedPositions(markets, positions))
   }, [markets, operations, queryClient, ready, setMarketPositions])
 
   // Fetch available markets on mount
@@ -163,82 +206,28 @@ export function useLendProvider({
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
-        // Log and fetch positions for all markets in parallel
+        // One SDK call aggregates every market/provider position (see #14),
+        // replacing the per-market getPosition fan-out. The single activity-log
+        // entry is now honest: one call, one log line.
         const positionActivity = logActivity('getPosition')
-        const positionPromises = marketInfoList.map(async (market) => {
-          try {
-            const position = await operations.getPosition({
-              address: market.marketId.address as Address,
-              chainId: market.marketId.chainId as SupportedChainId,
-            })
-            return { market, position }
-          } catch (error) {
-            console.error(
-              `Error fetching position for market ${market.name}:`,
-              error,
-            )
-            return null
-          }
-        })
-
-        const positionResults = await Promise.all(positionPromises)
+        const positions = await operations.getPositions()
         positionActivity?.confirm()
 
         // Seed position cache for each market so useMarketPosition doesn't re-fetch
-        for (const result of positionResults) {
-          if (result) {
-            queryClient.setQueryData(
-              [
-                'position',
-                result.market.marketId.address,
-                result.market.marketId.chainId,
-              ],
-              result.position,
-            )
-          }
-        }
+        seedPositionCache(queryClient, positions)
 
         // Build initial market positions array with all markets that have deposits
-        const initialPositions = positionResults
-          .filter((result) => {
-            if (!result) return false
-            return result.position.balance > 0n
-          })
-          .map((result) => {
-            const { market, position } = result!
-            return {
-              marketName: market.name,
-              marketLogo: market.logo,
-              networkName: market.networkName,
-              networkLogo: market.networkLogo,
-              asset: market.asset,
-              assetLogo: market.assetLogo,
-              apy: market.apy,
-              depositedAmount: position.balanceFormatted,
-              directDepositedAmount: position.balanceFormatted,
-              depositedShares: position.sharesFormatted,
-              depositedSharesRaw: position.shares,
-              directDepositedShares: position.sharesFormatted,
-              directDepositedSharesRaw: position.shares,
-              pledgedCollateralAmount: null,
-              isLoadingApy: false,
-              isLoadingPosition: false,
-              marketId: market.marketId,
-              provider: market.provider,
-            }
-          })
-
-        setMarketPositions(initialPositions)
+        setMarketPositions(buildFundedPositions(marketInfoList, positions))
 
         // Set default selected market (first one, preferably Morpho/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
           const defaultMarket =
             marketInfoList.find((m) => m.name === 'Morpho') || marketInfoList[0]
 
-          // Find if we already fetched position for this market
-          const defaultPosition = positionResults.find(
-            (r) =>
-              r?.market.marketId.address === defaultMarket.marketId.address,
+          // Reuse the position we already fetched for this market
+          const defaultPosition = findPosition(
+            positions,
+            defaultMarket.marketId,
           )
 
           setSelectedMarket({
@@ -249,14 +238,12 @@ export function useLendProvider({
             asset: defaultMarket.asset,
             assetLogo: defaultMarket.assetLogo,
             apy: defaultMarket.apy,
-            depositedAmount: defaultPosition?.position.balanceFormatted || null,
-            directDepositedAmount:
-              defaultPosition?.position.balanceFormatted || null,
-            depositedShares: defaultPosition?.position.sharesFormatted || null,
-            depositedSharesRaw: defaultPosition?.position.shares || null,
-            directDepositedShares:
-              defaultPosition?.position.sharesFormatted || null,
-            directDepositedSharesRaw: defaultPosition?.position.shares || null,
+            depositedAmount: defaultPosition?.balanceFormatted || null,
+            directDepositedAmount: defaultPosition?.balanceFormatted || null,
+            depositedShares: defaultPosition?.sharesFormatted || null,
+            depositedSharesRaw: defaultPosition?.shares || null,
+            directDepositedShares: defaultPosition?.sharesFormatted || null,
+            directDepositedSharesRaw: defaultPosition?.shares || null,
             pledgedCollateralAmount: null,
             isLoadingApy: false,
             isLoadingPosition: false,

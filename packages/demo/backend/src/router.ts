@@ -43,6 +43,11 @@ router.get('/version', (c) => {
 
 router.get('/wallet/balance', authMiddleware, walletController.getBalance)
 router.get(
+  '/wallet/lend/positions',
+  authMiddleware,
+  walletController.getLendPositions,
+)
+router.get(
   '/wallet/lend/:chainId/:marketAddress/position',
   authMiddleware,
   walletController.getLendPosition,

@@ -86,4 +86,54 @@ describe('Wallet Service', () => {
       ).rejects.toThrow('position read failed')
     })
   })
+
+  describe('getLendPositions', () => {
+    it('forwards params to wallet.lend.getPositions and serializes bigints', async () => {
+      const getPositions = vi.fn().mockResolvedValue([
+        {
+          balance: 1234567n,
+          balanceFormatted: '1.234567',
+          shares: 1000000n,
+          sharesFormatted: '1.0',
+          marketId: { address: '0xabc', chainId: 84532 },
+        },
+      ])
+      const wallet = { lend: { getPositions } }
+
+      const result = await walletService.getLendPositions({
+        wallet: wallet as never,
+        params: { chainId: 84532 as never, nonZeroOnly: true },
+      })
+
+      expect(getPositions).toHaveBeenCalledWith({
+        chainId: 84532,
+        nonZeroOnly: true,
+      })
+      expect(result).toEqual([
+        {
+          balance: '1234567',
+          balanceFormatted: '1.234567',
+          shares: '1000000',
+          sharesFormatted: '1.0',
+          marketId: { address: '0xabc', chainId: 84532 },
+        },
+      ])
+    })
+
+    it('propagates SDK errors', async () => {
+      const wallet = {
+        lend: {
+          getPositions: vi
+            .fn()
+            .mockRejectedValue(new Error('positions failed')),
+        },
+      }
+      await expect(
+        walletService.getLendPositions({
+          wallet: wallet as never,
+          params: {},
+        }),
+      ).rejects.toThrow('positions failed')
+    })
+  })
 })

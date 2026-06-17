@@ -341,6 +341,24 @@ export interface GetLendMarketsParams extends FilterAssetChain {
 }
 
 /**
+ * Parameters for getting all of a wallet's lending positions
+ * @description Optional filters for `getPositions`. Mirrors
+ * `GetLendMarketsParams` for chain filtering and adds provider selection plus
+ * a zero-balance filter.
+ */
+export interface GetPositionsParams {
+  /** Filter to one chain (mirrors `GetLendMarketsParams.chainId`). */
+  chainId?: SupportedChainId
+  /** Filter to one provider ("morpho" | "aave" etc.). */
+  provider?: LendProviderName
+  /**
+   * Drop zero-balance positions before returning. Default `false` (return
+   * every market for parity with `getMarkets`).
+   */
+  nonZeroOnly?: boolean
+}
+
+/**
  * Parameters for getting market balance
  * @description Parameters required for fetching market balance
  */

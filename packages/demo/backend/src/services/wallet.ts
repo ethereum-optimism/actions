@@ -1,6 +1,7 @@
 import type {
   BorrowMarketId,
   EOATransactionReceipt,
+  GetPositionsParams,
   LendMarketId,
   SmartWallet,
   TokenBalance,
@@ -94,6 +95,17 @@ export async function getLendPosition({
 }) {
   const position = await wallet.lend!.getPosition({ marketId })
   return serializeBigInt(position)
+}
+
+export async function getLendPositions({
+  wallet,
+  params,
+}: {
+  wallet: Wallet
+  params: GetPositionsParams
+}) {
+  const positions = await wallet.lend!.getPositions(params)
+  return serializeBigInt(positions)
 }
 
 export async function getBorrowPosition({

@@ -173,6 +173,88 @@ describe('LendProvider', () => {
     })
   })
 
+  describe('getPositions', () => {
+    const walletAddress = '0x5678' as Address
+    const marketA: LendMarketConfig = {
+      address: '0xaaaa' as Address,
+      chainId: 84532,
+      name: 'Market A',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const marketB: LendMarketConfig = {
+      address: '0xbbbb' as Address,
+      chainId: 84532,
+      name: 'Market B',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+
+    it('walks the allowlist and returns one position per market', async () => {
+      const provider = new MockLendProvider({
+        marketAllowlist: [marketA, marketB],
+      })
+
+      const positions = await provider.getPositions(walletAddress)
+
+      expect(positions).toHaveLength(2)
+      expect(positions.map((p) => p.marketId.address)).toEqual([
+        marketA.address,
+        marketB.address,
+      ])
+    })
+
+    it('returns an empty array when the allowlist is empty', async () => {
+      const provider = new MockLendProvider()
+
+      const positions = await provider.getPositions(walletAddress)
+
+      expect(positions).toEqual([])
+    })
+
+    it('throws AddressRequiredError when walletAddress is missing', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(
+        provider.getPositions(undefined as unknown as Address),
+      ).rejects.toThrow('walletAddress')
+    })
+
+    it('validates chainId against supported chains', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(
+        provider.getPositions(walletAddress, {
+          chainId: 999 as unknown as 84532,
+        }),
+      ).rejects.toThrow('Chain 999 is not supported')
+    })
+
+    it('isolates per-market failures and drops the rejected ones', async () => {
+      const provider = new MockLendProvider({
+        marketAllowlist: [marketA, marketB],
+      })
+      // Fail only the first market; the batch must still return market B.
+      provider.getPosition.mockImplementation(async (_addr, marketId) => {
+        if (marketId?.address === marketA.address) {
+          throw new Error('RPC exploded')
+        }
+        return {
+          balance: 500000n,
+          balanceFormatted: '500000',
+          shares: 500000n,
+          sharesFormatted: '500000',
+          marketId: marketId!,
+        }
+      })
+
+      const positions = await provider.getPositions(walletAddress)
+
+      expect(positions).toHaveLength(1)
+      expect(positions[0].marketId.address).toBe(marketB.address)
+    })
+  })
+
   describe('approvalMode resolution', () => {
     const mockAsset = {
       address: {

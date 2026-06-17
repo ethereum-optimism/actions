@@ -105,6 +105,28 @@ class ActionsApiClient extends BaseApiClient {
     }
   }
 
+  async getPositions(
+    params: { chainId?: SupportedChainId; nonZeroOnly?: boolean } = {},
+    headers: HeadersInit = {},
+  ): Promise<LendMarketPosition[]> {
+    const search = new URLSearchParams()
+    if (params.chainId !== undefined)
+      search.set('chainId', String(params.chainId))
+    if (params.nonZeroOnly) search.set('nonZeroOnly', 'true')
+    const qs = search.toString()
+    const { result } = await this.request<{
+      result: Serialized<LendMarketPosition>[]
+    }>(`/wallet/lend/positions${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers,
+    })
+    return result.map((position) => ({
+      ...position,
+      balance: BigInt(position.balance),
+      shares: BigInt(position.shares),
+    }))
+  }
+
   private async lendMutation(
     action: 'open' | 'close',
     { amount, asset, marketId }: LendExecutePositionParams,
