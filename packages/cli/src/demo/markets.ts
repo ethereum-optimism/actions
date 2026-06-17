@@ -1,9 +1,11 @@
 import {
   type BorrowMarketConfig,
+  computeAaveBorrowMarketId,
   ETH,
   getAssetAddress,
   type LendMarketConfig,
   OP_DEMO,
+  USDC,
   USDC_DEMO,
   WETH,
 } from '@eth-optimism/actions-sdk'
@@ -35,14 +37,35 @@ export const AaveETH: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
+// Aave V3 on OP Sepolia: real ETH collateral, real USDC debt. CLI borrows real USDC directly (no USDC_DEMO mirror).
+const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
+const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
+
+export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
+  kind: 'aave-v3',
+  marketId: computeAaveBorrowMarketId({
+    chainId: optimismSepolia.id,
+    collateralAddress: AAVE_OP_SEPOLIA_WETH,
+    debtAddress: AAVE_OP_SEPOLIA_USDC,
+  }),
+  chainId: optimismSepolia.id,
+  name: 'Aave ETH / USDC',
+  collateralAsset: ETH,
+  borrowAsset: USDC,
+  aave: {
+    debtReserve: AAVE_OP_SEPOLIA_USDC,
+    collateralReserve: AAVE_OP_SEPOLIA_WETH,
+    collateralUsesWethGateway: true,
+  },
+}
+
 /**
  * @description Morpho Blue market on Base Sepolia used for borrow demos.
  * `marketId` is the keccak256 of `marketParams` (loanToken, collateralToken,
  * oracle, irm, lltv). Mirrored from `packages/demo/backend/src/config/markets.ts`
  * so the CLI operates against the same demo market the backend does. Collateral
  * is the Gauntlet USDC vault share (a Morpho vault token), and the borrow asset
- * is OP_DEMO; `lendProvider: 'morpho'` is informational so frontends can wire
- * the supply leg through the same protocol.
+ * is OP_DEMO.
  */
 export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
@@ -52,8 +75,6 @@ export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   name: 'Demo dUSDC / OP',
   collateralAsset: USDC_DEMO,
   borrowAsset: OP_DEMO,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams: {
     loanToken: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
     collateralToken: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1',

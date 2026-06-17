@@ -220,7 +220,8 @@ function EarnHeader({
       style={{
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #E0E2EB',
-        position: 'relative',
+        position: 'sticky',
+        top: 0,
         zIndex: 40,
       }}
     >
@@ -586,7 +587,7 @@ function EarnContent({
         onLogout={logout}
       />
 
-      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)] overflow-x-hidden">
+      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
         <TabSwitcherProvider setActiveTab={setActiveTab}>
           <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
             <div className="w-full max-w-2xl">
@@ -630,6 +631,9 @@ function EarnContent({
               width: isSidebarCollapsed ? '0px' : '436px',
               transition: 'width 300ms ease-in-out',
               overflow: 'hidden',
+              position: 'sticky',
+              top: '65px',
+              alignSelf: 'flex-start',
             }}
           >
             <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />

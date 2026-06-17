@@ -2,6 +2,7 @@ export type { Actions } from '@/actions.js'
 export {
   AaveBorrowProvider,
   BorrowProvider,
+  borrowProviderForKind,
   MorphoBorrowProvider,
 } from '@/actions/borrow/index.js'
 export { computeAaveBorrowMarketId } from '@/actions/borrow/providers/aave/marketId.js'

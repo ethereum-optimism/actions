@@ -138,8 +138,6 @@ function buildMarketConfig(
     name: 'Demo dUSDC / OP',
     collateralAsset,
     borrowAsset,
-    borrowProvider: 'morpho',
-    lendProvider: 'morpho',
     marketParams: deploy.marketParams,
   }
 }

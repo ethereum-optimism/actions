@@ -88,11 +88,9 @@ export function deserializeReceipt(
   }
 }
 
+// All BorrowMarketId kinds share the same (chainId, hex) shape, so the path is uniform.
 export function marketIdPath(marketId: BorrowMarketId): string {
-  if (marketId.kind === 'morpho-blue') {
-    return `${marketId.chainId}/${encodeURIComponent(marketId.marketId)}`
-  }
-  throw new Error(`Unsupported borrow marketId.kind: ${marketId.kind}`)
+  return `${marketId.chainId}/${encodeURIComponent(marketId.marketId)}`
 }
 
 /**

@@ -1,4 +1,4 @@
-import { createActions, ETH } from '@eth-optimism/actions-sdk'
+import { createActions, ETH, USDC } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
@@ -7,6 +7,7 @@ import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import {
   AaveETH,
+  AaveETHBorrowUSDCDemo,
   MorphoUSDCBorrowOPDemo,
   MorphoUSDCLendDemo,
 } from './markets.js'
@@ -45,6 +46,9 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       morpho: {
         marketAllowlist: [MorphoUSDCBorrowOPDemo],
       },
+      aave: {
+        marketAllowlist: [AaveETHBorrowUSDCDemo],
+      },
     },
     swap: {
       uniswap: {
@@ -59,7 +63,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       },
     },
     assets: {
-      allow: [USDC_DEMO, OP_DEMO, ETH],
+      allow: [USDC_DEMO, OP_DEMO, ETH, USDC],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }

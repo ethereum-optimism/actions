@@ -1,13 +1,10 @@
-/**
- * Top-level Borrow tab layout. Wires the lend-position selector (the collateral
- * source) to the borrow provider's selected market and mounts the borrow form
- * once collateral is selected. Zero-deposit positions are filtered out; with
- * none eligible, the no-collateral banner shows.
- */
+// Borrow tab: wires the lend-position selector (collateral) to the borrow form.
 
 import { useEffect, useMemo, useState } from 'react'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
+import { DEBT_DUST_THRESHOLD } from '@/constants/borrow'
+import { useReconcileMorphoCollateral } from '@/demoMagic'
 import type { MarketPosition } from '@/types/market'
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 import { BorrowAction } from './BorrowAction'
@@ -21,8 +18,10 @@ export function BorrowTab() {
     marketPositions,
     isInitialLoad,
   } = useLendProviderContext()
-  const { markets, handleMarketSelect, borrowPositions } =
+  const { markets, handleMarketSelect, borrowPositions, handleTransaction } =
     useBorrowProviderContext()
+
+  useReconcileMorphoCollateral(marketPositions, handleTransaction)
 
   const effectiveLendPositions = useMemo(
     () =>
@@ -79,6 +78,15 @@ export function BorrowTab() {
 
   const hasCollateral = !isInitialLoad && positionsWithDeposits.length > 0
 
+  // Exclude collateral-only or fully-repaid positions (below dust threshold).
+  const activeBorrowPositions = useMemo(
+    () =>
+      borrowPositions.filter(
+        (p) => parseFloat(p.borrowAmountFormatted) >= DEBT_DUST_THRESHOLD,
+      ),
+    [borrowPositions],
+  )
+
   return (
     <>
       <div>
@@ -103,9 +111,9 @@ export function BorrowTab() {
         <BorrowAction selectedLendPosition={selectedLendPosition} />
       )}
 
-      {borrowPositions.length > 0 && (
+      {activeBorrowPositions.length > 0 && (
         <div style={{ marginTop: '24px' }}>
-          <BorrowPositions positions={borrowPositions} />
+          <BorrowPositions positions={activeBorrowPositions} />
         </div>
       )}
     </>

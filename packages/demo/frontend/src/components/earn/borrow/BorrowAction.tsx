@@ -16,12 +16,13 @@ import {
   computeMaxBorrowSafeUsd,
   computeSafeCeilingLtv,
 } from '@/utils/borrowMath'
-import {
-  directLendPositionUsd,
-  lendPositionUsd,
-  positionUsd,
-} from '@/utils/borrowValuation'
+import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
+import { assetBalanceAmount } from '@/utils/balanceMatching'
+import { repayGateAsset, ReacquireDebtNotice } from '@/demoMagic'
+import { DEBT_DUST_THRESHOLD } from '@/constants/borrow'
 import { sameMarketId } from '@/utils/marketId'
+import { displaySymbol } from '@/utils/tokenDisplay'
+import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
 import type { MarketPosition } from '@/types/market'
 import { CtaButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
@@ -41,16 +42,21 @@ export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
 }
 
+// Holding within 0.5% of the debt counts as repayable in full (interest dust).
+const REPAY_FULL_TOLERANCE = 0.995
+
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const {
     markets,
     selectedMarket,
-    selectedMarketPosition,
+    borrowPositions,
+    tokenBalances,
     handleMarketSelect,
     handleTransaction,
     getQuote,
   } = useBorrowProviderContext()
   const { isExecuting, runTransaction, txModal, toast } = useBorrowTransaction()
+  const { setActiveTab } = useTabSwitcher()
 
   const [mode, setMode] = useState<'borrow' | 'repay'>('borrow')
   const [amount, setAmount] = useState('')
@@ -68,21 +74,61 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     [markets, selectedLendPosition],
   )
 
+  // Prefer the globally-selected market if eligible, otherwise fall back to the first match.
+  const borrowMarket: BorrowMarket | null =
+    eligibleMarkets.find(
+      (m) =>
+        selectedMarket && sameMarketId(m.marketId, selectedMarket.marketId),
+    ) ??
+    eligibleMarkets[0] ??
+    null
+
+  // The wallet's borrow position in the active market, if any.
+  const activePosition =
+    borrowMarket &&
+    (borrowPositions.find((p) =>
+      sameMarketId(p.marketId, borrowMarket.marketId),
+    ) ??
+      null)
+
   // In repay mode, the asset is locked to the asset currently borrowed.
   const repayAsset =
-    mode === 'repay' && selectedMarketPosition
-      ? selectedMarketPosition.borrowAsset
-      : null
+    mode === 'repay' && activePosition ? activePosition.borrowAsset : null
 
   // Active market: user-selected in borrow mode, the position's market in repay mode.
   const activeMarket: BorrowMarket | null =
-    mode === 'repay' && selectedMarketPosition
+    mode === 'repay' && activePosition
       ? (markets.find((m) =>
-          sameMarketId(m.marketId, selectedMarketPosition.marketId),
+          sameMarketId(m.marketId, activePosition.marketId),
         ) ?? null)
-      : selectedMarket
+      : borrowMarket
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
+
+  // Gate the repay on the asset the user holds (USDC_DEMO for the mirror market).
+  const repayBalanceAsset = repayGateAsset(activeMarket, activeAsset)
+
+  // Cap the repay at min(held balance, outstanding debt); the balance gates the CTA.
+  const rawOutstandingDebt = activePosition
+    ? parseFloat(activePosition.borrowAmountFormatted) || 0
+    : 0
+  const outstandingDebt =
+    rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
+  const debtBalance = assetBalanceAmount(tokenBalances, repayBalanceAsset)
+  const maxRepayable = Math.min(debtBalance, outstandingDebt)
+  const isRepay = mode === 'repay'
+  const canRepayFull = debtBalance >= outstandingDebt * REPAY_FULL_TOLERANCE
+  const cannotRepay = isRepay && outstandingDebt > 0 && debtBalance <= 0
+  const partialRepayOnly =
+    isRepay && outstandingDebt > 0 && debtBalance > 0 && !canRepayFull
+
+  // Floor a number to the active asset's decimals (capped at 6) so a prefilled
+  // or clamped repay never rounds above the held balance.
+  const floorToAsset = (value: number) => {
+    const decimals = Math.min(activeAsset?.metadata.decimals ?? 6, 6)
+    const factor = 10 ** decimals
+    return (Math.floor(value * factor) / factor).toString()
+  }
 
   const bufferPct = activeMarket?.healthBufferPct ?? 0
   const maxLtv = activeMarket?.maxLtv ?? 0
@@ -91,16 +137,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   // Projection inputs: an existing position's USD aggregates, or a fresh open against the chosen lend position.
   const { collateralValueUsd: currentCollUsd, borrowValueUsd: currentBorrUsd } =
-    positionUsd(selectedMarketPosition)
+    positionUsd(activePosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
-  const additionalLendCollateralUsd =
-    directLendPositionUsd(selectedLendPosition)
 
-  // For a fresh open, the demo treats the full lend balance as available collateral.
+  // Use current collateral when a position exists; otherwise use the lend balance (fresh open).
   const projectionCollateralUsd =
-    currentCollUsd > 0
-      ? currentCollUsd + additionalLendCollateralUsd
-      : lendCollateralUsd
+    currentCollUsd > 0 ? currentCollUsd : lendCollateralUsd
 
   const amountNum = parseFloat(amount) || 0
   const amountAssetPriceUsd = activeAsset
@@ -108,7 +150,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const amountUsd = amountNum * amountAssetPriceUsd
 
-  const { livePreview, isPreviewLoading } = useBorrowQuotePreview({
+  // Gates the CTA on a settled quote; health display uses local stub prices (see useBorrowProjection).
+  const { isPreviewLoading } = useBorrowQuotePreview({
     activeMarket,
     amountNum,
     mode,
@@ -128,15 +171,20 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       currentBorrUsd,
       currentCollUsd,
       projectionCollateralUsd,
-      livePreview,
     })
 
   // Max button: prefill the safe ceiling in borrow mode, the borrowed amount in repay mode.
   const handleMax = () => {
     if (!activeAsset) return
     if (mode === 'repay') {
-      if (!selectedMarketPosition) return
-      setAmount(selectedMarketPosition.borrowAmountFormatted)
+      if (!activePosition) return
+      // Full debt when the balance covers it (exact string avoids dust);
+      // otherwise the floored held balance.
+      setAmount(
+        debtBalance >= outstandingDebt
+          ? activePosition.borrowAmountFormatted
+          : floorToAsset(maxRepayable),
+      )
       return
     }
     const maxBorrowUsd = computeMaxBorrowSafeUsd(
@@ -151,7 +199,17 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value
-    if (v === '' || /^\d*\.?\d*$/.test(v)) setAmount(v)
+    if (v !== '' && !/^\d*\.?\d*$/.test(v)) return
+    // In repay mode, cap entry at the max repayable (held balance vs debt)
+    // rather than hard-blocking the keystroke.
+    if (isRepay && v !== '' && maxRepayable > 0) {
+      const parsed = parseFloat(v)
+      if (Number.isFinite(parsed) && parsed > maxRepayable) {
+        setAmount(floorToAsset(maxRepayable))
+        return
+      }
+    }
+    setAmount(v)
   }
 
   const handleTokenClick = () => {
@@ -175,7 +233,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     amountNum > 0 &&
     !wouldLiquidate &&
     !inBufferZone &&
-    !isPreviewLoading
+    !isPreviewLoading &&
+    !cannotRepay &&
+    !(isRepay && outstandingDebt <= 0)
 
   const handleCtaClick = () => {
     if (!canOpenReview) return
@@ -254,6 +314,15 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
         />
 
         {health && <BorrowHealthCard {...health} />}
+
+        {repayBalanceAsset && (cannotRepay || partialRepayOnly) && (
+          <ReacquireDebtNotice
+            symbol={displaySymbol(repayBalanceAsset.metadata.symbol)}
+            variant={cannotRepay ? 'none' : 'partial'}
+            maxRepayable={maxRepayable}
+            onAcquire={() => setActiveTab('swap')}
+          />
+        )}
 
         <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
           {ctaText}

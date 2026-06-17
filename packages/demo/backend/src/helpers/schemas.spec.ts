@@ -240,10 +240,20 @@ describe('BorrowMarketIdSchema', () => {
     }
   })
 
-  it('rejects unknown kind', () => {
+  it('accepts the aave-v3 kind', () => {
     expect(
       BorrowMarketIdSchema.safeParse({
         kind: 'aave-v3',
+        marketId: validMarketId,
+        chainId: 11155420,
+      }).success,
+    ).toBe(true)
+  })
+
+  it('rejects unknown kind', () => {
+    expect(
+      BorrowMarketIdSchema.safeParse({
+        kind: 'compound-v3',
         marketId: validMarketId,
         chainId: 84532,
       }).success,

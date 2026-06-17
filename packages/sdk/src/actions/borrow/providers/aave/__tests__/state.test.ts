@@ -40,8 +40,6 @@ const config: AaveBorrowMarketConfig = {
   name: 'Aave ETH / USDC',
   collateralAsset,
   borrowAsset,
-  borrowProvider: 'aave',
-  lendProvider: 'aave',
   aave: {
     debtReserve: USDC,
     collateralReserve: WETH,

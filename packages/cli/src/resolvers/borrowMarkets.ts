@@ -1,6 +1,7 @@
 import {
   BORROW_PROVIDER_NAMES,
   type BorrowMarketConfig,
+  borrowProviderForKind,
   type NodeActionsConfig,
 } from '@eth-optimism/actions-sdk'
 
@@ -53,7 +54,7 @@ export function resolveBorrowMarket(
       matches: matches.map((m) => ({
         name: m.name,
         chainId: m.chainId,
-        provider: m.borrowProvider,
+        provider: borrowProviderForKind(m.kind),
       })),
     })
   }
