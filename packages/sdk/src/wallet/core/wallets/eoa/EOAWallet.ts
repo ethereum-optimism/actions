@@ -1,6 +1,7 @@
 import type {
   Chain,
   FallbackTransport,
+  Hex,
   HttpTransport,
   LocalAccount,
   WalletClient,
@@ -73,29 +74,74 @@ export abstract class EOAWallet extends Wallet {
   }
 
   /**
-   * Send multiple transactions sequentially from this EOA wallet.
+   * Send multiple transactions from this EOA wallet, pipelining the receipt
+   * waits.
    *
-   * Each transaction is awaited to inclusion (one confirmation) via `send()`
-   * before the next is signed. The `nonceManager` attached in `walletClient()`
-   * keeps nonces in sequence locally, so the wait does not need extra
-   * confirmations to guarantee nonce monotonicity.
+   * Transactions are broadcast sequentially but their receipts are awaited in
+   * parallel. Each tx is signed and submitted one after another (awaiting each
+   * broadcast before the next): the `nonceManager` attached in `walletClient()`
+   * assigns sequential nonces, and broadcasting in order guarantees tx `i` gets
+   * nonce `N+i` and reaches the mempool before tx `i+1` is sent. Submission is
+   * cheap (sign + `eth_sendRawTransaction`). All receipts are then awaited
+   * together via `Promise.all`; the receipt wait (~one block per tx) is the
+   * dominant cost, so overlapping the waits collapses `M` sequential waits into
+   * roughly a single wait — the perf win this method exists for.
+   *
+   * Receipts are returned in input order: `receipts[i]` corresponds to
+   * `transactionData[i]`.
+   *
+   * Why not broadcast in parallel too? viem's `nonceManager` only guarantees
+   * each `sendTransaction` consumes a unique nonce, not that the nonce order
+   * follows array order when sends race (the nonce is consumed after each
+   * call's async preparation, which can interleave). Broadcasting in parallel
+   * could therefore assign nonce `N` to the swap and `N+1` to its approval,
+   * reverting the swap. Sequential broadcast keeps on-chain execution order
+   * aligned with array order, which ordered batches (e.g. `[approve, swap]`)
+   * depend on. The skipped parallelism only covers the cheap submission RPCs,
+   * not the expensive waits, so the perf cost is negligible.
+   *
+   * Failure semantics, relative to the previous fully-sequential
+   * implementation that awaited each receipt before broadcasting the next:
+   *
+   * A broadcast that throws (e.g. insufficient funds, RPC rejection) rejects
+   * the whole batch immediately. Transactions already broadcast are not rolled
+   * back and will still be mined; transactions not yet reached are never sent.
+   * This matches the previous behaviour.
+   *
+   * A reverted-but-mined transaction does not throw (`waitForTransactionReceipt`
+   * resolves with `status: 'reverted'`) and does not stop later transactions —
+   * they were already broadcast with valid sequential nonces and will execute
+   * regardless. Callers must inspect each returned receipt's `status`. The
+   * previous implementation did not gate on revert either, so it also let later
+   * txs land after an earlier revert.
+   *
+   * An earlier transaction that is broadcast but never mined (dropped or stuck)
+   * leaves later transactions stuck behind the nonce gap, because they have
+   * already been submitted. The previous implementation would have blocked at
+   * the earlier tx's receipt wait and never submitted the later ones. This is
+   * the one genuine behavioural change to be aware of.
    *
    * Note: this method assumes a sequencer-ordered chain (e.g. OP-stack L2s).
    * On chains with deeper reorg risk, consider an additional confirmations
    * pass at the call site.
    * @param transactionData - Array of transactions to send
    * @param chainId - Chain to send the transactions on
-   * @returns Promise resolving to array of transaction receipts (one per transaction)
+   * @returns Promise resolving to array of transaction receipts (one per transaction, in input order)
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<EOATransactionReceipt[]> {
-    const receipts: EOATransactionReceipt[] = []
+    const walletClient = await this.walletClient(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+
+    const hashes: Hex[] = []
     for (const tx of transactionData) {
-      const receipt = await this.send(tx, chainId)
-      receipts.push(receipt)
+      hashes.push(await walletClient.sendTransaction(tx))
     }
-    return receipts
+
+    return Promise.all(
+      hashes.map((hash) => publicClient.waitForTransactionReceipt({ hash })),
+    )
   }
 }
