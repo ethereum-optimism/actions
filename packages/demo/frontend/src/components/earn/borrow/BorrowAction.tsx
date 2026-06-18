@@ -168,12 +168,19 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     getQuote,
   })
 
+  // While the tx is executing, the optimistic position update lands (debt now
+  // reflects the borrow) before the form amount clears. Zeroing the projected
+  // delta during execution stops the health bar from briefly double-counting
+  // the borrow and overshooting to 100%.
+  const projectionAmountNum = isExecuting ? 0 : amountNum
+  const projectionAmountUsd = isExecuting ? 0 : amountUsd
+
   const { currentLtv, projectedLtv, wouldLiquidate, projectedHealthFactor } =
     useBorrowProjection({
       activeMarket,
       activeAsset,
-      amountNum,
-      amountUsd,
+      amountNum: projectionAmountNum,
+      amountUsd: projectionAmountUsd,
       mode,
       maxLtv,
       currentBorrUsd,
