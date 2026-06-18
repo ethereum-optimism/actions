@@ -210,6 +210,9 @@ export function Action({
       setAmount('')
       trackEvent('transaction_success', eventData)
     } catch (e) {
+      // Log the full error (revert reason, calldata) for diagnosis; the modal
+      // only gets the short reason below.
+      console.error(`[lend] ${mode} failed:`, e)
       const shortMessage =
         e instanceof ActionsError ? e.shortMessage : undefined
       // Aave's testnet ETH market is thinly funded, so withdrawals can revert

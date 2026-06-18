@@ -117,6 +117,9 @@ export function useBorrowTransaction() {
         description: `${amountNum} ${symbol}`,
       })
     } catch (e) {
+      // Log the full error (revert reason, calldata) for diagnosis; the modal
+      // only gets the short reason below.
+      console.error(`[borrow] ${mode} failed:`, e)
       // Surface only the SDK's short, human-readable reason. A raw Error here
       // carries the full revert calldata, which must not reach the modal.
       const msg =
