@@ -12,7 +12,7 @@ anvil = "nightly-0dd4d3153764f4706c2c9857675e42dec64155a7"
 # Supersim
 supersim = "0.1.0-alpha.58"
 
-[alias]
+[tool_alias]
 forge = "ubi:foundry-rs/foundry[exe=forge]"
 cast = "ubi:foundry-rs/foundry[exe=cast]"
 anvil = "ubi:foundry-rs/foundry[exe=anvil]"
