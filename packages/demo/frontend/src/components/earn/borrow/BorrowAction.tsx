@@ -114,7 +114,15 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const outstandingDebt =
     rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
-  const debtBalance = assetBalanceAmount(tokenBalances, repayBalanceAsset)
+  // Scope to the market's chain: the repay spends USDC_DEMO on the borrow
+  // chain, but the same asset can also hold a balance on the swap chain. Using
+  // the cross-chain total would let Max prefill more than the wallet can spend
+  // here and revert with "transfer amount exceeds balance".
+  const debtBalance = assetBalanceAmount(
+    tokenBalances,
+    repayBalanceAsset,
+    activeMarket?.marketId.chainId,
+  )
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
   const canRepayFull = debtBalance >= outstandingDebt * REPAY_FULL_TOLERANCE
