@@ -208,8 +208,15 @@ export function Action({
       setAmount('')
       trackEvent('transaction_success', eventData)
     } catch (e) {
-      const displayMessage =
+      const shortMessage =
         e instanceof ActionsError ? e.shortMessage : undefined
+      // Aave's testnet ETH market is thinly funded, so withdrawals can revert
+      // on insufficient liquidity. Tell the user this is a testnet limitation
+      // rather than surfacing a bare "Transaction failed".
+      const displayMessage =
+        illiquidMarket && mode === 'withdraw'
+          ? 'This market has limited liquidity on testnet. This is a testnet-specific issue, please try again later.'
+          : shortMessage
       setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
@@ -339,9 +346,9 @@ export function Action({
           onConfirm={handleReviewConfirm}
           isExecuting={isLoading}
           flow="withdraw"
-          amount={{ main: amount || '0' }}
+          amount={{ main: effectiveAmount || '0' }}
           amountUsd={formatUsd(
-            parseFloat(amount) || 0,
+            parseFloat(effectiveAmount) || 0,
             stubPriceUsd(asset.metadata.symbol),
           )}
           asset={asset}
