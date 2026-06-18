@@ -144,7 +144,9 @@ export function Action({
   } = useWithdrawCollateral({
     asset,
     mode,
-    amount,
+    // Use the effective (possibly locked) amount so the projected-health card
+    // agrees with the amount shown in the review modal.
+    amount: effectiveAmount,
     amountValue,
     maxAmount,
     directDepositedAmount,

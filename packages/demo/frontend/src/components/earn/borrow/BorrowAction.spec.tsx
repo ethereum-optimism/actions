@@ -182,6 +182,26 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     return buttons[buttons.length - 1]
   }
 
+  it('blocks repay when the USDC balance lives only on the non-borrow chain', () => {
+    // Total balance is 50, but it is all on the swap chain (84532); the borrow
+    // chain (OPS) holds nothing, so the repay cannot be funded here.
+    const raw = 50_000000n
+    const crossChainOnly = {
+      asset: USDC_DEMO,
+      totalBalance: 50,
+      totalBalanceRaw: raw,
+      chains: { 84532: { balance: 50, balanceRaw: raw } },
+    } as unknown as TokenBalance
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [crossChainOnly],
+    })
+    expect(
+      screen.getByText(/need USDC to repay this loan/i),
+    ).toBeInTheDocument()
+    expect(repayCta()).toBeDisabled()
+  })
+
   it('blocks repay with a re-acquire notice when the USDC balance is zero', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
