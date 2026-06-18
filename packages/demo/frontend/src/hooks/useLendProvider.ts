@@ -502,6 +502,7 @@ export function useLendProvider({
     handleMarketSelect,
     isLoadingMarkets,
     marketPositions,
+    setMarketPositions,
     // Balance data
     assetBalance,
     isLoadingBalance,
