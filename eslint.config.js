@@ -115,4 +115,3 @@ const cliConfig = {
 }
 
 module.exports = [baseConfig, cliConfig]
-
