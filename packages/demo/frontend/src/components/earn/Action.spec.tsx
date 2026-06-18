@@ -224,7 +224,9 @@ describe('Action', () => {
     // that capped amount, not an empty "0".
     fireEvent.click(screen.getByRole('button', { name: /Withdraw USDC/i }))
     expect(screen.getByText('You withdraw')).toBeInTheDocument()
-    expect(screen.getByText('0.0001')).toBeInTheDocument()
+    // Rendered as a label: "0.00" full size + "01" dimmed (i.e. 0.0001, not 0).
+    expect(screen.getByText('0.00')).toBeInTheDocument()
+    expect(screen.getByText('01')).toBeInTheDocument()
   })
 
   it('shows a testnet-specific message when an illiquid Aave withdraw fails', async () => {
