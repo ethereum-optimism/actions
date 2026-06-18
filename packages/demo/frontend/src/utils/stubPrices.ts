@@ -7,8 +7,8 @@ const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   USDC_DEMO: 1.0,
   OP: 0.1,
   OP_DEMO: 0.1,
-  ETH: 3000,
-  WETH: 3000,
+  ETH: 1770,
+  WETH: 1770,
 }
 
 export function stubPriceUsd(symbol: string): number {

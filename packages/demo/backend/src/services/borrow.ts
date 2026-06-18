@@ -20,12 +20,24 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
-import { MorphoUSDCBorrowDemo } from '@/config/markets.js'
+import {
+  AaveETHBorrowUSDCDemo,
+  MorphoUSDCBorrowOPDemo,
+} from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
+import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
 import { getWallet } from '@/services/wallet.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
-const BORROW_MARKETS: BorrowMarketConfig[] = [MorphoUSDCBorrowDemo]
+// Only aave-v3 markets trigger USDC_DEMO mirroring (see services/mirror.ts).
+function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
+  return market.kind === 'aave-v3'
+}
+
+const BORROW_MARKETS: BorrowMarketConfig[] = [
+  MorphoUSDCBorrowOPDemo,
+  AaveETHBorrowUSDCDemo,
+]
 
 export type BorrowReceiptWithUrls = BorrowReceipt & {
   blockExplorerUrls: string[]
@@ -67,6 +79,30 @@ export function resolveMarketConfig(
     })
   }
   return config
+}
+
+// Recover the full BorrowMarketId (with `kind`) from chain + id hex; kind is not trusted from the request.
+export function resolveBorrowMarketId(
+  chainId: SupportedChainId,
+  marketIdHex: BorrowMarketId['marketId'],
+): BorrowMarketId {
+  const config = BORROW_MARKETS.find(
+    (m) =>
+      m.chainId === chainId &&
+      m.marketId.toLowerCase() === marketIdHex.toLowerCase(),
+  )
+  if (!config) {
+    throw new MarketNotAllowedError({
+      address: marketIdHex,
+      chainId,
+      reason: 'Market not in backend allowlist',
+    })
+  }
+  return {
+    kind: config.kind,
+    marketId: config.marketId,
+    chainId: config.chainId,
+  }
 }
 
 export async function getMarkets(
@@ -168,6 +204,11 @@ export async function openPosition(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.openPosition({ ...rest, market })
+  // Best-effort mirror: fire-and-forget, does not block the borrow response.
+  const minted = receipt.borrowAmount
+  if (isAaveMirrorMarket(market) && minted !== undefined && minted > 0n) {
+    void mintMirrorUsdc(wallet, minted, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }
 
@@ -185,6 +226,11 @@ export async function closePosition(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.closePosition({ ...rest, market })
+  // Best-effort mirror removal: fire-and-forget on close.
+  const removed = receipt.borrowAmount
+  if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
+    void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }
 
@@ -236,5 +282,10 @@ export async function repay(
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.repay({ ...rest, market })
+  // Best-effort mirror removal: swallows transfer reverts; deferred reconciliation repairs drift.
+  const removed = receipt.borrowAmount
+  if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
+    void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
+  }
   return decorateReceipt(receipt, market.chainId)
 }

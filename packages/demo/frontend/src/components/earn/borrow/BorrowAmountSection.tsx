@@ -1,4 +1,5 @@
 import { displaySymbol, formatUsd } from '@/utils/tokenDisplay'
+import { getAssetLogo } from '@/constants/logos'
 import { AmountInput } from '../AmountInput'
 import { MaxButton } from '../CtaButton'
 import { InfoTooltip } from '../InfoTooltip'
@@ -49,6 +50,9 @@ export function AmountSection({
     onChange: onAmountChange,
     disabled: false,
     displaySymbol: symbol,
+    ...(activeAsset
+      ? { tokenLogo: getAssetLogo(activeAsset.metadata.symbol) }
+      : {}),
     ...(onTokenClick ? { onTokenClick } : {}),
   }
 

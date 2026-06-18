@@ -39,7 +39,7 @@ export interface BorrowClosePositionInternalParams extends BorrowInternalBasePar
 
 /** Internal params after `depositCollateral` amount normalization. */
 export interface BorrowDepositCollateralInternalParams extends BorrowInternalBaseParams {
-  amountWei: bigint
+  amount: AmountWeiOrMax
 }
 
 /** Internal params after `withdrawCollateral` amount normalization. */

@@ -1,11 +1,13 @@
+import { isAddressEqual } from 'viem'
+
 import {
   validateBorrowMarketIdInAnyAllowlist,
   validateQuoteAction,
-  validateQuoteNotExpired,
 } from '@/actions/borrow/core/validations.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
 import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralParams,
@@ -19,7 +21,10 @@ import type {
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateQuoteNotExpired,
+} from '@/utils/validation.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import { extractReceiptHashes } from '@/wallet/core/utils/extractReceiptHashes.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -190,19 +195,27 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   }
 
   /**
-   * Defensive checks before dispatching a pre-built quote: the action
-   * matches the dispatch method, the quote has not expired, the chain is
-   * supported by this wallet namespace, and the market id is present in a
-   * configured provider allowlist. Borrow quotes don't carry a per-call
-   * recipient (the underlying calldata always routes to the borrowing
-   * wallet), so no recipient binding check is needed.
+   * Defensive checks before dispatching a pre-built quote: the recipient
+   * the calldata is bound to matches this wallet, the action matches the
+   * dispatch method, the quote has not expired, the chain is supported by
+   * this wallet namespace, and the market id is present in a configured
+   * provider allowlist. The recipient check is load-bearing: every leg's
+   * `onBehalfOf` / `to` is baked at quote time, so a quote built for a
+   * different wallet would route borrowed funds or withdrawn collateral to
+   * that address if dispatched here.
    */
   private validateQuoteForThisWallet(
     quote: BorrowQuote,
     expectedAction: BorrowQuote['action'],
   ): BorrowQuote {
+    if (!isAddressEqual(quote.recipient, this.wallet.address)) {
+      throw new QuoteRecipientMismatchError({
+        quoteRecipient: quote.recipient,
+        walletAddress: this.wallet.address,
+      })
+    }
     validateQuoteAction(quote, expectedAction)
-    validateQuoteNotExpired(quote)
+    validateQuoteNotExpired(quote.expiresAt)
     validateChainSupported(quote.marketId.chainId, this.supportedChainIds())
     validateBorrowMarketIdInAnyAllowlist(quote.marketId, this.getAllProviders())
     return quote

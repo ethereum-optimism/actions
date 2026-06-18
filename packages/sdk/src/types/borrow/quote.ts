@@ -1,4 +1,4 @@
-import type { Hex } from 'viem'
+import type { Address, Hex } from 'viem'
 
 import type { BorrowProviderName } from '@/types/actions.js'
 import type {
@@ -51,6 +51,13 @@ export interface BorrowQuoteExecution {
 export interface BorrowQuote {
   /** Market the quote targets */
   marketId: BorrowMarketId
+  /**
+   * Wallet the calldata is bound to: every leg's `to` / `onBehalfOf` is
+   * encoded for this address at quote time. `wallet.borrow.*` rejects a
+   * pre-built quote whose `recipient` differs from the dispatching wallet,
+   * since the baked address can't be re-bound after the fact.
+   */
+  recipient: Address
   /** Action the quote represents */
   action: BorrowAction
   /** Echo of the borrow-side input amount (raw) */

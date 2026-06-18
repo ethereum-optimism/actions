@@ -80,6 +80,7 @@ export function useTurnkeyWallet() {
 
         setSmartWallet(result.wallet)
       } catch (err) {
+        console.error('Failed to create smart wallet', err)
         setError(
           err instanceof Error ? err : new Error('Failed to create wallet'),
         )

@@ -13,7 +13,7 @@ describe('resolveBorrowMarket', () => {
   it('matches by exact .name', () => {
     const market = resolveBorrowMarket('Demo dUSDC / OP', markets)
     expect(market.name).toBe('Demo dUSDC / OP')
-    expect(market.borrowProvider).toBe('morpho')
+    expect(market.kind).toBe('morpho-blue')
   })
 
   it('matches case-insensitively and ignores hyphens / spaces', () => {
@@ -41,7 +41,10 @@ describe('resolveBorrowMarket', () => {
           borrow: string
         }>
       }
-      expect(details.allowed.map((m) => m.name)).toEqual(['Demo dUSDC / OP'])
+      expect(details.allowed.map((m) => m.name)).toEqual([
+        'Demo dUSDC / OP',
+        'Aave ETH / USDC',
+      ])
       for (const m of details.allowed) {
         expect(typeof m.chainId).toBe('number')
         expect(typeof m.collateral).toBe('string')
@@ -57,6 +60,8 @@ describe('resolveBorrowMarket', () => {
     expect(typeof m.chainId).toBe('number')
     expect(m.collateralAsset.metadata.symbol).toBe('USDC_DEMO')
     expect(m.borrowAsset.metadata.symbol).toBe('OP_DEMO')
+    if (m.kind !== 'morpho-blue')
+      throw new Error('expected a morpho-blue market')
     expect(m.marketParams.lltv).toBe(860000000000000000n)
   })
 })
@@ -64,7 +69,10 @@ describe('resolveBorrowMarket', () => {
 describe('configuredBorrowMarkets', () => {
   it('flattens every provider allowlist', () => {
     const all = configuredBorrowMarkets(getDemoConfig())
-    expect(all.map((m) => m.name)).toEqual(['Demo dUSDC / OP'])
+    expect(all.map((m) => m.name)).toEqual([
+      'Demo dUSDC / OP',
+      'Aave ETH / USDC',
+    ])
   })
 
   it('returns an empty array when config.borrow is omitted', () => {

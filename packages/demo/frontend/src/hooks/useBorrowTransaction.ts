@@ -74,14 +74,12 @@ export function useBorrowTransaction() {
     try {
       let receipt
       if (mode === 'borrow') {
-        const collateralSharesRaw = selectedLendPosition.depositedSharesRaw
-        const topUpCollateralSharesRaw =
-          currentCollUsd > 0
-            ? selectedLendPosition.directDepositedSharesRaw
-            : collateralSharesRaw
+        // Fresh open pledges the lend position; top-up (or Aave, which supplies collateral at lend time) skips pledging.
+        const isTopUp = currentCollUsd > 0
+        const freshOpenCollateralRaw = selectedLendPosition.depositedSharesRaw
         if (
-          currentCollUsd === 0 &&
-          (collateralSharesRaw === null || collateralSharesRaw <= 0n)
+          !isTopUp &&
+          (freshOpenCollateralRaw === null || freshOpenCollateralRaw <= 0n)
         ) {
           throw new Error(
             'No collateral shares available for this lend position',
@@ -90,8 +88,10 @@ export function useBorrowTransaction() {
         receipt = await handleTransaction('open', {
           marketId: activeMarket.marketId,
           borrowAmount: { amount: amountNum },
-          ...(topUpCollateralSharesRaw !== null && topUpCollateralSharesRaw > 0n
-            ? { collateralAmount: { amountRaw: topUpCollateralSharesRaw } }
+          ...(!isTopUp &&
+          freshOpenCollateralRaw !== null &&
+          freshOpenCollateralRaw > 0n
+            ? { collateralAmount: { amountRaw: freshOpenCollateralRaw } }
             : {}),
           collateralAsset: undefined,
         })

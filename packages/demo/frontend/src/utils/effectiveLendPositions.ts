@@ -48,11 +48,19 @@ export function buildEffectiveLendPositions(
       )
       const directDepositedAmount =
         directPosition?.directDepositedAmount ?? null
-      const pledgedCollateralAmount = pledgedPosition
-        ? pledgedPosition.collateralAmountFormatted
-        : null
+      // Aave: lend deposit and borrow collateral are the same aToken, so don't add them twice.
+      // Morpho: vault shares leave the vault when pledged, so they are distinct and do sum.
+      const pledgedCollateralAmount =
+        market.provider !== 'aave' && pledgedPosition
+          ? pledgedPosition.collateralAmountFormatted
+          : null
+      // Floor (not round) to 2 dp: the displayed deposit doubles as withdraw Max, so rounding up could exceed actual collateral.
       const totalDepositedAmount = (
-        toAmount(directDepositedAmount) + toAmount(pledgedCollateralAmount)
+        Math.floor(
+          (toAmount(directDepositedAmount) +
+            toAmount(pledgedCollateralAmount)) *
+            100,
+        ) / 100
       ).toFixed(2)
 
       if (toAmount(totalDepositedAmount) <= 0) return null

@@ -30,8 +30,3 @@ export function lendPositionUsd(position: MarketPosition): number {
   const price = stubPriceUsd(position.asset.metadata.symbol)
   return parseFloat(position.depositedAmount || '0') * price
 }
-
-export function directLendPositionUsd(position: MarketPosition): number {
-  const price = stubPriceUsd(position.asset.metadata.symbol)
-  return parseFloat(position.directDepositedAmount || '0') * price
-}

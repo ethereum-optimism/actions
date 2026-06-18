@@ -9,6 +9,7 @@ import {
 } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 
 /**
  * Aave V3 contract addresses per chain
@@ -89,6 +90,27 @@ export function getWETHGatewayAddress(chainId: number): Address | undefined {
  */
 export function getSupportedChainIds(): number[] {
   return Object.keys(AAVE_ADDRESSES).map(Number)
+}
+
+/**
+ * Resolve the Aave Pool address for a chain, throwing `ChainNotSupportedError`
+ * when Aave is not deployed there. Single guarded accessor shared by the lend
+ * and borrow providers so the null check lives in one place.
+ */
+export function requireAavePoolAddress(chainId: number): Address {
+  const pool = getPoolAddress(chainId)
+  if (!pool) throw new ChainNotSupportedError({ chainId })
+  return pool
+}
+
+/**
+ * Resolve the Aave WETH gateway address for a chain, throwing
+ * `ChainNotSupportedError` when Aave is not deployed there.
+ */
+export function requireAaveWethGatewayAddress(chainId: number): Address {
+  const gateway = getWETHGatewayAddress(chainId)
+  if (!gateway) throw new ChainNotSupportedError({ chainId })
+  return gateway
 }
 
 export const POOL_ADDRESSES_MAINNET: Record<number, Address> = {

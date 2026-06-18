@@ -96,6 +96,8 @@ export function buildBorrowOperations(
   // Fall back to {} so every borrow call sends a valid HeadersInit.
   const headers = async () => (await getAuthHeaders()) ?? {}
   return {
+    getTokenBalances: async () =>
+      actionsApi.getWalletBalance(await getAuthHeaders()),
     getMarkets: async () => borrowApi.getMarkets(await headers()),
     getPosition: async (walletAddress, marketId) =>
       borrowApi.getPosition(walletAddress, marketId, await headers()),

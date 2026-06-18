@@ -7,6 +7,7 @@
 
 import type { MarketPosition } from '@/types/market'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
+import { stubPriceUsd } from '@/utils/stubPrices'
 import { displaySymbol, formatUsd } from '@/utils/tokenDisplay'
 import { Dropdown } from '../Dropdown'
 
@@ -61,8 +62,11 @@ export function LendPositionSelector({
 }
 
 function LendPositionRow({ position }: { position: MarketPosition }) {
-  const formattedUsd =
-    formatUsd(parseFloat(position.depositedAmount || '0')) ?? '$0.00'
+  // depositedAmount is in asset units; multiply by stub price to get USD.
+  const depositedUsd =
+    parseFloat(position.depositedAmount || '0') *
+    stubPriceUsd(position.asset.metadata.symbol)
+  const formattedUsd = formatUsd(depositedUsd) ?? '$0.00'
   const symbol = displaySymbol(position.asset.metadata.symbol)
   return (
     <div className="flex items-center gap-2 w-full" style={{ minWidth: 0 }}>

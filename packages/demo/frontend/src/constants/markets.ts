@@ -1,8 +1,11 @@
 import {
   type BorrowMarketConfig,
+  computeAaveBorrowMarketId,
   ETH,
+  getAssetAddress,
   type LendMarketConfig,
   OP_DEMO,
+  USDC,
   USDC_DEMO,
   WETH,
 } from '@eth-optimism/actions-sdk/react'
@@ -20,14 +23,37 @@ export const GauntletUSDCDemo: LendMarketConfig = {
 }
 
 export const AaveETH: LendMarketConfig = {
-  address: WETH.address[optimismSepolia.id] as Address,
+  address: getAssetAddress(WETH, optimismSepolia.id),
   chainId: optimismSepolia.id,
   name: 'Aave ETH',
   asset: ETH,
   lendProvider: 'aave',
 }
 
-export const MorphoBorrowDemo: BorrowMarketConfig = {
+// Aave V3 on Optimism Sepolia: ETH collateral, USDC debt (the only borrowable reserve).
+// marketId derived from (chain, WETH, USDC); borrows real USDC via the SDK, not USDC_DEMO.
+const AAVE_OP_SEPOLIA_WETH = getAssetAddress(WETH, optimismSepolia.id)
+const AAVE_OP_SEPOLIA_USDC = getAssetAddress(USDC, optimismSepolia.id)
+
+export const AaveETHBorrowUSDCDemo: BorrowMarketConfig = {
+  kind: 'aave-v3',
+  marketId: computeAaveBorrowMarketId({
+    chainId: optimismSepolia.id,
+    collateralAddress: AAVE_OP_SEPOLIA_WETH,
+    debtAddress: AAVE_OP_SEPOLIA_USDC,
+  }),
+  chainId: optimismSepolia.id,
+  name: 'Aave ETH / USDC',
+  collateralAsset: ETH,
+  borrowAsset: USDC,
+  aave: {
+    debtReserve: AAVE_OP_SEPOLIA_USDC,
+    collateralReserve: AAVE_OP_SEPOLIA_WETH,
+    collateralUsesWethGateway: true,
+  },
+}
+
+export const MorphoUSDCBorrowOPDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId:
     '0x7dc82421423b50debf8c1f9f967f34367e0fb7bcdb1bda0cef27c319d89cd12f',
@@ -35,8 +61,6 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
   name: 'Demo dUSDC / OP',
   collateralAsset: USDC_DEMO,
   borrowAsset: OP_DEMO,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams: {
     loanToken: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8' as Address,
     collateralToken: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as Address,
@@ -46,7 +70,9 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
   },
 }
 
-const BORROW_MARKET_CONFIGS: readonly BorrowMarketConfig[] = [MorphoBorrowDemo]
+const BORROW_MARKET_CONFIGS: readonly BorrowMarketConfig[] = [
+  MorphoUSDCBorrowOPDemo,
+]
 
 /**
  * On-chain ERC-4626 vault (the Morpho `collateralToken`) backing a borrow
@@ -64,4 +90,18 @@ export function borrowCollateralVault(marketId: {
       c.marketId === marketId.marketId &&
       c.chainId === marketId.chainId,
   )?.marketParams.collateralToken
+}
+
+/** Morpho borrow market that uses the given vault as collateral; undefined for non-Morpho lends (e.g. Aave). */
+export function morphoBorrowMarketForVault(
+  vaultAddress: string,
+  chainId: number,
+): BorrowMarketConfig | undefined {
+  return BORROW_MARKET_CONFIGS.find(
+    (c) =>
+      c.kind === 'morpho-blue' &&
+      c.chainId === chainId &&
+      c.marketParams.collateralToken.toLowerCase() ===
+        vaultAddress.toLowerCase(),
+  )
 }

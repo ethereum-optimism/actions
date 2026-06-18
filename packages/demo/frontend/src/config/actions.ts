@@ -2,6 +2,7 @@ import {
   ETH,
   type ReactActionsConfig,
   type ReactProviderTypes,
+  USDC,
 } from '@eth-optimism/actions-sdk/react'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 import { env } from '@/envVars'
@@ -10,7 +11,8 @@ import {
   USDC_DEMO,
   GauntletUSDCDemo,
   AaveETH,
-  MorphoBorrowDemo,
+  AaveETHBorrowUSDCDemo,
+  MorphoUSDCBorrowOPDemo,
 } from '@/constants/markets'
 
 // Helper to create Actions config matching backend structure
@@ -40,7 +42,7 @@ export function createActionsConfig<T extends ReactProviderTypes>(
       },
     },
     assets: {
-      allow: [USDC_DEMO, OP_DEMO, ETH],
+      allow: [USDC_DEMO, OP_DEMO, ETH, USDC],
     },
     swap: {
       uniswap: {
@@ -56,7 +58,10 @@ export function createActionsConfig<T extends ReactProviderTypes>(
     },
     borrow: {
       morpho: {
-        marketAllowlist: [MorphoBorrowDemo],
+        marketAllowlist: [MorphoUSDCBorrowOPDemo],
+      },
+      aave: {
+        marketAllowlist: [AaveETHBorrowUSDCDemo],
       },
     },
     chains: [

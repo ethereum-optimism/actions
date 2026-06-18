@@ -34,7 +34,7 @@ interface ActionProps {
    * withdraw flow that shows a Health card when this asset is securing a
    * borrow position. */
   asset?: Asset | null
-  onMintAsset?: () => void
+  onMintAsset?: () => Promise<void> | void
   onTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
@@ -221,7 +221,16 @@ export function Action({
   const handleCtaClick = async () => {
     if (needsMint) {
       trackEvent('mint_asset', { asset: assetSymbol })
-      onMintAsset?.()
+      try {
+        await onMintAsset?.()
+        setToast({
+          visible: true,
+          title: 'Minted',
+          description: displaySymbol,
+        })
+      } catch {
+        // Mint errors are surfaced via the activity log; no toast on failure.
+      }
       return
     }
     if (isActionDisabled) return

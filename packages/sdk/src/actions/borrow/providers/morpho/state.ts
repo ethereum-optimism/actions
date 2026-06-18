@@ -10,11 +10,11 @@ import {
   buildMorphoBlueMarket,
   requireMorphoBlueAddress,
 } from '@/actions/borrow/providers/morpho/blue.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
 
 export async function fetchMorphoMarket(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
 ): Promise<Market> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const id = config.marketId
@@ -55,7 +55,7 @@ export async function fetchMorphoMarket(
  */
 function corePositionContracts(
   morphoBlue: Address,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
 ) {
   const id = config.marketId
@@ -89,7 +89,7 @@ function corePositionContracts(
 
 export async function fetchMorphoPosition(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
 ): Promise<{ position: AccrualPosition }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
@@ -111,12 +111,14 @@ export async function fetchMorphoPosition(
 
 export async function fetchMorphoStateWithAllowance(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
   token: Address,
 ): Promise<{
   current: AccrualPosition
   allowance: bigint
+  /** Wallet balance of `token`, used to resolve a `max` collateral deposit. */
+  balance: bigint
 }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const allowanceContract = {
@@ -125,13 +127,20 @@ export async function fetchMorphoStateWithAllowance(
     functionName: 'allowance' as const,
     args: [user, morphoBlue] as const,
   } as const
+  const balanceContract = {
+    address: token,
+    abi: erc20Abi,
+    functionName: 'balanceOf' as const,
+    args: [user] as const,
+  } as const
 
-  const [positionTuple, marketTuple, price, rateAtTarget, allowance] =
+  const [positionTuple, marketTuple, price, rateAtTarget, allowance, balance] =
     await client.multicall({
       allowFailure: false,
       contracts: [
         ...corePositionContracts(morphoBlue, config, user),
         allowanceContract,
+        balanceContract,
       ],
     })
   const current = buildAccrualPosition(
@@ -142,11 +151,11 @@ export async function fetchMorphoStateWithAllowance(
     price,
     rateAtTarget,
   )
-  return { current, allowance }
+  return { current, allowance, balance }
 }
 
 function buildAccrualPosition(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
   positionTuple: readonly [bigint, bigint, bigint],
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],

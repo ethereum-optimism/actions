@@ -5,7 +5,16 @@
 
 import type { Asset } from '@eth-optimism/actions-sdk'
 import { displaySymbol } from '@/utils/tokenDisplay'
+import { stubPriceUsd } from '@/utils/stubPrices'
 import { InfoTooltip } from '../InfoTooltip'
+
+// Recovers asset amount from USD value (valueUsd / stubPrice), trimmed to 4 decimals.
+function formatCollateralAmount(valueUsd: number, symbol: string): string {
+  const price = stubPriceUsd(symbol)
+  if (price <= 0) return `$${valueUsd.toFixed(2)}`
+  const amount = parseFloat((valueUsd / price).toFixed(4))
+  return amount.toLocaleString('en-US', { maximumFractionDigits: 4 })
+}
 
 export function BorrowHealthStats({
   maxLtv,
@@ -51,11 +60,14 @@ export function BorrowHealthStats({
           <span
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
+            <span style={{ color: '#1a1b1e' }}>
+              {formatCollateralAmount(
+                collateralValueUsd,
+                collateralAsset.metadata.symbol,
+              )}
+            </span>
             <span style={{ color: '#9195A6', fontSize: '13px' }}>
               {displaySymbol(collateralAsset.metadata.symbol)}
-            </span>
-            <span style={{ color: '#1a1b1e' }}>
-              ${collateralValueUsd.toFixed(2)}
             </span>
           </span>
         }

@@ -1,7 +1,19 @@
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
-import type { LendMarketId } from '@eth-optimism/actions-sdk'
+import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { isEthSymbol } from './assetUtils'
+
+/** Wallet balance for an asset matched by symbol; returns human-readable total or 0 when absent. */
+export function assetBalanceAmount(
+  tokenBalances: readonly TokenBalance[] | undefined,
+  asset: Asset | null,
+): number {
+  if (!asset || !tokenBalances) return 0
+  const token = tokenBalances.find(
+    (t) => t.asset.metadata.symbol === asset.metadata.symbol,
+  )
+  return token?.totalBalance ?? 0
+}
 
 interface BalanceMatchingParams {
   allTokenBalances: TokenBalance[]

@@ -15,6 +15,7 @@ import type {
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
+import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type {
   BorrowQuoteParams,
   StubCloseParams,
@@ -28,6 +29,7 @@ import { fetchCollateralUnderlying } from '@/utils/vaultCollateral'
 import { borrowCollateralVault } from '@/constants/markets'
 import type { BorrowPosition } from '@/types/market'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
+import { useTokenBalances } from '@/queries/useTokenBalances'
 import {
   dispatchEarnPositionsChanged,
   EARN_POSITIONS_CHANGED_EVENT,
@@ -75,6 +77,7 @@ interface BorrowOperationParams {
 }
 
 export interface BorrowOperations {
+  getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<readonly BorrowMarket[]>
   getPosition: (
     walletAddress: Address,
@@ -108,6 +111,9 @@ export interface UseBorrowProviderReturn {
   selectedMarket: BorrowMarket | null
   handleMarketSelect: (market: BorrowMarket) => void
   isLoadingMarkets: boolean
+
+  /** Wallet token balances, used to gate repay on the held debt-asset balance. */
+  tokenBalances: readonly TokenBalance[]
 
   borrowPositions: readonly BorrowPosition[]
   selectedMarketPosition: BorrowPosition | null
@@ -149,6 +155,22 @@ export function useBorrowProvider(
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Shares the lend provider's `['tokenBalances']` cache entry; no activity logging to avoid double-counting.
+  const { data: tokenBalances } = useTokenBalances({
+    getTokenBalances: operations.getTokenBalances,
+    isReady: () => walletAddress !== null,
+  })
+
+  // Tracked so timers can be cancelled on unmount rather than firing on a stale closure.
+  const repollTimers = useRef<number[]>([])
+  useEffect(
+    () => () => {
+      repollTimers.current.forEach((id) => window.clearTimeout(id))
+      repollTimers.current = []
+    },
+    [],
+  )
 
   // Load markets once (ref-guarded) so wallet re-renders don't re-run and reset the read-only activity to pending.
   const hasLoadedMarkets = useRef(false)
@@ -296,11 +318,15 @@ export function useBorrowProvider(
           return isEmptyPosition(next) ? filtered : [...filtered, next]
         })
       }
-      // Delay reconcile ~3s: Base Sepolia RPC lags tx confirmation, so an eager refetch returns pre-tx state and clobbers the optimistic update.
-      window.setTimeout(() => {
-        dispatchEarnPositionsChanged()
-      }, 3000)
+      // Re-poll across the settle window: Base Sepolia RPC lags and the USDC_DEMO mirror settles separately.
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+      for (const delay of [3000, 7000, 12000]) {
+        const id = window.setTimeout(() => {
+          dispatchEarnPositionsChanged()
+          void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+        }, delay)
+        repollTimers.current.push(id)
+      }
       return receipt
     },
     [walletAddress, operations, queryClient],
@@ -324,6 +350,8 @@ export function useBorrowProvider(
   useEffect(() => {
     const handlePositionsChanged = () => {
       void fetchPositionsRef.current(walletAddress)
+      // Refresh balances so the nav and gating pick up the USDC_DEMO mirror change.
+      void queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
     }
     window.addEventListener(
       EARN_POSITIONS_CHANGED_EVENT,
@@ -335,13 +363,14 @@ export function useBorrowProvider(
         handlePositionsChanged,
       )
     }
-  }, [walletAddress])
+  }, [walletAddress, queryClient])
 
   return {
     markets,
     selectedMarket,
     handleMarketSelect,
     isLoadingMarkets,
+    tokenBalances: tokenBalances ?? [],
     borrowPositions,
     selectedMarketPosition,
     isLoadingPositions,

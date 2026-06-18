@@ -6,6 +6,7 @@
 
 import { createPortal } from 'react-dom'
 import type { BorrowMarket } from '@eth-optimism/actions-sdk'
+import { marketIdKey } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
 import { Modal, ModalHeader } from '../../Modal'
 
@@ -53,11 +54,7 @@ export function BorrowAssetModal({
       >
         {markets.map((market) => (
           <button
-            key={`${market.marketId.kind}-${
-              market.marketId.kind === 'morpho-blue'
-                ? market.marketId.marketId
-                : ''
-            }`}
+            key={marketIdKey(market.marketId)}
             onClick={() => onSelect(market)}
             style={{
               display: 'grid',

@@ -2,6 +2,7 @@ import {
   type AmountOrMax,
   type BorrowAction,
   type BorrowMarketConfig,
+  borrowProviderForKind,
   type BorrowReceipt,
   type Wallet,
 } from '@eth-optimism/actions-sdk'
@@ -137,7 +138,7 @@ export async function runBorrowAction(
           chainId: market.chainId,
         },
         chainId: market.chainId,
-        provider: market.borrowProvider,
+        provider: borrowProviderForKind(market.kind),
       },
       ...args.envelopeAmounts,
       transactions: receipts,

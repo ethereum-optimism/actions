@@ -2,14 +2,16 @@ import {
   ETH,
   type NodeActionsConfig,
   OP_DEMO,
+  USDC,
   USDC_DEMO,
 } from '@eth-optimism/actions-sdk'
 
 import { getDemoChains } from '@/demo/chains.js'
 import {
   AaveETH,
+  AaveETHBorrowUSDCDemo,
   GauntletUSDCDemo,
-  MorphoUSDCBorrowDemo,
+  MorphoUSDCBorrowOPDemo,
 } from '@/demo/markets.js'
 
 /**
@@ -34,7 +36,8 @@ export function getDemoConfig(): NodeActionsConfig<never> {
       aave: { marketAllowlist: [AaveETH] },
     },
     borrow: {
-      morpho: { marketAllowlist: [MorphoUSDCBorrowDemo] },
+      morpho: { marketAllowlist: [MorphoUSDCBorrowOPDemo] },
+      aave: { marketAllowlist: [AaveETHBorrowUSDCDemo] },
     },
     swap: {
       uniswap: {
@@ -48,7 +51,7 @@ export function getDemoConfig(): NodeActionsConfig<never> {
         marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
       },
     },
-    assets: { allow: [USDC_DEMO, OP_DEMO, ETH] },
+    assets: { allow: [USDC_DEMO, OP_DEMO, ETH, USDC] },
     chains: getDemoChains(),
   }
 }

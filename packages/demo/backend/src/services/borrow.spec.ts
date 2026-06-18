@@ -14,34 +14,45 @@ vi.mock('./wallet.js', () => ({
   getWallet: vi.fn(),
 }))
 
+vi.mock('./mirror.js', () => ({
+  mintMirrorUsdc: vi.fn(),
+  removeMirrorUsdc: vi.fn(),
+}))
+
 vi.mock('../utils/explorers.js', () => ({
   getBlockExplorerUrls: vi.fn(() => []),
 }))
 
-vi.mock('../config/markets.js', async () => {
-  const baseMarketId = {
+vi.mock('../config/markets.js', () => ({
+  MorphoUSDCBorrowOPDemo: {
     kind: 'morpho-blue' as const,
     marketId: ('0x' + 'a'.repeat(64)) as `0x${string}`,
     chainId: 84532 as never,
-  }
-  return {
-    MorphoUSDCBorrowDemo: {
-      ...baseMarketId,
-      name: 'Demo dUSDC / OP',
-      collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
-      borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
-      borrowProvider: 'morpho',
-      lendProvider: 'morpho',
-      marketParams: {
-        loanToken: '0x0',
-        collateralToken: '0x0',
-        oracle: '0x0',
-        irm: '0x0',
-        lltv: 0n,
-      },
+    name: 'Demo dUSDC / OP',
+    collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
+    borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
+    marketParams: {
+      loanToken: '0x0',
+      collateralToken: '0x0',
+      oracle: '0x0',
+      irm: '0x0',
+      lltv: 0n,
     },
-  }
-})
+  },
+  AaveETHBorrowUSDCDemo: {
+    kind: 'aave-v3' as const,
+    marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+    chainId: 11155420 as never,
+    name: 'Aave ETH / USDC',
+    collateralAsset: { metadata: { symbol: 'ETH' } },
+    borrowAsset: { metadata: { symbol: 'USDC' } },
+    aave: {
+      debtReserve: '0x0',
+      collateralReserve: '0x0',
+      collateralUsesWethGateway: true,
+    },
+  },
+}))
 
 const mockBorrowProvider = {
   getMarket: vi.fn(),
@@ -156,6 +167,53 @@ describe('Borrow Service', () => {
           ...baseMarketId,
           marketId: ('0x' + 'b'.repeat(64)) as `0x${string}`,
         }),
+      ).toThrow()
+    })
+
+    it('resolves the aave-v3 market by kind + id', () => {
+      const result = borrowService.resolveMarketConfig({
+        kind: 'aave-v3',
+        marketId: ('0x' + 'C'.repeat(64)) as `0x${string}`,
+        chainId: 11155420 as never,
+      })
+      expect(result.kind).toBe('aave-v3')
+    })
+
+    it('does not cross-match an aave id against a morpho-blue kind', () => {
+      expect(() =>
+        borrowService.resolveMarketConfig({
+          kind: 'morpho-blue',
+          marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+          chainId: 11155420 as never,
+        }),
+      ).toThrow()
+    })
+  })
+
+  describe('resolveBorrowMarketId', () => {
+    // Guards against hardcoding morpho-blue kind, which would mis-route aave-v3 position reads.
+    it('recovers the aave-v3 kind from chain + id alone', () => {
+      const result = borrowService.resolveBorrowMarketId(
+        11155420 as never,
+        ('0x' + 'c'.repeat(64)) as `0x${string}`,
+      )
+      expect(result.kind).toBe('aave-v3')
+    })
+
+    it('recovers the morpho-blue kind from chain + id alone', () => {
+      const result = borrowService.resolveBorrowMarketId(
+        84532 as never,
+        ('0x' + 'A'.repeat(64)) as `0x${string}`,
+      )
+      expect(result.kind).toBe('morpho-blue')
+    })
+
+    it('throws MarketNotAllowedError for an unknown market', () => {
+      expect(() =>
+        borrowService.resolveBorrowMarketId(
+          84532 as never,
+          ('0x' + 'b'.repeat(64)) as `0x${string}`,
+        ),
       ).toThrow()
     })
   })
@@ -337,6 +395,101 @@ describe('Borrow Service', () => {
           amount: { amount: 1 },
         }),
       )
+    })
+  })
+
+  describe('aave mirror integration', () => {
+    const aaveMarketId = {
+      kind: 'aave-v3' as const,
+      marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+      chainId: 11155420 as never,
+    }
+
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('mints USDC_DEMO after an aave borrow, with the realized amount', async () => {
+      const { mintMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.openPosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.openPosition({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        borrowAmount: { amount: 1 },
+      })
+      expect(mintMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        1_000_000n,
+        '0xreal',
+      )
+    })
+
+    it('removes USDC_DEMO after an aave repay', async () => {
+      const { removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.repay.mockResolvedValue({
+        borrowAmount: 500_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.repay({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        amount: { amount: 0.5 },
+      })
+      expect(removeMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        500_000n,
+        '0xreal',
+      )
+    })
+
+    it('removes USDC_DEMO after an aave close (full repay)', async () => {
+      const { removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.closePosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.closePosition({
+        idToken: 'idtok',
+        marketId: aaveMarketId,
+        borrowAmount: { max: true },
+      })
+      expect(removeMirrorUsdc).toHaveBeenCalledWith(
+        mockWallet,
+        1_000_000n,
+        '0xreal',
+      )
+    })
+
+    it('does NOT mirror a morpho borrow or repay (regression)', async () => {
+      const { mintMirrorUsdc, removeMirrorUsdc } = await import('./mirror.js')
+      mockWalletBorrow.openPosition.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+      mockWalletBorrow.repay.mockResolvedValue({
+        borrowAmount: 1_000_000n,
+        transactionHash: '0xreal',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.openPosition({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 1 },
+      })
+      await borrowService.repay({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        amount: { amount: 1 },
+      })
+      expect(mintMirrorUsdc).not.toHaveBeenCalled()
+      expect(removeMirrorUsdc).not.toHaveBeenCalled()
     })
   })
 })
