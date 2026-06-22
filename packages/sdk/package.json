@@ -39,7 +39,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && resolve-tspaths",
+    "build": "tsc && node ../../node_modules/resolve-tspaths/dist/main.js",
     "clean": "rm -rf dist types tsconfig.tsbuildinfo",
     "docs": "typedoc",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
