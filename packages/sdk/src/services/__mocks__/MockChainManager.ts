@@ -130,7 +130,7 @@ export class MockChainManager {
       getBalance: vi.fn().mockImplementation(() => {
         return Promise.resolve(this.config.defaultBalance)
       }),
-    } as any
+    } as unknown as PublicClient
   }
 
   private createBundlerClient(): BundlerClient {
@@ -138,6 +138,6 @@ export class MockChainManager {
       sendUserOperation: vi.fn(),
       waitForUserOperationReceipt: vi.fn(),
       prepareUserOperation: vi.fn(),
-    } as any
+    } as unknown as BundlerClient
   }
 }
