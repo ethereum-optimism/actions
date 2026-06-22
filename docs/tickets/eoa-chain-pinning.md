@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | wallet |
 | **Surface** | `EOAWallet.walletClient`/`send`/`sendBatch` (chain set on the wallet client skips `eth_chainId` node verification; chainId not gated on the configured set), `ChainManager.getChain` / `createPublicClients` (config chainIds validated against viem's global `chainById`, not `SUPPORTED_CHAIN_IDS`) |
 | **Resolves findings** | F089, F022, F095, F112 |

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 4 (of 5) |
+| **Complexity** | 4 / 5 |
 | **Domain** | wallet |
 | **Surface** | `WalletProvider.getSmartWallet` / `DefaultSmartWalletProvider.getWallet` (signers default + dropped nonce), `DefaultSmartWallet.getCoinbaseSmartAccount` (ownerIndex/owners source), `DefaultSmartWallet.addSigner`/`removeSigner` (idempotency + index reconciliation + chain-local rotation) |
 | **Resolves findings** | F023, F058, F093, F087, F088 |

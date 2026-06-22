@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | low |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | wallet |
 | **Surface** | `WalletNamespace.resolveProvider` (`_initPromise` lifecycle), `actions.ts` `createWalletProvider` optional-`smartWalletConfig` deref, `Wallet` base constructor address init |
 | **Resolves findings** | F266, F077, F024 |

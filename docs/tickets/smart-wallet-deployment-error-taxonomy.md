@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | wallet |
 | **Surface** | `smart/error/errors.ts` `SmartWalletDeploymentError`, `DefaultSmartWalletProvider.createWallet` |
 | **Resolves findings** | F142, F143, F144, F145 |

@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Severity** | medium |
-| **Complexity** | 4 (1-5) |
+| **Complexity** | 4 / 5 |
 | **Domain** | borrow |
 | **Surface** | `AaveBorrowProvider` constructor marketId verify; `validateConfigAddresses` skips `config.borrow`; aave/morpho `receiver=onBehalf` bind |
 | **Resolves findings** | F103, F104, F083, F086, F017, F259 |

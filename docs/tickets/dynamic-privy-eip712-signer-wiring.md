@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | wallet |
 | **Surface** | react Dynamic `createSigner` (hand-rolled raw-digest `sign()` with `0x` hex-stripping, connector backend vs `walletClient` backend, unchecked connector cast); react Privy `createSigner` (`signTypedData` cast to `CustomSource['signTypedData']` on the EIP-712/Permit2 seam) |
 | **Resolves findings** | F030, F073, F062, F244 |

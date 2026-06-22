@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | low |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | core |
 | **Surface** | `ChainManager.getChain` (unguarded `chainById[chainId]`), `DefaultSmartWallet` chainId selection (no up-front membership gate; derivation-vs-broadcast chain unreconciled), backend `ChainIdSchema` / `ChainIdStringSchema` and lend controller inline `marketId.chainId` (`as SupportedChainId` cast without membership refine) |
 | **Resolves findings** | F095, F109, F299, F284 |

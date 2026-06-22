@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | borrow |
 | **Surface** | `core/quote.ts:54` (`safeCeilingLtv` computed, never enforced), `providers/aave/presentation.ts:176,224` (`maxLtv` from liquidation-threshold bits), `providers/aave/state.ts:33-45` (`ltvBps` decoded then discarded), `namespaces/WalletBorrowNamespace.ts:207-247` (dispatch gate with no solvency check) |
 | **Resolves findings** | F055, F018, F117 |

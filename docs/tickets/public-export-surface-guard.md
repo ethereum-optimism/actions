@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | core |
 | **Surface** | `packages/sdk/src/index.ts` (root barrel re-exports), `packages/sdk/src/__tests__/index.exports.spec.ts` (the only export guard) |
 | **Resolves findings** | F147, F125, F142, F128, F119, F124, F122, F140 |

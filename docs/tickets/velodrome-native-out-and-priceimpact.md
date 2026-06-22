@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | swap |
 | **Surface** | `velodrome/encoding/routers/cl.ts:135-164` and `routers/v2.ts:214-237` (no trailing `UNWRAP_WETH` on the universal/CL paths); `encoding/helpers.ts:74-75` (`Infinity`/`NaN` price strings) and `helpers.ts:80` (`priceImpact: 0`) |
 | **Resolves findings** | F258, F049, F115 |

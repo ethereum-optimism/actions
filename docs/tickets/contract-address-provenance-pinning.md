@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Severity** | low |
-| **Complexity** | 2 (1-5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | infra |
 | **Surface** | uniswap/velodrome `addresses.ts`; smart-wallet factory address + ABI constants; Aave `marketId` hashing |
 | **Resolves findings** | F154, F172, F104 |

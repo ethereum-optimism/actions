@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Severity | low |
-| Complexity | 2 (1-5) |
+| **Complexity** | 2 / 5 |
 | Domain | backend |
 | Surface | `services/mirror.ts` `void mintMirrorUsdc/removeMirrorUsdc` |
 | Resolves findings | F292 |

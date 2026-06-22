@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | low |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | core |
 | **Surface** | `packages/sdk/src/utils/approve.ts:107-130` (`buildPermit2ApprovalTx`) |
 | **Resolves findings** | F067 (spender/amount/uint48 encode-site legs) |

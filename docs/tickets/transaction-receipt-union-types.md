@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Severity | medium |
-| Complexity | 3 (1-5) |
+| **Complexity** | 3 / 5 |
 | Domain | wallet |
 | Surface | `TransactionReturnType`/`BatchTransactionReturnType` (abstract/types), `extractReceiptHashes`, `Wallet.send`/`sendBatch` JSDoc, `ChainManager.getBundlerUrl`, `LendProviderMethods._closePosition`, `BorrowReceipt.positionAfter` |
 | Resolves findings | F132, F134, F133, F221, F271, F123, F131 |

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 4 / 5 |
 | **Domain** | wallet |
 | **Surface** | `DefaultSmartWallet.appendAttributionSuffix` (callData/initCode mutation), `DefaultSmartWallet.send`/`sendBatch` double-prepare |
 | **Resolves findings** | F063, F059, F065, F037 |

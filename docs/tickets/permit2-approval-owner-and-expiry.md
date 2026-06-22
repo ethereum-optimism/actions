@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | swap |
 | **Surface** | `SwapProvider.buildPermit2Approvals` (owner read + expiration), `UniswapSwapProvider._buildApprovals` (`walletAddress: quote.recipient`), `VelodromeSwapProvider._buildApprovals` (`owner: quote.recipient`), `utils/approve.ts buildPermit2ApprovalTx` (expiration encoding) |
 | **Resolves findings** | F002, F078, F050, F067, F187 |

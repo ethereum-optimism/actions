@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Severity | medium |
-| Complexity | 2 (1-5) |
+| **Complexity** | 2 / 5 |
 | Domain | backend |
 | Surface | `services/wallet.ts` `mintDemoUsdcToWallet` (returns `{ success: true }`), `controllers/wallet.ts` `getLendPosition` 500-vs-404 |
 | Resolves findings | F287, F289 |

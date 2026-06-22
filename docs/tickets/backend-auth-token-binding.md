@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | medium |
-| **Complexity** | 3 / 5 |
+| **Complexity** | 2 / 5 |
 | **Domain** | backend |
 | **Surface** | `middleware/auth.ts` `authMiddleware` (verified access token vs unverified `privy-id-token`), `parseAuthorizationHeader` Bearer strip, controller-level `validateRequest` vs `requireAuth` gate ordering |
 | **Resolves findings** | F274, F294, F286, F288 |

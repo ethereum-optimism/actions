@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | low |
-| **Complexity** | 2 (of 5) |
+| **Complexity** | 2 / 5 |
 | **Domain** | frontend |
 | **Surface** | `hooks/useDynamicWallet` and `hooks/useTurnkeyWallet` smart-wallet create-effect: the `if (isCreating || smartWallet) return` short-circuit that only resets on a null signer, and `useTurnkeyWallet`'s create-effect dep array that omits `httpClient`/`session`/the first-match `embeddedWallet.accounts[0].address` it reads |
 | **Resolves findings** | F322 |

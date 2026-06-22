@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Severity** | medium |
-| **Complexity** | 4 (1-5) |
+| **Complexity** | 4 / 5 |
 | **Domain** | testing |
 | **Surface** | shared Anvil harness `packages/sdk/src/utils/test.ts`; the two divergent fork tests (Velodrome swap, Morpho borrow); PR #348 `src/test/network` foundation + its required fixes |
 | **Resolves findings** | F177, F188, F200, F210, F223, F230, F241, F254 (and the harness-defect slices F194, F195, F216, F249, F250 they consolidate) |

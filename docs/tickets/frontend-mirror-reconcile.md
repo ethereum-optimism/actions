@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Severity | low |
-| Complexity | 2 (1-5) |
+| **Complexity** | 2 / 5 |
 | Domain | frontend |
 | Surface | `demoMagic/aaveDemoMagic.ts` `mirrorBorrowReceipt`/`sendMirrorTx`, `api/actionsApi.ts` mutation idempotency |
 | Resolves findings | F308, F309 |

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | medium |
-| **Complexity** | 3 (of 5) |
+| **Complexity** | 3 / 5 |
 | **Domain** | swap |
 | **Surface** | `UniswapSwapProvider.ts:172` (`execution.value`); `SwapProvider.resolveQuoteDefaults` shared `?? 1` default; `encoding.ts` exact-out `amountInMaximum` |
 | **Resolves findings** | F004, F048 |

@@ -9,7 +9,7 @@ The schedule is organized into **5 priority phases**, highest-value work first. 
 - **Total tickets:** 74
 - **Phases:** 5
 - **By severity:** 9 high, 44 medium, 21 low
-- **By complexity (1-5):** 32×2, 30×3, 10×4, 2×5
+- **By complexity (1-5):** 32×2, 28×3, 12×4, 2×5
 - **Augmenting an existing issue:** 48; **net-new:** 26
 - **By domain:** 14 wallet, 14 core, 9 swap, 9 frontend, 7 backend, 5 cli, 4 lend, 4 borrow, 4 infra, 4 testing
 - **Per phase:** Phase 1 — 16 tickets, Phase 2 — 15 tickets, Phase 3 — 15 tickets, Phase 4 — 14 tickets, Phase 5 — 14 tickets
@@ -35,7 +35,7 @@ The canonical ticket list. **Phase** is the priority phase the ticket runs in (s
 | 1 | [`receipt-status-as-success`](./receipt-status-as-success.md) | Fail closed on reverted-but-mined receipts in send/sendBatch | high | 3 | wallet | #474 | yes |
 | 1 | [`smart-wallet-owner-set-reconcile`](./smart-wallet-owner-set-reconcile.md) | Reconcile smart-wallet owner set/index/nonce before signing | medium | 4 | wallet | #163 | yes |
 | 1 | [`recipient-validation-symmetry`](./recipient-validation-symmetry.md) | Validate swap recipient consistently across providers/resolver | medium | 3 | swap | #437 | yes |
-| 1 | [`lend-borrow-full-exit-max-sentinel`](./lend-borrow-full-exit-max-sentinel.md) | Provide a dust-free full-exit (max) path for close/max-close | medium | 3 | lend | #209 | yes |
+| 1 | [`lend-borrow-full-exit-max-sentinel`](./lend-borrow-full-exit-max-sentinel.md) | Provide a dust-free full-exit (max) path for close/max-close | medium | 4 | lend | #209 | yes |
 | 2 | [`remove-signer-lockout-guard`](./remove-signer-lockout-guard.md) | Guard removeSigner against removing the only signable key | high | 3 | wallet | #163 | yes |
 | 2 | [`cli-recipient-validation-and-echo`](./cli-recipient-validation-and-echo.md) | Validate and echo CLI swap recipient before/after signing | medium | 2 | cli | #444 | yes |
 | 2 | [`borrow-marketid-calldata-bind`](./borrow-marketid-calldata-bind.md) | Bind borrow marketId/reserves to calldata, verify config | medium | 4 | borrow | #334 | yes |
@@ -45,8 +45,8 @@ The canonical ticket list. **Phase** is the priority phase the ticket runs in (s
 | 2 | [`amount-positivity-finiteness`](./amount-positivity-finiteness.md) | Reject zero/negative/non-finite amounts on lend/borrow/transfer | medium | 3 | core | #303 | yes |
 | 2 | [`apy-finiteness-and-aave-share-price`](./apy-finiteness-and-aave-share-price.md) | Validate APY/reserve math, fix Aave share-price/utilization | medium | 3 | lend | #209 | yes |
 | 2 | [`assets-precision-and-format-roundtrip`](./assets-precision-and-format-roundtrip.md) | Harden amount parse/format precision, add *Raw escape hatches | medium | 3 | core | #379 | yes |
-| 2 | [`attribution-suffix-safety-asserts`](./attribution-suffix-safety-asserts.md) | Assert attribution-suffix inertness, EntryPoint-version guards | medium | 3 | wallet | #456 | yes |
-| 2 | [`backend-auth-token-binding`](./backend-auth-token-binding.md) | Bind verified access token to the wallet-selecting id token | medium | 3 | backend | — | no |
+| 2 | [`attribution-suffix-safety-asserts`](./attribution-suffix-safety-asserts.md) | Assert attribution-suffix inertness, EntryPoint-version guards | medium | 4 | wallet | #456 | yes |
+| 2 | [`backend-auth-token-binding`](./backend-auth-token-binding.md) | Bind verified access token to the wallet-selecting id token | medium | 2 | backend | — | no |
 | 2 | [`caller-address-validation-signing-targets`](./caller-address-validation-signing-targets.md) | isAddress-validate caller walletAddress/recipient pre-signing | medium | 3 | wallet | #163 | yes |
 | 2 | [`cli-error-redactor-value-aware`](./cli-error-redactor-value-aware.md) | Make CLI error redactor value-aware (hex/secrets, depth caps) | medium | 3 | cli | — | no |
 | 2 | [`dynamic-privy-eip712-signer-wiring`](./dynamic-privy-eip712-signer-wiring.md) | Fix Dynamic/Privy raw-digest and EIP-712/Permit2 signer wiring | medium | 3 | wallet | — | no |
@@ -82,7 +82,7 @@ The canonical ticket list. **Phase** is the priority phase the ticket runs in (s
 | 4 | [`cli-lend-max-and-amountormax-projection`](./cli-lend-max-and-amountormax-projection.md) | Route CLI lend close --max through SDK full-balance path | low | 2 | cli | #334 | yes |
 | 5 | [`e2e-anvil-feature-test`](./e2e-anvil-feature-test.md) | Single consolidated end-to-end Anvil feature-test | high | 5 | testing | #335 | yes |
 | 5 | [`cli-pre-send-confirmation`](./cli-pre-send-confirmation.md) | Add a pre-send dry-run/summary affordance for CLI fund verbs | low | 2 | cli | #414 | yes |
-| 5 | [`contract-address-provenance-pinning`](./contract-address-provenance-pinning.md) | Pin and integrity-test vendored router/factory/poolManager addrs | low | 2 | infra | #328 | yes |
+| 5 | [`contract-address-provenance-pinning`](./contract-address-provenance-pinning.md) | Pin and integrity-test vendored router/factory/poolManager addrs | low | 3 | infra | #328 | yes |
 | 5 | [`frontend-borrow-quote-param-parity`](./frontend-borrow-quote-param-parity.md) | Align borrow CTA-gate preview params with executed transaction | low | 2 | frontend | #427 | yes |
 | 5 | [`frontend-collateral-address-identity`](./frontend-collateral-address-identity.md) | Match pledged collateral by address not symbol on withdraw | low | 2 | frontend | — | no |
 | 5 | [`frontend-config-parity-and-stub-pricing`](./frontend-config-parity-and-stub-pricing.md) | Reconcile frontend/backend config parity, stub-price fail-open | low | 2 | frontend | #482 | yes |

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Severity | high |
-| Complexity | 3 (1-5) |
+| **Complexity** | 3 / 5 |
 | Domain | wallet |
 | Surface | `EOAWallet.send/sendBatch`, `DefaultSmartWallet.send/sendBatch`, all three action dispatch envelopes (lend/swap/borrow) |
 | Resolves findings | F020, F034, F021, F212 |

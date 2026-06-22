@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | **Severity** | medium |
-| **Complexity** | 3 / 5 |
+| **Complexity** | 4 / 5 |
 | **Domain** | lend |
 | **Surface** | `MorphoLendProvider`/`AaveLendProvider` close (assets-denominated, no `maxUint256`/`redeem`), `borrow/providers/morpho/close.ts` `{max:true}` collateral snapshot, frontend repay-full dispatch |
 | **Resolves findings** | F013, F015, F314 |
