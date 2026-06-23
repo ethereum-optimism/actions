@@ -342,6 +342,10 @@ describe('DefaultSmartWallet', () => {
     await expect(
       wallet.sendBatch(transactionData, chainId),
     ).rejects.toBeInstanceOf(TransactionConfirmedButRevertedError)
+    // The thrown error carries the underlying UserOp receipt for post-mortem.
+    await expect(
+      wallet.sendBatch(transactionData, chainId),
+    ).rejects.toMatchObject({ receipt: innerReceipt })
   })
 
   it('adds an EOA signer via addSigner and returns index', async () => {
@@ -719,7 +723,10 @@ describe('DefaultSmartWallet', () => {
       })
     })
 
-    it('should throw SmartWalletDeploymentError when receipt.success is false', async () => {
+    it('should throw SmartWalletDeploymentError when the deploy UserOp reverts', async () => {
+      // sendBatch now fails closed on a reverted UserOp (throws
+      // TransactionConfirmedButRevertedError); deploy maps that to its own
+      // named error with the deployment-specific message.
       const deploymentAddress = getRandomAddress()
       const wallet = await createAndInitDefaultSmartWallet({
         deploymentAddress,
@@ -733,18 +740,17 @@ describe('DefaultSmartWallet', () => {
 
       vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
 
-      const mockReceipt = {
-        success: false,
-        userOpHash: '0xfailed',
-      } as unknown as WaitForUserOperationReceiptReturnType
-
-      vi.spyOn(wallet, 'sendBatch').mockResolvedValue(mockReceipt)
+      vi.spyOn(wallet, 'sendBatch').mockRejectedValue(
+        new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          { transactionHash: '0xfailed' } as never,
+        ),
+      )
 
       await expect(wallet.deploy(chainId)).rejects.toThrow(
         new SmartWalletDeploymentError(
-          'Failed to deploy smart wallet: deployment transaction reverted',
+          'deployment transaction reverted',
           chainId,
-          mockReceipt,
         ),
       )
     })

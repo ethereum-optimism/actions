@@ -495,6 +495,9 @@ export class DefaultSmartWallet extends SmartWallet {
       // Call createAccount on the factory to trigger deployment
       // The factory's createAccount is idempotent and will return the existing address if already deployed
       // Using the factory address allows paymasters to configure it in their allowlist once
+      // `sendBatch` now fails closed on a reverted UserOp (throws
+      // TransactionConfirmedButRevertedError), so a returned receipt is always
+      // a successful deployment.
       const receipt = await this.sendBatch(
         [
           {
@@ -509,15 +512,16 @@ export class DefaultSmartWallet extends SmartWallet {
         ],
         chainId,
       )
-      if (!receipt.success) {
+      return { chainId, success: true, receipt }
+    } catch (error) {
+      // Preserve the deployment-specific error type and message for a reverted
+      // deploy now that the revert surfaces as TransactionConfirmedButRevertedError.
+      if (error instanceof TransactionConfirmedButRevertedError) {
         throw new SmartWalletDeploymentError(
           'deployment transaction reverted',
           chainId,
-          receipt,
         )
       }
-      return { chainId, success: true, receipt }
-    } catch (error) {
       throw new SmartWalletDeploymentError(
         `Failed to deploy smart wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
         chainId,
