@@ -2,11 +2,11 @@
  * Fork wallet funding for network tests.
  *
  * Funds ETH via `anvil_setBalance` and (optionally) USDC via whale
- * impersonation, resolving the USDC token + whale per `chainId`. A requested
- * USDC transfer that cannot be satisfied — no whale entry for the chain, or a
- * post-transfer balance that does not move by the requested amount — throws
- * loudly rather than logging and continuing, so a test never proceeds against
- * a zero balance (dead-on-arrival / false-green).
+ * impersonation, resolving the USDC token + whale per `chainId`. When no
+ * whale entry exists for the chain or the post-transfer balance does not move
+ * by the requested amount, funding throws loudly rather than logging and
+ * continuing, so a test never proceeds against a zero balance
+ * (dead-on-arrival / false-green).
  */
 import {
   type Address,
@@ -42,6 +42,7 @@ const USDC_FUNDING: Partial<
 
 /**
  * Configuration for wallet funding.
+ * @description Describes ETH and optional USDC funding for a forked wallet.
  */
 export interface FundWalletConfig {
   /** RPC URL for the fork. */
@@ -60,6 +61,7 @@ export interface FundWalletConfig {
 
 /**
  * Read a wallet's USDC balance.
+ * @description Reads the raw token balance used to verify fork funding.
  * @param publicClient - Client bound to the fork.
  * @param usdc - USDC token address.
  * @param owner - Address whose balance to read.
@@ -80,6 +82,7 @@ async function readUsdcBalance(
 
 /**
  * Assert that a funding transfer moved exactly the requested amount.
+ * @description Fails loudly when USDC funding does not land exactly.
  * @param before - Target balance before the transfer.
  * @param after - Target balance after the transfer.
  * @param expected - Raw amount the transfer was supposed to move.
@@ -100,6 +103,7 @@ export function assertFundingLanded(
 
 /**
  * Fund a wallet with ETH and optionally USDC on an Anvil fork.
+ * @description Funds a fork-local wallet and verifies requested balances.
  * @param config - Wallet funding configuration.
  * @returns Promise that resolves when funding is complete and verified.
  * @throws Error when USDC funding is requested for a chain with no whale
@@ -170,7 +174,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
       })
       // `waitForTransactionReceipt` resolves for reverted txs too; USDC's
       // `transfer` returns a bool that viem does not check, so assert the
-      // receipt status directly — a reverted/failed transfer fails loud here.
+      // receipt status directly. A reverted/failed transfer fails loud here.
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
         throw new Error(

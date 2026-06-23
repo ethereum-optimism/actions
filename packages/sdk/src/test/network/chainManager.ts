@@ -11,6 +11,7 @@ import { ChainManager } from '@/services/ChainManager.js'
 /**
  * Build a real `ChainManager` whose public client for `chainId` is bound to
  * the Anvil fork RPC.
+ * @description Creates the concrete chain wiring network tests exercise.
  * @param rpcUrl - Local Anvil fork JSON-RPC URL.
  * @param chainId - Chain the fork serves; the wallet/provider under test must
  * use this same chain.

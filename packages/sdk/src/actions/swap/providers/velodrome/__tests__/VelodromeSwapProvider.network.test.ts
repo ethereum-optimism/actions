@@ -97,7 +97,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     if (baseFork) stopAnvilFork(baseFork)
   })
 
-  describe('Optimism — v2 router', () => {
+  describe('Optimism - v2 router', () => {
     it('getQuote returns valid quote for USDC/OP volatile pool', async () => {
       const chainManager = createForkChainManager(opFork.rpcUrl, optimism.id)
       const provider = createProvider(
@@ -160,7 +160,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Base — v2 router (Aerodrome)', () => {
+  describe('Base - v2 router (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH volatile pool', async () => {
       const chainManager = createForkChainManager(baseFork.rpcUrl, base.id)
       const provider = createProvider(
@@ -190,7 +190,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Optimism — CL/Slipstream pool', () => {
+  describe('Optimism - CL/Slipstream pool', () => {
     it('getQuote returns valid quote for WETH/USDC CL pool', async () => {
       const chainManager = createForkChainManager(opFork.rpcUrl, optimism.id)
       const provider = createProvider(
@@ -222,7 +222,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Base — CL/Slipstream pool (Aerodrome)', () => {
+  describe('Base - CL/Slipstream pool (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH CL pool', async () => {
       const chainManager = createForkChainManager(baseFork.rpcUrl, base.id)
       const provider = createProvider(

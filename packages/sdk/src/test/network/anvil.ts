@@ -5,7 +5,7 @@
  * port (no hard-coded port literals, which makes `EADDRINUSE` collisions
  * between concurrent fork suites vanishingly unlikely rather than guaranteed
  * by manual bookkeeping) and validates the fork's `eth_chainId` against the
- * expected chain before declaring the node ready — a bare HTTP 200 from an
+ * expected chain before declaring the node ready. A bare HTTP 200 from an
  * unforked or wrong-chain node fails loudly instead of passing.
  */
 import type { ChildProcess } from 'node:child_process'
@@ -29,6 +29,7 @@ export interface AnvilFork {
 
 /**
  * Allocate a free TCP port from the OS.
+ * @description Asks the OS for an available local port for a short-lived fork.
  * @returns A port number that was free at allocation time.
  */
 async function allocateEphemeralPort(): Promise<number> {
@@ -52,6 +53,7 @@ async function allocateEphemeralPort(): Promise<number> {
 
 /**
  * Probe a node's `eth_chainId`.
+ * @description Reads and validates a JSON-RPC `eth_chainId` response.
  * @param rpcUrl - JSON-RPC URL to probe.
  * @returns The numeric chain id, or null when the node is not ready or the
  * response is not a valid JSON-RPC result.
@@ -71,7 +73,7 @@ async function probeChainId(rpcUrl: string): Promise<number | null> {
     if (!res.ok) return null
     const json = (await res.json()) as { result?: unknown }
     // A JSON-RPC error body (or an unforked node returning HTML) lacks a
-    // hex-string `result` — treat anything else as "not ready".
+    // hex-string `result`; treat anything else as "not ready".
     if (typeof json.result !== 'string') return null
     const chainId = Number.parseInt(json.result, 16)
     return Number.isInteger(chainId) && chainId > 0 ? chainId : null
@@ -84,6 +86,7 @@ async function probeChainId(rpcUrl: string): Promise<number | null> {
 /**
  * Start an Anvil fork on an ephemeral port and wait until it serves the
  * expected chain.
+ * @description Starts a local Anvil fork and validates its chain before use.
  * @param forkUrl - Upstream RPC URL to fork.
  * @param expectedChainId - Chain id the fork must report from `eth_chainId`.
  * @returns Fork metadata including process handle, bound port, and local RPC URL.
@@ -140,6 +143,7 @@ export async function startAnvilFork(
 
 /**
  * Stop a running Anvil fork process.
+ * @description Terminates the child process for a fork created by this harness.
  * @param fork - Fork process returned by `startAnvilFork`.
  * @returns Nothing.
  */
