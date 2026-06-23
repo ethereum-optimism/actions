@@ -295,9 +295,9 @@ export abstract class SwapProvider<
     slippage: number,
     assetOut: Asset,
   ): { amountOutMinRaw: bigint; amountOutMin: number } {
-    // Defense-in-depth: reject non-finite slippage even if a future caller
-    // reaches this without going through validateSlippage.
-    if (!Number.isFinite(slippage)) {
+    // Defense-in-depth: enforce the same invariant as validateSlippage in case
+    // a future caller reaches this helper directly.
+    if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
       throw new InvalidParamsError({
         param: 'slippage',
         expected: 'a finite number in [0, 1)',

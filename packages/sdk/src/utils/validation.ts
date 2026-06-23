@@ -115,7 +115,7 @@ export function validateWalletAddress(
  * relative `maxSlippage`. The `>= 1` ceiling is independent of `maxSlippage`
  * so a misconfigured `maxSlippage > 1` can no longer admit a value that drives
  * `computeSlippageBounds` to a negative (protection-disabling) `amountOutMinRaw`.
- * Non-finite values (`NaN` / `±Infinity`) are rejected because the bare `<`/`>`
+ * Non-finite values (`NaN` / `Infinity`) are rejected because the bare `<`/`>`
  * comparisons are silently `false` for `NaN`.
  */
 export function validateSlippage(slippage: number, maxSlippage: number): void {

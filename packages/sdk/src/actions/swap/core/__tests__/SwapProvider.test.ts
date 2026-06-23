@@ -307,7 +307,7 @@ describe('SwapProvider', () => {
     })
 
     // F186: getQuote previously skipped validateSwapExecute, so a slippage in
-    // [maxSlippage, ∞) or a non-finite slippage reached the bounds math and a
+    // [maxSlippage, Infinity) or a non-finite slippage reached the bounds math and a
     // negative/zero floor was encoded into the returned quote's calldata.
     it.each([1.5, NaN])(
       'rejects slippage %p instead of returning a negative-floor quote',
@@ -356,12 +356,26 @@ describe('SwapProvider', () => {
       },
     )
 
-    it('throws instead of returning a negative floor for slippage >= 1', () => {
+    it.each([1.0, 1.5])(
+      'throws instead of returning a disabled floor for slippage %p',
+      (slippage) => {
+        const provider = new MockSwapProvider()
+        expect(() =>
+          provider.testComputeSlippageBounds(
+            1_000_000_000_000_000_000n,
+            slippage,
+            MockWETH,
+          ),
+        ).toThrow(InvalidParamsError)
+      },
+    )
+
+    it('throws instead of returning an impossible floor for negative slippage', () => {
       const provider = new MockSwapProvider()
       expect(() =>
         provider.testComputeSlippageBounds(
           1_000_000_000_000_000_000n,
-          1.5,
+          -0.1,
           MockWETH,
         ),
       ).toThrow(InvalidParamsError)
