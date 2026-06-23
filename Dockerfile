@@ -26,10 +26,10 @@ RUN pnpm fetch
 COPY . ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline
 
-# provide the ability to build a single projects
 ARG DOCKER_TARGET
 
-RUN pnpm nx build @eth-optimism/actions-service
+RUN pnpm --filter @eth-optimism/actions-sdk build
+RUN pnpm --filter @eth-optimism/actions-service build
 RUN pnpm deploy --filter @eth-optimism/actions-service --prod /prod/actions-service
 
 ########################################################
