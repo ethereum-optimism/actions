@@ -1,6 +1,8 @@
 import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Context, Next } from 'hono'
 
+import type { AuthContext } from '@/middleware/auth.js'
+
 /**
  * Lightweight fixed-window in-memory rate limiter.
  *
@@ -28,9 +30,9 @@ interface RateWindow {
   resetAt: number
 }
 
-// Bound the per-limiter key set so a churn of distinct clients (e.g. spoofed
-// `x-forwarded-for` values) cannot grow the map without limit. When the cap is
-// hit we sweep entries whose window has already elapsed.
+// Bound the per-limiter key set so a churn of distinct clients cannot grow the
+// map without limit. When the cap is hit we sweep entries whose window has
+// already elapsed.
 const DEFAULT_MAX_TRACKED_KEYS = 10_000
 
 export function rateLimit({
@@ -89,17 +91,13 @@ function rateLimitExceeded(c: Context, retryAfterSeconds: number): Response {
 }
 
 /**
- * Identify the caller. Prefer the authenticated identity (`privy-id-token`,
- * read straight from the header since this middleware runs before auth) so an
- * authenticated user is throttled per-user; otherwise fall back to the client
- * IP so an anonymous burst from one host is still bounded.
+ * Identify the caller from trusted request state. After auth runs, this uses
+ * the verified Privy identity key. Before auth, this only uses the socket
+ * address exposed by the server adapter, never spoofable forwarding headers.
  */
 function clientKey(c: Context): string {
-  const idToken = c.req.header('privy-id-token')
-  if (idToken) return `user:${idToken}`
-
-  const forwardedFor = c.req.header('x-forwarded-for')
-  if (forwardedFor) return `ip:${forwardedFor.split(',')[0]!.trim()}`
+  const auth = c.get('auth') as AuthContext | undefined
+  if (auth?.rateLimitKey) return auth.rateLimitKey
 
   try {
     const address = getConnInfo(c).remote.address

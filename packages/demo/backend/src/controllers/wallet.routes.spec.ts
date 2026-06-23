@@ -54,13 +54,19 @@ const okDrip = { success: true, userOpHash: '0x' + 'd'.repeat(64) }
 
 beforeEach(async () => {
   vi.resetAllMocks()
+  mockVerifiedUser('user-a')
+})
+
+async function mockVerifiedUser(userId: string) {
   const { getPrivyClient } = await import('@/config/actions.js')
   vi.mocked(getPrivyClient).mockReturnValue({
     utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
+      auth: () => ({
+        verifyAuthToken: vi.fn().mockResolvedValue({ user_id: userId }),
+      }),
     }),
   } as never)
-})
+}
 
 describe('POST /wallet/eth (faucet drip)', () => {
   it('rejects an unauthenticated request and signs no drip', async () => {
@@ -161,6 +167,33 @@ describe('rate limiting on fund-touching routes', () => {
     expect(walletService.mintDemoUsdcToWallet).toHaveBeenCalledTimes(10)
   })
 
+  it('does not let rotating privy-id-token headers bypass /wallet/usdc limits', async () => {
+    await mockVerifiedUser('user-usdc-rotating-token')
+    vi.mocked(walletService.getWallet).mockResolvedValue({
+      address: '0x' + 'e'.repeat(40),
+    } as never)
+    vi.mocked(walletService.mintDemoUsdcToWallet).mockResolvedValue({
+      success: true,
+    } as never)
+
+    const app = createApp()
+    const statuses: number[] = []
+    for (let i = 0; i < 11; i++) {
+      const res = await app.request('/wallet/usdc', {
+        method: 'POST',
+        headers: {
+          Authorization: authHeaders().Authorization,
+          'privy-id-token': `fake-id-token-${i}`,
+        },
+      })
+      statuses.push(res.status)
+    }
+
+    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
+    expect(statuses[10]).toBe(429)
+    expect(walletService.mintDemoUsdcToWallet).toHaveBeenCalledTimes(10)
+  })
+
   it('caps a /swap/execute burst at the limit and 429s the rest', async () => {
     vi.mocked(swapService.executeSwap).mockResolvedValue({ ok: true } as never)
     const body = JSON.stringify({
@@ -176,6 +209,36 @@ describe('rate limiting on fund-touching routes', () => {
       const res = await app.request('/swap/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body,
+      })
+      statuses.push(res.status)
+    }
+
+    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
+    expect(statuses[10]).toBe(429)
+    expect(swapService.executeSwap).toHaveBeenCalledTimes(10)
+  })
+
+  it('does not let rotating x-forwarded-for headers bypass /swap/execute limits', async () => {
+    await mockVerifiedUser('user-swap-rotating-forwarded-for')
+    vi.mocked(swapService.executeSwap).mockResolvedValue({ ok: true } as never)
+    const body = JSON.stringify({
+      amountIn: 1,
+      tokenInAddress: '0x' + 'a'.repeat(40),
+      tokenOutAddress: '0x' + 'b'.repeat(40),
+      chainId: 84532,
+    })
+
+    const app = createApp()
+    const statuses: number[] = []
+    for (let i = 0; i < 11; i++) {
+      const res = await app.request('/swap/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+          'x-forwarded-for': `203.0.113.${i}`,
+        },
         body,
       })
       statuses.push(res.status)

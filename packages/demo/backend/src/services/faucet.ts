@@ -56,6 +56,7 @@ export async function isWalletEligibleForFaucet(
  * the live on-chain balance, decides re-qualification).
  */
 export const FAUCET_DRIP_COOLDOWN_MS = 24 * 60 * 60 * 1000
+export const MAX_TRACKED_DRIP_RECIPIENTS = 10_000
 
 const lastDripAtByRecipient = new Map<string, number>()
 
@@ -70,8 +71,15 @@ export function reserveDrip(
   now: number = Date.now(),
 ): boolean {
   const key = walletAddress.toLowerCase()
+  sweepExpiredDripReservations(now)
   const lastDripAt = lastDripAtByRecipient.get(key)
   if (lastDripAt !== undefined && now - lastDripAt < FAUCET_DRIP_COOLDOWN_MS) {
+    return false
+  }
+  if (
+    lastDripAt === undefined &&
+    lastDripAtByRecipient.size >= MAX_TRACKED_DRIP_RECIPIENTS
+  ) {
     return false
   }
   lastDripAtByRecipient.set(key, now)
@@ -84,6 +92,14 @@ export function reserveDrip(
  */
 export function releaseDrip(walletAddress: Address): void {
   lastDripAtByRecipient.delete(walletAddress.toLowerCase())
+}
+
+function sweepExpiredDripReservations(now: number): void {
+  for (const [key, lastDripAt] of lastDripAtByRecipient) {
+    if (now - lastDripAt >= FAUCET_DRIP_COOLDOWN_MS) {
+      lastDripAtByRecipient.delete(key)
+    }
+  }
 }
 
 export async function dripEthToWallet(walletAddress: Address) {

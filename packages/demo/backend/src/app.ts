@@ -162,9 +162,8 @@ export function createApp(): Hono {
     }),
   )
 
-  // Throttle the fund-touching mutation routes. A fresh limiter per route gives
-  // each its own per-client budget; this runs before route-level auth so an
-  // anonymous burst is bounded too.
+  // Throttle the fund-touching mutation routes before auth using only trusted
+  // socket state. Router-level limiters add the verified user bucket after auth.
   for (const path of RATE_LIMITED_ROUTES) {
     app.use(
       path,
