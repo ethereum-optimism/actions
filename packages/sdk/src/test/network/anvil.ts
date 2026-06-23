@@ -2,8 +2,9 @@
  * Anvil fork lifecycle helpers for network tests.
  *
  * The single fork-harness entry point. Allocates an OS-assigned ephemeral
- * port (no hard-coded port literals, so concurrent fork suites never
- * collide on `EADDRINUSE`) and validates the fork's `eth_chainId` against the
+ * port (no hard-coded port literals, which makes `EADDRINUSE` collisions
+ * between concurrent fork suites vanishingly unlikely rather than guaranteed
+ * by manual bookkeeping) and validates the fork's `eth_chainId` against the
  * expected chain before declaring the node ready — a bare HTTP 200 from an
  * unforked or wrong-chain node fails loudly instead of passing.
  */
@@ -100,8 +101,27 @@ export async function startAnvilFork(
     { stdio: 'ignore' },
   )
 
+  // Surface a missing `anvil` binary (ENOENT) or an early exit (e.g. a port
+  // collision the ephemeral allocation lost the race on) as a loud, specific
+  // error instead of an opaque "did not start in time" after the full timeout.
+  let spawnFailure: Error | null = null
+  proc.on('error', (err) => {
+    spawnFailure = new Error(`Failed to spawn anvil: ${err.message}`)
+  })
+  proc.on('exit', (code, signal) => {
+    if (spawnFailure === null && signal === null) {
+      spawnFailure = new Error(
+        `anvil on port ${port} exited early with code ${code}`,
+      )
+    }
+  })
+
   const rpcUrl = `http://127.0.0.1:${port}`
   for (let i = 0; i < 60; i++) {
+    if (spawnFailure !== null) {
+      proc.kill()
+      throw spawnFailure
+    }
     const chainId = await probeChainId(rpcUrl)
     if (chainId !== null) {
       if (chainId !== expectedChainId) {

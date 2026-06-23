@@ -79,6 +79,26 @@ async function readUsdcBalance(
 }
 
 /**
+ * Assert that a funding transfer moved exactly the requested amount.
+ * @param before - Target balance before the transfer.
+ * @param after - Target balance after the transfer.
+ * @param expected - Raw amount the transfer was supposed to move.
+ * @throws Error when the balance did not increase by exactly `expected`.
+ */
+export function assertFundingLanded(
+  before: bigint,
+  after: bigint,
+  expected: bigint,
+): void {
+  if (after - before !== expected) {
+    throw new Error(
+      `fundWallet: USDC funding did not land: ` +
+        `expected balance to increase by ${expected}, got ${after - before}`,
+    )
+  }
+}
+
+/**
  * Fund a wallet with ETH and optionally USDC on an Anvil fork.
  * @param config - Wallet funding configuration.
  * @returns Promise that resolves when funding is complete and verified.
@@ -148,7 +168,15 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
         functionName: 'transfer',
         args: [targetAddress, amountUnits],
       })
-      await publicClient.waitForTransactionReceipt({ hash })
+      // `waitForTransactionReceipt` resolves for reverted txs too; USDC's
+      // `transfer` returns a bool that viem does not check, so assert the
+      // receipt status directly — a reverted/failed transfer fails loud here.
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+      if (receipt.status !== 'success') {
+        throw new Error(
+          `fundWallet: USDC transfer reverted on chainId ${chainId} (status ${receipt.status})`,
+        )
+      }
     } finally {
       await testClient.stopImpersonatingAccount({ address: funding.whale })
     }
@@ -158,11 +186,6 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
       funding.usdc,
       targetAddress,
     )
-    if (after - before !== amountUnits) {
-      throw new Error(
-        `fundWallet: USDC funding did not land on chainId ${chainId}: ` +
-          `expected balance to increase by ${amountUnits}, got ${after - before}`,
-      )
-    }
+    assertFundingLanded(before, after, amountUnits)
   }
 }

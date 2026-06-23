@@ -9,8 +9,8 @@ import { createPublicClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 // Imported separately for internal use by `setupSupersimTest` below.
-import type { FundWalletConfig } from '../test/network/index.js'
-import { fundWallet } from '../test/network/index.js'
+import type { FundWalletConfig } from '@/test/network/index.js'
+import { fundWallet } from '@/test/network/index.js'
 
 // Re-exported from the consolidated fork harness for back-compat: there is one
 // fork-harness entry point (`src/test/network`), surfaced here too so existing
@@ -22,7 +22,7 @@ export {
   type FundWalletConfig,
   startAnvilFork,
   stopAnvilFork,
-} from '../test/network/index.js'
+} from '@/test/network/index.js'
 
 /**
  * Standard anvil/foundry test accounts with predictable private keys
