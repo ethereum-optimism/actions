@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarketConfig } from '@/types/swap/index.js'
 
@@ -303,6 +304,78 @@ describe('SwapProvider', () => {
       expect(quote.amountIn).toBeDefined()
       expect(quote.amountOut).toBeDefined()
       expect(quote.route).toBeDefined()
+    })
+
+    // F186: getQuote previously skipped validateSwapExecute, so a slippage in
+    // [maxSlippage, ∞) or a non-finite slippage reached the bounds math and a
+    // negative/zero floor was encoded into the returned quote's calldata.
+    it.each([1.5, NaN])(
+      'rejects slippage %p instead of returning a negative-floor quote',
+      async (slippage) => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.getQuote({
+            assetIn: MockUSDC,
+            assetOut: MockWETH,
+            amountIn: 100,
+            chainId: 84532 as SupportedChainId,
+            slippage,
+          }),
+        ).rejects.toThrow('out of range')
+        expect(provider.mockGetQuote).not.toHaveBeenCalled()
+      },
+    )
+
+    it('rejects a non-finite amount before quoting', async () => {
+      const provider = new MockSwapProvider()
+      await expect(
+        provider.getQuote({
+          assetIn: MockUSDC,
+          assetOut: MockWETH,
+          amountIn: NaN,
+          chainId: 84532 as SupportedChainId,
+        }),
+      ).rejects.toThrow('Amount must be positive')
+      expect(provider.mockGetQuote).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('computeSlippageBounds()', () => {
+    it.each([0, 0.005, 0.5])(
+      'keeps amountOutMinRaw within [0, amountOutRaw] for slippage %p',
+      (slippage) => {
+        const provider = new MockSwapProvider()
+        const amountOutRaw = 1_000_000_000_000_000_000n
+        const { amountOutMinRaw } = provider.testComputeSlippageBounds(
+          amountOutRaw,
+          slippage,
+          MockWETH,
+        )
+        expect(amountOutMinRaw).toBeGreaterThanOrEqual(0n)
+        expect(amountOutMinRaw).toBeLessThanOrEqual(amountOutRaw)
+      },
+    )
+
+    it('throws instead of returning a negative floor for slippage >= 1', () => {
+      const provider = new MockSwapProvider()
+      expect(() =>
+        provider.testComputeSlippageBounds(
+          1_000_000_000_000_000_000n,
+          1.5,
+          MockWETH,
+        ),
+      ).toThrow(InvalidParamsError)
+    })
+
+    it('throws for a non-finite slippage', () => {
+      const provider = new MockSwapProvider()
+      expect(() =>
+        provider.testComputeSlippageBounds(
+          1_000_000_000_000_000_000n,
+          NaN,
+          MockWETH,
+        ),
+      ).toThrow(InvalidParamsError)
     })
   })
 

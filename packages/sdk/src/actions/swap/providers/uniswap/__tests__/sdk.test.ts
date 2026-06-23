@@ -7,7 +7,11 @@ import {
 } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { UNIVERSAL_ROUTER_ABI } from '@/actions/swap/providers/uniswap/abis.js'
+import {
+  EXACT_INPUT_SINGLE_PARAMS,
+  EXACT_OUTPUT_SINGLE_PARAMS,
+  UNIVERSAL_ROUTER_ABI,
+} from '@/actions/swap/providers/uniswap/abis.js'
 import {
   calculatePriceImpact,
   encodeUniversalRouterSwap,
@@ -271,12 +275,62 @@ describe('encodeUniversalRouterSwap', () => {
     gasEstimate: 150000n,
   }
 
+  // Provider-derived bounds for baseQuote at 0.5% slippage:
+  //   amountOutMinRaw = 500000000000000000 * 9950/10000
+  //   amountInMaxRaw  = 100000000 + 100000000 * 50/10000
+  const AMOUNT_OUT_MIN = 497500000000000000n
+  const AMOUNT_IN_MAX = 100500000n
+
+  /** Decode the amountOutMinimum baked into exact-in calldata. */
+  const decodeMinAmountOut = (calldata: `0x${string}`): bigint => {
+    const { args } = decodeFunctionData({
+      abi: UNIVERSAL_ROUTER_ABI,
+      data: calldata,
+    })
+    const [, inputs] = args as readonly [
+      `0x${string}`,
+      ReadonlyArray<`0x${string}`>,
+      bigint,
+    ]
+    const [, swapParams] = decodeAbiParameters(
+      [{ type: 'bytes' }, { type: 'bytes[]' }],
+      inputs[0]!,
+    )
+    const [swap] = decodeAbiParameters(
+      EXACT_INPUT_SINGLE_PARAMS,
+      (swapParams as ReadonlyArray<`0x${string}`>)[0]!,
+    )
+    return (swap as { amountOutMinimum: bigint }).amountOutMinimum
+  }
+
+  /** Decode the amountInMaximum baked into exact-out calldata. */
+  const decodeMaxAmountIn = (calldata: `0x${string}`): bigint => {
+    const { args } = decodeFunctionData({
+      abi: UNIVERSAL_ROUTER_ABI,
+      data: calldata,
+    })
+    const [, inputs] = args as readonly [
+      `0x${string}`,
+      ReadonlyArray<`0x${string}`>,
+      bigint,
+    ]
+    const [, swapParams] = decodeAbiParameters(
+      [{ type: 'bytes' }, { type: 'bytes[]' }],
+      inputs[0]!,
+    )
+    const [swap] = decodeAbiParameters(
+      EXACT_OUTPUT_SINGLE_PARAMS,
+      (swapParams as ReadonlyArray<`0x${string}`>)[0]!,
+    )
+    return (swap as { amountInMaximum: bigint }).amountInMaximum
+  }
+
   it('encodes exact-in swap calldata', () => {
     const calldata = encodeUniversalRouterSwap({
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -295,7 +349,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountOutRaw: 500000000000000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -307,6 +361,72 @@ describe('encodeUniversalRouterSwap', () => {
 
     expect(calldata).toMatch(/^0x/)
     expect(calldata.length).toBeGreaterThan(10)
+  })
+
+  it('bakes the provider-derived bound into calldata without recomputing (F005)', () => {
+    const exactIn = encodeUniversalRouterSwap({
+      amountInRaw: 100000000n,
+      assetIn: USDC,
+      assetOut: WETH,
+      amountOutMinRaw: AMOUNT_OUT_MIN,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: baseQuote,
+      universalRouterAddress: '0xrouter' as Address,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+    expect(decodeMinAmountOut(exactIn)).toBe(AMOUNT_OUT_MIN)
+
+    const exactOut = encodeUniversalRouterSwap({
+      amountOutRaw: 500000000000000000n,
+      assetIn: USDC,
+      assetOut: WETH,
+      amountInMaxRaw: AMOUNT_IN_MAX,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: baseQuote,
+      universalRouterAddress: '0xrouter' as Address,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+    expect(decodeMaxAmountIn(exactOut)).toBe(AMOUNT_IN_MAX)
+  })
+
+  it('throws when the exact-in min-out floor is not supplied', () => {
+    expect(() =>
+      encodeUniversalRouterSwap({
+        amountInRaw: 100000000n,
+        assetIn: USDC,
+        assetOut: WETH,
+        deadline: 1700000000,
+        recipient: '0xrecipient' as Address,
+        chainId: CHAIN_ID,
+        quote: baseQuote,
+        universalRouterAddress: '0xrouter' as Address,
+        fee: FEE,
+        tickSpacing: TICK_SPACING,
+      }),
+    ).toThrow(/amountOutMinRaw/)
+  })
+
+  it('throws when the exact-out max-in ceiling is not supplied', () => {
+    expect(() =>
+      encodeUniversalRouterSwap({
+        amountOutRaw: 500000000000000000n,
+        assetIn: USDC,
+        assetOut: WETH,
+        deadline: 1700000000,
+        recipient: '0xrecipient' as Address,
+        chainId: CHAIN_ID,
+        quote: baseQuote,
+        universalRouterAddress: '0xrouter' as Address,
+        fee: FEE,
+        tickSpacing: TICK_SPACING,
+      }),
+    ).toThrow(/amountInMaxRaw/)
   })
 
   it('tags V4 action bytes per Uniswap v4-periphery Actions.sol', () => {
@@ -337,7 +457,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -352,7 +472,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountOutRaw: 500000000000000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -369,7 +489,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -383,7 +503,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountOutRaw: 500000000000000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.005,
+      amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -396,12 +516,12 @@ describe('encodeUniversalRouterSwap', () => {
     expect(exactIn).not.toBe(exactOut)
   })
 
-  it('applies slippage to minimum output for exact-in', () => {
+  it('reflects a different min-out floor in exact-in calldata', () => {
     const noSlippage = encodeUniversalRouterSwap({
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0,
+      amountOutMinRaw: 500000000000000000n, // 0% slippage → full quoted out
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -415,7 +535,7 @@ describe('encodeUniversalRouterSwap', () => {
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
-      slippage: 0.05, // 5%
+      amountOutMinRaw: 475000000000000000n, // 5% slippage
       deadline: 1700000000,
       recipient: '0xrecipient' as Address,
       chainId: CHAIN_ID,
@@ -425,7 +545,9 @@ describe('encodeUniversalRouterSwap', () => {
       tickSpacing: TICK_SPACING,
     })
 
-    // Different slippage should produce different calldata
+    // A lower floor must produce different calldata.
     expect(noSlippage).not.toBe(withSlippage)
+    expect(decodeMinAmountOut(noSlippage)).toBe(500000000000000000n)
+    expect(decodeMinAmountOut(withSlippage)).toBe(475000000000000000n)
   })
 })

@@ -129,12 +129,26 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
+    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
+      quote.amountOutRaw,
+      slippage,
+      assetOut,
+    )
+
+    // Derive the exact-out max-in ceiling once and feed it (and the min-out
+    // floor) to the encoder so the displayed bounds and the bounds baked into
+    // calldata come from a single computation, not two that can diverge.
+    const amountInMaxRaw = amountOutRaw
+      ? this.computeAmountInMaxRaw(quote.amountInRaw, slippage)
+      : undefined
+
     const swapCalldata = encodeUniversalRouterSwap({
       amountInRaw: amountOutRaw ? undefined : amountInRaw,
       amountOutRaw,
       assetIn,
       assetOut,
-      slippage,
+      amountOutMinRaw,
+      amountInMaxRaw,
       deadline,
       recipient,
       chainId,
@@ -145,12 +159,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
 
     const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
-
-    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
-      quote.amountOutRaw,
-      slippage,
-      assetOut,
-    )
 
     return {
       assetIn,

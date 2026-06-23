@@ -114,6 +114,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.buildSwapTransactions(quote)
   }
 
+  public testComputeSlippageBounds(
+    amountOutRaw: bigint,
+    slippage: number,
+    assetOut: Asset,
+  ): { amountOutMinRaw: bigint; amountOutMin: number } {
+    return this.computeSlippageBounds(amountOutRaw, slippage, assetOut)
+  }
+
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {

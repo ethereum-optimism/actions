@@ -8,6 +8,7 @@ import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  InvalidParamsError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteRecipientMissingError,
@@ -163,6 +164,12 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     this.assertChainSupported(params.chainId)
+    // Run the value-relevant guards before quoting so a quote can never encode
+    // a negative-floor calldata that execute() would have rejected. Scoped to
+    // the slippage/amount guards needed to close the negative-min-out path.
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     return this._getQuote(params)
   }
 
@@ -288,13 +295,49 @@ export abstract class SwapProvider<
     slippage: number,
     assetOut: Asset,
   ): { amountOutMinRaw: bigint; amountOutMin: number } {
+    // Defense-in-depth: reject non-finite slippage even if a future caller
+    // reaches this without going through validateSlippage.
+    if (!Number.isFinite(slippage)) {
+      throw new InvalidParamsError({
+        param: 'slippage',
+        expected: 'a finite number in [0, 1)',
+        received: `${slippage}`,
+      })
+    }
     const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
+    // The min-out floor is the only on-chain slippage protection. A floor
+    // outside [0, amountOutRaw] means protection is disabled (negative) or
+    // impossible (above the quote), so fail loud rather than silently sign it.
+    if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
+      throw new InvalidParamsError({
+        param: 'slippage',
+        expected: `amountOutMinRaw within [0, ${amountOutRaw}]`,
+        received: `${amountOutMinRaw}`,
+      })
+    }
     const amountOutMin = parseFloat(
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
     return { amountOutMinRaw, amountOutMin }
+  }
+
+  /**
+   * Compute the maximum input for an exact-output swap after slippage.
+   * Symmetric to {@link computeSlippageBounds} on the input side. The ceiling
+   * can only grow with slippage, so it needs no negative-floor clamp; callers
+   * pass this through to the encoder so the displayed and enforced max-in are
+   * the same number.
+   * @param amountInRaw - Quoted input as raw bigint
+   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
+   */
+  protected computeAmountInMaxRaw(
+    amountInRaw: bigint,
+    slippage: number,
+  ): bigint {
+    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    return amountInRaw + (amountInRaw * slippageBps) / BPS_DENOMINATOR
   }
 
   protected resolveMarketConfig(

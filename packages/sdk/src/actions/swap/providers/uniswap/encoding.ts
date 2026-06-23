@@ -17,6 +17,7 @@ import {
   UNIVERSAL_ROUTER_ABI,
 } from '@/actions/swap/providers/uniswap/abis.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
@@ -196,7 +197,17 @@ export interface EncodeSwapParams {
   amountOutRaw?: bigint
   assetIn: Asset
   assetOut: Asset
-  slippage: number
+  /**
+   * Provider-derived minimum output floor (exact-in). Required for exact-input
+   * swaps. Passed in (not recomputed from slippage) so the displayed bound and
+   * the bound baked into calldata are the same number.
+   */
+  amountOutMinRaw?: bigint
+  /**
+   * Provider-derived maximum input ceiling (exact-out). Required for
+   * exact-output swaps. Passed in for the same single-source-of-truth reason.
+   */
+  amountInMaxRaw?: bigint
   deadline: number
   recipient: Address
   chainId: SupportedChainId
@@ -226,7 +237,8 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     amountInRaw,
     assetIn,
     assetOut,
-    slippage,
+    amountOutMinRaw,
+    amountInMaxRaw,
     deadline,
     chainId,
     quote,
@@ -248,8 +260,13 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
   let actionParams: Hex[]
 
   if (isExactInput) {
-    const minAmountOut =
-      (quote.amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+    if (amountOutMinRaw === undefined) {
+      throw new InvalidParamsError({
+        param: 'amountOutMinRaw',
+        expected: 'a provider-derived min-out floor for an exact-input swap',
+      })
+    }
+    const minAmountOut = amountOutMinRaw
 
     actions =
       `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -268,9 +285,13 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
     ]
   } else {
-    const maxAmountIn =
-      quote.amountInRaw +
-      (quote.amountInRaw * BigInt(Math.round(slippage * 10000))) / 10000n
+    if (amountInMaxRaw === undefined) {
+      throw new InvalidParamsError({
+        param: 'amountInMaxRaw',
+        expected: 'a provider-derived max-in ceiling for an exact-output swap',
+      })
+    }
+    const maxAmountIn = amountInMaxRaw
 
     actions =
       `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex

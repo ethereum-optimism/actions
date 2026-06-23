@@ -34,7 +34,7 @@ export function validateAmountProvided(
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
-  if (amount !== undefined && amount <= 0) {
+  if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
     throw new InvalidAmountError(amount)
   }
 }
@@ -108,8 +108,23 @@ export function validateWalletAddress(
   validateNotZeroAddress(walletAddress, label)
 }
 
+/**
+ * Reject a slippage tolerance that cannot safely reach the bounds math.
+ *
+ * Enforces an absolute `[0, 1)` invariant in addition to the integrator's
+ * relative `maxSlippage`. The `>= 1` ceiling is independent of `maxSlippage`
+ * so a misconfigured `maxSlippage > 1` can no longer admit a value that drives
+ * `computeSlippageBounds` to a negative (protection-disabling) `amountOutMinRaw`.
+ * Non-finite values (`NaN` / `±Infinity`) are rejected because the bare `<`/`>`
+ * comparisons are silently `false` for `NaN`.
+ */
 export function validateSlippage(slippage: number, maxSlippage: number): void {
-  if (slippage < 0 || slippage > maxSlippage) {
+  if (
+    !Number.isFinite(slippage) ||
+    slippage < 0 ||
+    slippage >= 1 ||
+    slippage > maxSlippage
+  ) {
     throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }
