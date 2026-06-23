@@ -3,13 +3,15 @@
 // Purpose (F149/F165/F166/F170): prove that the *published* SDK, installed the
 // way a real downstream consumer installs it, honours the manifest invariants:
 //
-//   1. A static `import` of the SDK root must NOT eagerly load the unused vendor
-//      SDKs. We install only the Turnkey vendor set (peer auto-install off), so
-//      `@privy-io/node` and `@dynamic-labs/ethereum` are absent on disk. If the
-//      SDK eager-loaded them, this import would throw ERR_MODULE_NOT_FOUND.
+//   1. A static `import` of either SDK entry (node and react) must NOT eagerly
+//      load the unused vendor SDKs. We install only the Turnkey vendor set (peer
+//      auto-install off), so `@privy-io/node` and `@dynamic-labs/ethereum` are
+//      absent on disk. If the SDK eager-loaded them, the import would throw
+//      ERR_MODULE_NOT_FOUND.
 //   2. The signing-path runtime deps (viem, permissionless, @morpho-org/*)
-//      resolve inside the CI-tested band — a fresh consumer install cannot drift
-//      to an untested build.
+//      resolve inside the band the SDK itself declares (read from the installed
+//      SDK package.json — no second source of truth to drift), so a fresh
+//      consumer install cannot drift to an untested build.
 //
 // Exits non-zero (and prints the reason) on any violation so CI fails closed.
 
@@ -27,6 +29,9 @@ const sdkPkgDir = realpathSync(
   join(fixtureDir, 'node_modules', '@eth-optimism', 'actions-sdk'),
 )
 const sdkRequire = createRequire(join(sdkPkgDir, 'package.json'))
+const sdkManifest = JSON.parse(
+  readFileSync(join(sdkPkgDir, 'package.json'), 'utf8'),
+)
 
 const failures = []
 
@@ -44,9 +49,46 @@ function resolvedVersion(pkg) {
   throw new Error(`package.json not found for ${pkg}`)
 }
 
+/** Numeric semver compare of two release versions (prerelease tags ignored). */
+function cmp(a, b) {
+  const pa = a.split('-')[0].split('.').map(Number)
+  const pb = b.split('-')[0].split('.').map(Number)
+  for (let i = 0; i < 3; i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0)
+    if (d !== 0) return d < 0 ? -1 : 1
+  }
+  return 0
+}
+
+/** Whether `version` satisfies a space-separated comparator range (`>=x <y`). */
+function satisfies(version, range) {
+  return range
+    .trim()
+    .split(/\s+/)
+    .every((token) => {
+      const m = token.match(/^(>=|<=|>|<|=|\^|~)?\s*v?(.+)$/)
+      if (!m) return false
+      const [, op = '=', v] = m
+      const c = cmp(version, v)
+      switch (op) {
+        case '>=':
+          return c >= 0
+        case '<=':
+          return c <= 0
+        case '>':
+          return c > 0
+        case '<':
+          return c < 0
+        default:
+          return c === 0
+      }
+    })
+}
+
 // --- 1. Eager-import probe -------------------------------------------------
 // The unused vendors are intentionally NOT installed in this fixture. A clean
-// import is the proof that the SDK root does not statically pull them in.
+// import of BOTH entries is the proof that neither barrel statically pulls them
+// in (node -> @privy-io/node, react -> @dynamic-labs/ethereum).
 for (const vendor of ['@privy-io/node', '@dynamic-labs/ethereum']) {
   try {
     sdkRequire.resolve(vendor)
@@ -59,26 +101,37 @@ for (const vendor of ['@privy-io/node', '@dynamic-labs/ethereum']) {
   }
 }
 
-try {
-  await import('@eth-optimism/actions-sdk')
-} catch (err) {
-  failures.push(
-    `Importing the SDK root eagerly loaded an uninstalled vendor: ${err.message}`,
-  )
+for (const entry of [
+  '@eth-optimism/actions-sdk',
+  '@eth-optimism/actions-sdk/react',
+]) {
+  try {
+    await import(entry)
+  } catch (err) {
+    failures.push(
+      `Importing "${entry}" failed — likely an eager static import of an ` +
+        `uninstalled optional vendor SDK: ${err.message}`,
+    )
+  }
 }
 
 // --- 2. Pinned-range probe -------------------------------------------------
-// major.minor must match the CI-tested band; patch releases inside the band are
-// allowed (the manifest ranges are >=tested <next-minor).
-const TESTED_BANDS = {
-  viem: '2.33',
-  permissionless: '0.2',
-  '@morpho-org/blue-sdk': '4.13',
-  '@morpho-org/blue-sdk-viem': '3.2',
-  '@morpho-org/morpho-ts': '2.4',
-}
+// The expected range is read from the SDK's own manifest (peerDependencies for
+// viem, dependencies for the rest), so there is exactly one source of truth.
+const PINNED = [
+  ['viem', 'peerDependencies'],
+  ['permissionless', 'dependencies'],
+  ['@morpho-org/blue-sdk', 'dependencies'],
+  ['@morpho-org/blue-sdk-viem', 'dependencies'],
+  ['@morpho-org/morpho-ts', 'dependencies'],
+]
 
-for (const [pkg, band] of Object.entries(TESTED_BANDS)) {
+for (const [pkg, field] of PINNED) {
+  const range = sdkManifest[field]?.[pkg]
+  if (!range) {
+    failures.push(`SDK manifest is missing ${field}.${pkg} — expected a pin`)
+    continue
+  }
   let resolved
   try {
     resolved = resolvedVersion(pkg)
@@ -86,13 +139,12 @@ for (const [pkg, band] of Object.entries(TESTED_BANDS)) {
     failures.push(`Could not resolve ${pkg} in the fixture: ${err.message}`)
     continue
   }
-  const majorMinor = resolved.split('.').slice(0, 2).join('.')
-  if (majorMinor !== band) {
+  if (!satisfies(resolved, range)) {
     failures.push(
-      `${pkg} resolved to ${resolved}, outside the CI-tested band ${band}.x`,
+      `${pkg} resolved to ${resolved}, outside the SDK's declared band "${range}"`,
     )
   } else {
-    console.log(`  ok  ${pkg}@${resolved} (band ${band}.x)`)
+    console.log(`  ok  ${pkg}@${resolved} satisfies "${range}"`)
   }
 }
 
