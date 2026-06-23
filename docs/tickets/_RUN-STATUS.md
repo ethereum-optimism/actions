@@ -2,7 +2,7 @@
 
 Live source of truth for the aiur-driven implementation of the production-readiness backlog. Updated as agents progress.
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 11:10 PT — aiur `--bg` launched (`d96812c`), all 5 agents dispatched and `in-progress` on `claude:opus`.
 
 ## How the work flows
 
@@ -25,11 +25,11 @@ The most fund-safety-critical Phase-1 tickets. All `agent:todo` on `its-applekid
 
 | # | Ticket | Sev | Cx | applekid | State | Fork PR | CE review | Sign-off | actions issue | actions PR |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | prebuilt-quote-calldata-integrity | high | 5 | [#37](https://github.com/its-applekid/actions/issues/37) | todo | — | — | — | #373 | — |
-| 2 | swap-recipient-encoding-ignored | high | 4 | [#38](https://github.com/its-applekid/actions/issues/38) | todo | — | — | — | #444 | — |
-| 3 | lend-asset-market-validation | high | 4 | [#39](https://github.com/its-applekid/actions/issues/39) | todo | — | — | — | #334 | — |
-| 4 | receipt-status-as-success | high | 3 | [#40](https://github.com/its-applekid/actions/issues/40) | todo | — | — | — | #474 | — |
-| 5 | slippage-bounds-negative-minout | high | 3 | [#34](https://github.com/its-applekid/actions/issues/34) | todo | — | — | — | #318 | — |
+| 1 | prebuilt-quote-calldata-integrity | high | 5 | [#37](https://github.com/its-applekid/actions/issues/37) | in-progress | — | — | — | #373 | — |
+| 2 | swap-recipient-encoding-ignored | high | 4 | [#38](https://github.com/its-applekid/actions/issues/38) | in-progress | — | — | — | #444 | — |
+| 3 | lend-asset-market-validation | high | 4 | [#39](https://github.com/its-applekid/actions/issues/39) | in-progress | — | — | — | #334 | — |
+| 4 | receipt-status-as-success | high | 3 | [#40](https://github.com/its-applekid/actions/issues/40) | in-progress | — | — | — | #474 | — |
+| 5 | slippage-bounds-negative-minout | high | 3 | [#34](https://github.com/its-applekid/actions/issues/34) | in-progress | — | — | — | #318 | — |
 
 Overlap to watch at reopen time: #1/#2/#5 all touch swap provider/encoder files, so their fork PRs may conflict on swap code — replay them sequentially. #3 (lend) and #4 (wallet) are independent.
 
