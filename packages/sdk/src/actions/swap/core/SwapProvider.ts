@@ -295,16 +295,7 @@ export abstract class SwapProvider<
     slippage: number,
     assetOut: Asset,
   ): { amountOutMinRaw: bigint; amountOutMin: number } {
-    // Defense-in-depth: enforce the same invariant as validateSlippage in case
-    // a future caller reaches this helper directly.
-    if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
-      throw new InvalidParamsError({
-        param: 'slippage',
-        expected: 'a finite number in [0, 1)',
-        received: `${slippage}`,
-      })
-    }
-    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
     // The min-out floor is the only on-chain slippage protection. A floor
@@ -336,7 +327,7 @@ export abstract class SwapProvider<
     amountInRaw: bigint,
     slippage: number,
   ): bigint {
-    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    const slippageBps = this.computeSlippageBps(slippage)
     return amountInRaw + (amountInRaw * slippageBps) / BPS_DENOMINATOR
   }
 
@@ -473,6 +464,17 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
+
+  private computeSlippageBps(slippage: number): bigint {
+    if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
+      throw new InvalidParamsError({
+        param: 'slippage',
+        expected: 'a finite number in [0, 1)',
+        received: `${slippage}`,
+      })
+    }
+    return BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+  }
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     validateQuoteNotExpired(quote.expiresAt)
