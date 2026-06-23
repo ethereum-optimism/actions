@@ -20,7 +20,7 @@ WORKDIR /usr/src/app
 
 RUN apk add --no-cache python3 make g++
 
-COPY ../pnpm-lock.yaml ./
+COPY pnpm-lock.yaml ./
 RUN pnpm fetch
 
 COPY . ./
