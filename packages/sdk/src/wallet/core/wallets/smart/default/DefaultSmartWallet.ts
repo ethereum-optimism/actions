@@ -239,8 +239,21 @@ export class DefaultSmartWallet extends SmartWallet {
           hash,
         })
 
+      if (!userOperationReceipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          userOperationReceipt.receipt,
+        )
+      }
+
       return userOperationReceipt
     } catch (error) {
+      // Preserve the named revert error so it is not reshaped into a generic
+      // message; this keeps the user-facing contract aligned with the
+      // deploy/rotation siblings that already fail closed on a reverted receipt.
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -283,8 +296,21 @@ export class DefaultSmartWallet extends SmartWallet {
         hash,
       })
 
+      if (!receipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          receipt.receipt,
+        )
+      }
+
       return receipt
     } catch (error) {
+      // Preserve the named revert error so it is not reshaped into a generic
+      // message; this keeps the user-facing contract aligned with the
+      // deploy/rotation siblings that already fail closed on a reverted receipt.
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'

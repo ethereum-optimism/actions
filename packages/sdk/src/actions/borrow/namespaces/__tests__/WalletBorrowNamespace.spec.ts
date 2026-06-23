@@ -21,6 +21,7 @@ import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type { BorrowMarketConfig, BorrowQuote } from '@/types/borrow/index.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 
@@ -145,6 +146,26 @@ describe('WalletBorrowNamespace - quote dispatch', () => {
     await namespace.openPosition(quote)
     expect(mocks.sendBatch).toHaveBeenCalledTimes(1)
     expect(mocks.send).not.toHaveBeenCalled()
+  })
+
+  it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
+    // F212: a reverted-but-mined receipt must not be denormalized into a
+    // BorrowReceipt with quote-derived positionAfter. The wallet failing
+    // closed propagates through dispatch.
+    const { wallet, mocks } = makeWallet()
+    mocks.send.mockRejectedValue(
+      new TransactionConfirmedButRevertedError(
+        'transaction confirmed but reverted',
+        makeEoaReceipt(singleTransactionHash),
+      ),
+    )
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(namespace.openPosition(makeQuote())).rejects.toBeInstanceOf(
+      TransactionConfirmedButRevertedError,
+    )
   })
 
   it('re-quotes raw params that happen to include quotedAt', async () => {
