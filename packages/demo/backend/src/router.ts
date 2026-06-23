@@ -54,7 +54,7 @@ router.post(
   authMiddleware,
   walletController.mintDemoUsdcToWallet,
 )
-router.post('/wallet/eth', walletController.dripEthToWallet)
+router.post('/wallet/eth', authMiddleware, walletController.dripEthToWallet)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)
