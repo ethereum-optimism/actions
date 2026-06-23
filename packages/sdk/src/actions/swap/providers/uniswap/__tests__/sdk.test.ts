@@ -2,6 +2,7 @@ import {
   type Address,
   decodeAbiParameters,
   decodeFunctionData,
+  type Hex,
   type PublicClient,
   zeroAddress,
 } from 'viem'
@@ -281,48 +282,66 @@ describe('encodeUniversalRouterSwap', () => {
   const AMOUNT_OUT_MIN = 497500000000000000n
   const AMOUNT_IN_MAX = 100500000n
 
-  /** Decode the amountOutMinimum baked into exact-in calldata. */
-  const decodeMinAmountOut = (calldata: `0x${string}`): bigint => {
-    const { args } = decodeFunctionData({
+  const isHex = (value: unknown): value is Hex =>
+    typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value)
+
+  const isReadonlyArray = (value: unknown): value is readonly unknown[] =>
+    Array.isArray(value)
+
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+
+  const expectHex = (value: unknown, label: string): Hex => {
+    if (!isHex(value)) throw new Error(`${label} is not hex`)
+    return value
+  }
+
+  const expectBigInt = (value: unknown, label: string): bigint => {
+    if (typeof value !== 'bigint') throw new Error(`${label} is not bigint`)
+    return value
+  }
+
+  const decodeRouterInput = (calldata: Hex): Hex => {
+    const { functionName, args } = decodeFunctionData({
       abi: UNIVERSAL_ROUTER_ABI,
       data: calldata,
     })
-    const [, inputs] = args as readonly [
-      `0x${string}`,
-      ReadonlyArray<`0x${string}`>,
-      bigint,
-    ]
+    expect(functionName).toBe('execute')
+    if (!isReadonlyArray(args) || !isReadonlyArray(args[1])) {
+      throw new Error('execute args are malformed')
+    }
+    return expectHex(args[1][0], 'router input')
+  }
+
+  const decodeV4SwapParams = (calldata: Hex): readonly unknown[] => {
     const [, swapParams] = decodeAbiParameters(
       [{ type: 'bytes' }, { type: 'bytes[]' }],
-      inputs[0]!,
+      decodeRouterInput(calldata),
     )
+    if (!isReadonlyArray(swapParams)) {
+      throw new Error('V4 swap params are malformed')
+    }
+    return swapParams
+  }
+
+  /** Decode the amountOutMinimum baked into exact-in calldata. */
+  const decodeMinAmountOut = (calldata: Hex): bigint => {
     const [swap] = decodeAbiParameters(
       EXACT_INPUT_SINGLE_PARAMS,
-      (swapParams as ReadonlyArray<`0x${string}`>)[0]!,
+      expectHex(decodeV4SwapParams(calldata)[0], 'exact-in params'),
     )
-    return (swap as { amountOutMinimum: bigint }).amountOutMinimum
+    if (!isRecord(swap)) throw new Error('exact-in swap is malformed')
+    return expectBigInt(swap.amountOutMinimum, 'amountOutMinimum')
   }
 
   /** Decode the amountInMaximum baked into exact-out calldata. */
-  const decodeMaxAmountIn = (calldata: `0x${string}`): bigint => {
-    const { args } = decodeFunctionData({
-      abi: UNIVERSAL_ROUTER_ABI,
-      data: calldata,
-    })
-    const [, inputs] = args as readonly [
-      `0x${string}`,
-      ReadonlyArray<`0x${string}`>,
-      bigint,
-    ]
-    const [, swapParams] = decodeAbiParameters(
-      [{ type: 'bytes' }, { type: 'bytes[]' }],
-      inputs[0]!,
-    )
+  const decodeMaxAmountIn = (calldata: Hex): bigint => {
     const [swap] = decodeAbiParameters(
       EXACT_OUTPUT_SINGLE_PARAMS,
-      (swapParams as ReadonlyArray<`0x${string}`>)[0]!,
+      expectHex(decodeV4SwapParams(calldata)[0], 'exact-out params'),
     )
-    return (swap as { amountInMaximum: bigint }).amountInMaximum
+    if (!isRecord(swap)) throw new Error('exact-out swap is malformed')
+    return expectBigInt(swap.amountInMaximum, 'amountInMaximum')
   }
 
   it('encodes exact-in swap calldata', () => {
@@ -397,6 +416,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('throws when the exact-in min-out floor is not supplied', () => {
     expect(() =>
+      // @ts-expect-error amountOutMinRaw is required for exact-input swaps.
       encodeUniversalRouterSwap({
         amountInRaw: 100000000n,
         assetIn: USDC,
@@ -414,6 +434,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('throws when the exact-out max-in ceiling is not supplied', () => {
     expect(() =>
+      // @ts-expect-error amountInMaxRaw is required for exact-output swaps.
       encodeUniversalRouterSwap({
         amountOutRaw: 500000000000000000n,
         assetIn: USDC,
@@ -436,21 +457,12 @@ describe('encodeUniversalRouterSwap', () => {
     // bare-reverted on pool lookup. Correct codes:
     //   0x06 SWAP_EXACT_IN_SINGLE
     //   0x08 SWAP_EXACT_OUT_SINGLE
-    const decodeActions = (calldata: `0x${string}`): `0x${string}` => {
-      const { args } = decodeFunctionData({
-        abi: UNIVERSAL_ROUTER_ABI,
-        data: calldata,
-      })
-      const [, inputs] = args as readonly [
-        `0x${string}`,
-        ReadonlyArray<`0x${string}`>,
-        bigint,
-      ]
+    const decodeActions = (calldata: Hex): Hex => {
       const [actions] = decodeAbiParameters(
         [{ type: 'bytes' }, { type: 'bytes[]' }],
-        inputs[0]!,
+        decodeRouterInput(calldata),
       )
-      return actions as `0x${string}`
+      return expectHex(actions, 'actions')
     }
 
     const exactIn = encodeUniversalRouterSwap({

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { InvalidParamsError } from '@/core/error/errors.js'
+import { SlippageOutOfRangeError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarketConfig } from '@/types/swap/index.js'
 
@@ -326,16 +326,39 @@ describe('SwapProvider', () => {
       },
     )
 
-    it('rejects a non-finite amount before quoting', async () => {
+    it.each([
+      { amountIn: NaN, amountOut: undefined },
+      { amountIn: undefined, amountOut: NaN },
+      { amountIn: undefined, amountOut: 0 },
+      { amountIn: undefined, amountOut: -1 },
+    ])(
+      'rejects invalid quote amount shape %p before quoting',
+      async ({ amountIn, amountOut }) => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.getQuote({
+            assetIn: MockUSDC,
+            assetOut: MockWETH,
+            amountIn,
+            amountOut,
+            chainId: 84532 as SupportedChainId,
+          }),
+        ).rejects.toThrow('Amount must be a positive finite number')
+        expect(provider.mockGetQuote).not.toHaveBeenCalled()
+      },
+    )
+
+    it('rejects conflicting quote amounts before quoting', async () => {
       const provider = new MockSwapProvider()
       await expect(
         provider.getQuote({
           assetIn: MockUSDC,
           assetOut: MockWETH,
-          amountIn: NaN,
+          amountIn: 100,
+          amountOut: 1,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow('Amount must be positive')
+      ).rejects.toThrow('Provide either amountIn or amountOut, not both')
       expect(provider.mockGetQuote).not.toHaveBeenCalled()
     })
   })
@@ -366,7 +389,7 @@ describe('SwapProvider', () => {
             slippage,
             MockWETH,
           ),
-        ).toThrow(InvalidParamsError)
+        ).toThrow(SlippageOutOfRangeError)
       },
     )
 
@@ -378,7 +401,7 @@ describe('SwapProvider', () => {
           -0.1,
           MockWETH,
         ),
-      ).toThrow(InvalidParamsError)
+      ).toThrow(SlippageOutOfRangeError)
     })
 
     it('throws for a non-finite slippage', () => {
@@ -389,7 +412,17 @@ describe('SwapProvider', () => {
           NaN,
           MockWETH,
         ),
-      ).toThrow(InvalidParamsError)
+      ).toThrow(SlippageOutOfRangeError)
+    })
+
+    it('does not round near-one slippage to a zero floor', () => {
+      const provider = new MockSwapProvider({ maxSlippage: 1 })
+      const { amountOutMinRaw } = provider.testComputeSlippageBounds(
+        1_000_000_000_000_000_000n,
+        0.99996,
+        MockWETH,
+      )
+      expect(amountOutMinRaw).toBeGreaterThan(0n)
     })
   })
 

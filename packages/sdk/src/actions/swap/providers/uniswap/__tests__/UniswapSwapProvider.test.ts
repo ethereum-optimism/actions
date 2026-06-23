@@ -1,13 +1,26 @@
-import type { Address, PublicClient } from 'viem'
+import {
+  type Address,
+  decodeAbiParameters,
+  decodeFunctionData,
+  erc20Abi,
+  type Hex,
+  type PublicClient,
+} from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MockWETHAsset } from '@/__mocks__/MockAssets.js'
+import { MockETHAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
+import {
+  EXACT_INPUT_SINGLE_PARAMS,
+  EXACT_OUTPUT_SINGLE_PARAMS,
+  UNIVERSAL_ROUTER_ABI,
+} from '@/actions/swap/providers/uniswap/abis.js'
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import { UniswapSwapProvider } from '@/actions/swap/providers/uniswap/UniswapSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
+import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
 
 const CHAIN_ID = baseSepolia.id as SupportedChainId
 
@@ -27,10 +40,14 @@ const OP: Asset = {
   metadata: { name: 'Optimism', symbol: 'OP', decimals: 18 },
 }
 
-function createMockChainManager(): ChainManager {
+const WALLET = '0x4444444444444444444444444444444444444444' as Address
+
+function createMockChainManager(
+  quoteResult = 500000000000000000n,
+): ChainManager {
   const mockPublicClient = {
     simulateContract: vi.fn().mockResolvedValue({
-      result: [500000000000000000n, 150000n],
+      result: [quoteResult, 150000n],
     }),
     readContract: vi
       .fn()
@@ -56,6 +73,7 @@ function createMockChainManager(): ChainManager {
 
 function createProvider(
   configOverrides?: Partial<UniswapSwapProviderConfig>,
+  quoteResult?: bigint,
 ): UniswapSwapProvider {
   const config: UniswapSwapProviderConfig = {
     defaultSlippage: 0.005,
@@ -64,7 +82,81 @@ function createProvider(
     ],
     ...configOverrides,
   }
-  return new UniswapSwapProvider(config, createMockChainManager())
+  return new UniswapSwapProvider(config, createMockChainManager(quoteResult))
+}
+
+const isHex = (value: unknown): value is Hex =>
+  typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value)
+
+const isReadonlyArray = (value: unknown): value is readonly unknown[] =>
+  Array.isArray(value)
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function expectHex(value: unknown, label: string): Hex {
+  if (!isHex(value)) throw new Error(`${label} is not hex`)
+  return value
+}
+
+function expectBigInt(value: unknown, label: string): bigint {
+  if (typeof value !== 'bigint') throw new Error(`${label} is not bigint`)
+  return value
+}
+
+function decodeRouterInput(calldata: Hex): Hex {
+  const { functionName, args } = decodeFunctionData({
+    abi: UNIVERSAL_ROUTER_ABI,
+    data: calldata,
+  })
+  expect(functionName).toBe('execute')
+  if (!isReadonlyArray(args) || !isReadonlyArray(args[1])) {
+    throw new Error('execute args are malformed')
+  }
+  return expectHex(args[1][0], 'router input')
+}
+
+function decodeV4SwapParams(calldata: Hex): readonly unknown[] {
+  const [, swapParams] = decodeAbiParameters(
+    [{ type: 'bytes' }, { type: 'bytes[]' }],
+    decodeRouterInput(calldata),
+  )
+  if (!isReadonlyArray(swapParams)) {
+    throw new Error('V4 swap params are malformed')
+  }
+  return swapParams
+}
+
+function decodeMinAmountOut(calldata: Hex): bigint {
+  const [swap] = decodeAbiParameters(
+    EXACT_INPUT_SINGLE_PARAMS,
+    expectHex(decodeV4SwapParams(calldata)[0], 'exact-in params'),
+  )
+  if (!isRecord(swap)) throw new Error('exact-in swap is malformed')
+  return expectBigInt(swap.amountOutMinimum, 'amountOutMinimum')
+}
+
+function decodeMaxAmountIn(calldata: Hex): bigint {
+  const [swap] = decodeAbiParameters(
+    EXACT_OUTPUT_SINGLE_PARAMS,
+    expectHex(decodeV4SwapParams(calldata)[0], 'exact-out params'),
+  )
+  if (!isRecord(swap)) throw new Error('exact-out swap is malformed')
+  return expectBigInt(swap.amountInMaximum, 'amountInMaximum')
+}
+
+function decodeErc20ApprovalAmount(data: Hex): bigint {
+  const { functionName, args } = decodeFunctionData({ abi: erc20Abi, data })
+  expect(functionName).toBe('approve')
+  if (!isReadonlyArray(args)) throw new Error('ERC20 approve args malformed')
+  return expectBigInt(args[1], 'ERC20 approval amount')
+}
+
+function decodePermit2ApprovalAmount(data: Hex): bigint {
+  const { functionName, args } = decodeFunctionData({ abi: PERMIT2_ABI, data })
+  expect(functionName).toBe('approve')
+  if (!isReadonlyArray(args)) throw new Error('Permit2 approve args malformed')
+  return expectBigInt(args[2], 'Permit2 approval amount')
 }
 
 describe('UniswapSwapProvider', () => {
@@ -142,6 +234,106 @@ describe('UniswapSwapProvider', () => {
       expect(quote.amountOut).toBeDefined()
       expect(quote.route.path).toEqual([USDC, OP])
       expect(quote.execution).toBeDefined()
+    })
+
+    it('encodes the provider-derived exact-in min-out bound', async () => {
+      const provider = createProvider()
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+        slippage: 0.005,
+      })
+
+      expect(decodeMinAmountOut(quote.execution.swapCalldata)).toBe(
+        quote.amountOutMinRaw,
+      )
+      expect(quote.amountInMaxRaw).toBeUndefined()
+    })
+
+    it('encodes the provider-derived exact-out max-in bound', async () => {
+      const provider = createProvider(undefined, 100000000n)
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountOut: 0.5,
+        chainId: CHAIN_ID,
+        slippage: 0.005,
+      })
+
+      expect(quote.amountInMaxRaw).toBe(100500000n)
+      expect(decodeMaxAmountIn(quote.execution.swapCalldata)).toBe(
+        quote.amountInMaxRaw,
+      )
+    })
+
+    it('uses exact-output max-in for exact approvals', async () => {
+      const provider = createProvider(undefined, 100000000n)
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountOut: 0.5,
+        chainId: CHAIN_ID,
+        slippage: 0.005,
+        recipient: WALLET,
+      })
+      const amountInMaxRaw = quote.amountInMaxRaw
+      if (amountInMaxRaw === undefined) {
+        throw new Error('Expected exact-output quote to include amountInMaxRaw')
+      }
+
+      const transaction = await provider.execute({
+        ...quote,
+        approvalMode: 'exact',
+      })
+      const { tokenApproval, permit2Approval, swap } =
+        transaction.transactionData
+      if (!tokenApproval || !permit2Approval) {
+        throw new Error('Expected exact ERC20 and Permit2 approvals')
+      }
+
+      expect(decodeMaxAmountIn(swap.data)).toBe(amountInMaxRaw)
+      expect(decodeErc20ApprovalAmount(tokenApproval.data)).toBe(amountInMaxRaw)
+      expect(decodePermit2ApprovalAmount(permit2Approval.data)).toBe(
+        amountInMaxRaw,
+      )
+    })
+
+    it('uses exact-output max-in as native input value', async () => {
+      const provider = createProvider(
+        {
+          marketAllowlist: [
+            {
+              assets: [MockETHAsset, OP],
+              fee: 100,
+              tickSpacing: 2,
+              chainId: CHAIN_ID,
+            },
+          ],
+        },
+        123000000000000000n,
+      )
+      const quote = await provider.getQuote({
+        assetIn: MockETHAsset,
+        assetOut: OP,
+        amountOut: 0.5,
+        chainId: CHAIN_ID,
+        slippage: 0.005,
+        recipient: WALLET,
+      })
+      const amountInMaxRaw = quote.amountInMaxRaw
+      if (amountInMaxRaw === undefined) {
+        throw new Error('Expected exact-output quote to include amountInMaxRaw')
+      }
+
+      const transaction = await provider.execute(quote)
+
+      expect(quote.execution.value).toBe(amountInMaxRaw)
+      expect(transaction.transactionData.swap.value).toBe(amountInMaxRaw)
+      expect(decodeMaxAmountIn(quote.execution.swapCalldata)).toBe(
+        amountInMaxRaw,
+      )
     })
 
     it('defaults to 1 unit when no amount specified', async () => {

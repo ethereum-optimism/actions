@@ -167,6 +167,7 @@ export abstract class SwapProvider<
     // Run the value-relevant guards before quoting so a quote can never encode
     // a negative-floor calldata that execute() would have rejected. Scoped to
     // the slippage/amount guards needed to close the negative-min-out path.
+    validateNotBothAmounts(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
@@ -466,14 +467,8 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
 
   private computeSlippageBps(slippage: number): bigint {
-    if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
-      throw new InvalidParamsError({
-        param: 'slippage',
-        expected: 'a finite number in [0, 1)',
-        received: `${slippage}`,
-      })
-    }
-    return BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    validateSlippage(slippage, this.maxSlippage)
+    return BigInt(Math.floor(slippage * Number(BPS_DENOMINATOR)))
   }
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {

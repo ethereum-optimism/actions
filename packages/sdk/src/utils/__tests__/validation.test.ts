@@ -84,6 +84,17 @@ describe('validateSlippage', () => {
     // misconfigured maxSlippage > 1 cannot admit a negative-floor slippage.
     expect(() => validateSlippage(1.5, 2.0)).toThrow(SlippageOutOfRangeError)
   })
+
+  it('reports the effective exclusive upper bound when maxSlippage is >= 1', () => {
+    try {
+      validateSlippage(1, 2)
+      throw new Error('Expected validateSlippage to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(SlippageOutOfRangeError)
+      if (!(error instanceof SlippageOutOfRangeError)) throw error
+      expect(error.metaMessages).toContain('Allowed range: finite [0, 100%)')
+    }
+  })
 })
 
 describe('validateAmountPositiveIfExists', () => {
@@ -106,4 +117,10 @@ describe('validateAmountPositiveIfExists', () => {
       expect(() => validateAmountPositiveIfExists(amount)).not.toThrow()
     },
   )
+
+  it('reports that rejected amounts must be finite', () => {
+    expect(() => validateAmountPositiveIfExists(Infinity)).toThrow(
+      'Amount must be a positive finite number',
+    )
+  })
 })

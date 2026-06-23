@@ -192,22 +192,9 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   }
 }
 
-export interface EncodeSwapParams {
-  amountInRaw?: bigint
-  amountOutRaw?: bigint
+interface EncodeSwapBaseParams {
   assetIn: Asset
   assetOut: Asset
-  /**
-   * Provider-derived minimum output floor (exact-in). Required for exact-input
-   * swaps. Passed in (not recomputed from slippage) so the displayed bound and
-   * the bound baked into calldata are the same number.
-   */
-  amountOutMinRaw?: bigint
-  /**
-   * Provider-derived maximum input ceiling (exact-out). Required for
-   * exact-output swaps. Passed in for the same single-source-of-truth reason.
-   */
-  amountInMaxRaw?: bigint
   deadline: number
   recipient: Address
   chainId: SupportedChainId
@@ -218,6 +205,28 @@ export interface EncodeSwapParams {
   /** Tick spacing for the pool */
   tickSpacing: number
 }
+
+export type EncodeSwapParams =
+  | (EncodeSwapBaseParams & {
+      amountInRaw: bigint
+      amountOutRaw?: undefined
+      /**
+       * Provider-derived minimum output floor for exact-input swaps. Passed in
+       * so displayed and enforced bounds are the same number.
+       */
+      amountOutMinRaw: bigint
+      amountInMaxRaw?: undefined
+    })
+  | (EncodeSwapBaseParams & {
+      amountInRaw?: undefined
+      amountOutRaw: bigint
+      amountOutMinRaw?: undefined
+      /**
+       * Provider-derived maximum input ceiling for exact-output swaps. Passed
+       * in so approvals, native value, and calldata use the same number.
+       */
+      amountInMaxRaw: bigint
+    })
 
 // V4 Universal Router command
 const V4_SWAP = 0x10

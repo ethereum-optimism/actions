@@ -1,4 +1,4 @@
-import { formatUnits } from 'viem'
+import { formatUnits, type Hex } from 'viem'
 
 import { expandMarkets, findMarket } from '@/actions/swap/core/markets.js'
 import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
@@ -81,6 +81,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
   protected async _buildApprovals(quote: SwapQuote) {
     const addresses = getUniswapAddresses(quote.chainId)
+    const requiredAmount = quote.amountInMaxRaw ?? quote.amountInRaw
 
     return this.buildPermit2Approvals(
       {
@@ -91,14 +92,14 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         recipient: quote.recipient,
         walletAddress: quote.recipient,
         chainId: quote.chainId,
-        amountInRaw: quote.amountInRaw,
+        amountInRaw: requiredAmount,
         approvalMode: resolveApprovalMode(
           quote.approvalMode,
           this._config.approvalMode,
           this._settings.approvalMode,
         ),
       },
-      quote.amountInRaw,
+      requiredAmount,
       addresses.permit2,
       addresses.universalRouter,
     )
@@ -135,30 +136,46 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       assetOut,
     )
 
-    // Derive the exact-out max-in ceiling once and feed it (and the min-out
-    // floor) to the encoder so the displayed bounds and the bounds baked into
-    // calldata come from a single computation, not two that can diverge.
-    const amountInMaxRaw = amountOutRaw
-      ? this.computeAmountInMaxRaw(quote.amountInRaw, slippage)
-      : undefined
+    let amountInMaxRaw: bigint | undefined
+    let swapCalldata: Hex
 
-    const swapCalldata = encodeUniversalRouterSwap({
-      amountInRaw: amountOutRaw ? undefined : amountInRaw,
-      amountOutRaw,
-      assetIn,
-      assetOut,
-      amountOutMinRaw,
-      amountInMaxRaw,
-      deadline,
-      recipient,
-      chainId,
-      quote,
-      universalRouterAddress: addresses.universalRouter,
-      fee: marketConfig.fee,
-      tickSpacing: marketConfig.tickSpacing,
-    })
+    if (amountOutRaw !== undefined) {
+      amountInMaxRaw = this.computeAmountInMaxRaw(quote.amountInRaw, slippage)
+      swapCalldata = encodeUniversalRouterSwap({
+        amountOutRaw,
+        amountInMaxRaw,
+        assetIn,
+        assetOut,
+        deadline,
+        recipient,
+        chainId,
+        quote,
+        universalRouterAddress: addresses.universalRouter,
+        fee: marketConfig.fee,
+        tickSpacing: marketConfig.tickSpacing,
+      })
+    } else {
+      swapCalldata = encodeUniversalRouterSwap({
+        amountInRaw,
+        amountOutMinRaw,
+        assetIn,
+        assetOut,
+        deadline,
+        recipient,
+        chainId,
+        quote,
+        universalRouterAddress: addresses.universalRouter,
+        fee: marketConfig.fee,
+        tickSpacing: marketConfig.tickSpacing,
+      })
+    }
 
-    const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
+    const finalAmountInRaw =
+      amountOutRaw !== undefined ? quote.amountInRaw : amountInRaw
+
+    const executionValue = isNativeAsset(assetIn)
+      ? (amountInMaxRaw ?? finalAmountInRaw)
+      : 0n
 
     return {
       assetIn,
@@ -170,6 +187,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       amountOutRaw: quote.amountOutRaw,
       amountOutMin,
       amountOutMinRaw,
+      amountInMaxRaw,
       price: quote.amountOut / quote.amountIn,
       priceInverse: quote.amountIn / quote.amountOut,
       priceImpact: quote.priceImpact,
@@ -177,7 +195,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       execution: {
         swapCalldata,
         routerAddress: addresses.universalRouter,
-        value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
+        value: executionValue,
         providerContext: {
           fee: marketConfig.fee,
           tickSpacing: marketConfig.tickSpacing,
