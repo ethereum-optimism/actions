@@ -110,6 +110,9 @@ jobs:
       - run:
           name: Test SDK
           command: cd packages/sdk && pnpm test
+      - run:
+          name: Verify consumer install (single-vendor, peer auto-install off)
+          command: cd packages/sdk && bash scripts/check-consumer-install.sh
 
   # CLI checks
   check-cli:
