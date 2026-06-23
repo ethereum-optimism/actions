@@ -22,7 +22,7 @@ describe('faucet drip accounting', () => {
       const wallet = addr(2)
       const now = 5_000_000
       // reserveDrip is synchronous, so N "concurrent" claims reduce to N
-      // back-to-back calls at the same instant — exactly one must succeed.
+      // back-to-back calls at the same instant; exactly one must succeed.
       const grants = Array.from({ length: 25 }, () => reserveDrip(wallet, now))
       expect(grants.filter(Boolean)).toHaveLength(1)
     })

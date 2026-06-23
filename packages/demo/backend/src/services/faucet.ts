@@ -30,7 +30,7 @@ type AuthParams = {
 
 /**
  * Cheap, best-effort eligibility pre-check: a wallet that already holds ETH
- * doesn't need a drip. This is NOT the abuse boundary — the read is not atomic
+ * doesn't need a drip. This is NOT the abuse boundary: the read is not atomic
  * with the drip and a wallet swept back to zero re-passes it indefinitely. The
  * authoritative gate is the per-recipient accounting in `reserveDrip` below,
  * which is checked-and-recorded synchronously before the admin signer runs.
@@ -51,7 +51,7 @@ export async function isWalletEligibleForFaucet(
  * process, so a module-level `Map` with a synchronous check-and-record is
  * enough to be the real accounting boundary. It closes the read-then-drip
  * TOCTOU (the reservation is taken before any `await`, so N concurrent requests
- * for one fresh wallet cannot all observe "eligible" — exactly one wins), and
+ * for one fresh wallet cannot all observe "eligible"; exactly one wins), and
  * it survives the wallet being swept back to zero (the recorded timestamp, not
  * the live on-chain balance, decides re-qualification).
  */

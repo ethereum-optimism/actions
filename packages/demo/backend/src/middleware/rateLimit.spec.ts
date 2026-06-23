@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { rateLimit } from './rateLimit.js'
 
-function makeApp(max: number, windowMs = 60_000) {
+function makeApp(max: number, windowMs = 60_000, maxTrackedKeys?: number) {
   const app = new Hono()
-  app.use('/x', rateLimit({ windowMs, max }))
+  app.use('/x', rateLimit({ windowMs, max, maxTrackedKeys }))
   app.get('/x', (c) => c.text('ok'))
   return app
 }
@@ -62,5 +62,18 @@ describe('rateLimit middleware', () => {
     expect((await app.request('/x', fromIp('203.0.113.5'))).status).toBe(429)
     // A different source IP is bucketed separately.
     expect((await app.request('/x', fromIp('203.0.113.6'))).status).toBe(200)
+  })
+
+  it('rejects new clients when active tracked keys hit the cap', async () => {
+    const app = makeApp(2, 60_000, 2)
+
+    expect((await app.request('/x', withToken('a'))).status).toBe(200)
+    expect((await app.request('/x', withToken('b'))).status).toBe(200)
+
+    const blocked = await app.request('/x', withToken('c'))
+    expect(blocked.status).toBe(429)
+    expect(blocked.headers.get('Retry-After')).toBe('60')
+
+    expect((await app.request('/x', withToken('a'))).status).toBe(200)
   })
 })
