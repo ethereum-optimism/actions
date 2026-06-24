@@ -106,7 +106,7 @@ describe('Wallet Service', () => {
 
       const result = await walletService.mintDemoUsdcToWallet(wallet)
 
-      // F279: amount is a server-fixed integer constant, not a parseFloat path.
+      // Amount is a server-fixed integer constant, not a parseFloat path.
       expect(usdcDemo.mintUsdcDemo).toHaveBeenCalledWith(
         wallet,
         walletAddress,

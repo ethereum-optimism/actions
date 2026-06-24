@@ -8,8 +8,7 @@ import {
   reserveDrip,
 } from './faucet.js'
 
-// Distinct address per test so the module-level accounting map never leaks
-// state between cases.
+// Use distinct addresses so module-level accounting cannot leak between cases.
 const addr = (n: number): Address =>
   `0x${n.toString(16).padStart(40, '0')}` as Address
 
@@ -38,8 +37,7 @@ describe('faucet drip accounting', () => {
     it('is atomic: only one of N same-instant claims for one wallet wins', () => {
       const wallet = addr(2)
       const now = 5_000_000
-      // reserveDrip is synchronous, so N "concurrent" claims reduce to N
-      // back-to-back calls at the same instant; exactly one must succeed.
+      // Same-instant synchronous claims reduce to back-to-back reserve attempts.
       const grants = Array.from({ length: 25 }, () => claimDrip(wallet, now))
       expect(grants.filter(Boolean)).toHaveLength(1)
     })
@@ -61,8 +59,7 @@ describe('faucet drip accounting', () => {
     })
 
     it('still denies a wallet swept back to zero (balance is not the gate)', () => {
-      // A swept wallet would re-pass the on-chain `balance == 0` pre-check;
-      // the recorded reservation, not balance, keeps it denied in cooldown.
+      // The recorded reservation, not balance, keeps swept wallets in cooldown.
       const wallet = addr(5)
       const t0 = 3_000_000
       expect(claimDrip(wallet, t0)).toBe(true)

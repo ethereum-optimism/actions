@@ -30,9 +30,7 @@ interface RateWindow {
   resetAt: number
 }
 
-// Bound the per-limiter key set so a churn of distinct clients cannot grow the
-// map without limit. When the cap is hit we sweep entries whose window has
-// already elapsed.
+// Bound distinct-client churn by capping keys and sweeping expired windows.
 const DEFAULT_MAX_TRACKED_KEYS = 10_000
 
 export function rateLimit({

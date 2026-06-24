@@ -13,9 +13,7 @@ vi.mock('@/services/wallet.js', () => ({
   mintDemoUsdcToWallet: vi.fn(),
 }))
 
-// Keep the real per-recipient accounting (reserveDrip / releaseDrip) so the
-// TOCTOU gate is exercised end-to-end; only the network-touching calls are
-// stubbed.
+// Keep real per-recipient accounting; stub only network-touching calls.
 vi.mock('@/services/faucet.js', async (importOriginal) => {
   const actual = await importOriginal<typeof faucetService>()
   return {

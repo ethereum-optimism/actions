@@ -151,9 +151,7 @@ export function createApp(): Hono {
     }),
   )
 
-  // Reject oversized JSON bodies before any handler parses them. The explicit
-  // `onError` returns a 413 directly so it bypasses the SDK-error `onError`
-  // mapper below (which would otherwise turn the thrown 413 into a 500).
+  // Return 413 before oversized JSON reaches handlers or SDK-error mapping.
   app.use(
     '*',
     bodyLimit({
@@ -162,8 +160,7 @@ export function createApp(): Hono {
     }),
   )
 
-  // Throttle the fund-touching mutation routes before auth using only trusted
-  // socket state. Router-level limiters add the verified user bucket after auth.
+  // Throttle fund-touching routes before auth using only trusted socket state.
   for (const path of RATE_LIMITED_ROUTES) {
     app.use(
       path,
