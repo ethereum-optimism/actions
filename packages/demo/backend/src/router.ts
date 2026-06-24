@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { Hono } from 'hono'
+import { rateLimiter } from 'hono-rate-limiter'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -8,18 +9,25 @@ import * as borrowController from './controllers/borrow.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
-import { authMiddleware } from './middleware/auth.js'
-import { rateLimit } from './middleware/rateLimit.js'
+import { type AuthContext, authMiddleware } from './middleware/auth.js'
 
-export const router = new Hono()
+type RouterEnv = {
+  Variables: {
+    auth: AuthContext
+  }
+}
+
+export const router = new Hono<RouterEnv>()
 
 const walletController = new WalletController()
 const FAUCET_RATE_LIMIT_WINDOW_MS = 60_000
 const FAUCET_RATE_LIMIT_MAX = 10
 const faucetRateLimit = () =>
-  rateLimit({
+  rateLimiter<RouterEnv>({
     windowMs: FAUCET_RATE_LIMIT_WINDOW_MS,
-    max: FAUCET_RATE_LIMIT_MAX,
+    limit: FAUCET_RATE_LIMIT_MAX,
+    message: { error: 'Too many requests' },
+    keyGenerator: (c) => c.get('auth').rateLimitKey,
   })
 
 // Get package.json path relative to this file

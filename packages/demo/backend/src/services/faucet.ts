@@ -28,13 +28,7 @@ type AuthParams = {
   proof: Hash
 }
 
-/**
- * Cheap, best-effort eligibility pre-check: a wallet that already holds ETH
- * doesn't need a drip. This is NOT the abuse boundary: the read is not atomic
- * with the drip and a wallet swept back to zero re-passes it indefinitely. The
- * authoritative gate is the per-recipient accounting in `reserveDrip` below,
- * which is checked-and-recorded synchronously before the admin signer runs.
- */
+/** Best-effort zero-balance pre-check; `reserveDrip` is the real cooldown gate. */
 export async function isWalletEligibleForFaucet(
   walletAddress: Address,
 ): Promise<boolean> {
@@ -46,26 +40,13 @@ export async function isWalletEligibleForFaucet(
   return balance === 0n
 }
 
-/**
- * Server-side per-recipient drip cooldown. The demo backend is a single
- * process, so a module-level `Map` with a synchronous check-and-record is
- * enough to be the real accounting boundary. It closes the read-then-drip
- * TOCTOU (the reservation is taken before any `await`, so N concurrent requests
- * for one fresh wallet cannot all observe "eligible"; exactly one wins), and
- * it survives the wallet being swept back to zero (the recorded timestamp, not
- * the live on-chain balance, decides re-qualification).
- */
+/** Per-recipient cooldown state for this single-process demo backend. */
 export const FAUCET_DRIP_COOLDOWN_MS = 24 * 60 * 60 * 1000
 export const MAX_TRACKED_DRIP_RECIPIENTS = 10_000
 
 const lastDripAtByRecipient = new Map<string, number>()
 
-/**
- * Atomically claim a drip for `walletAddress`. Returns `true` and records the
- * drip when the wallet is outside its cooldown; returns `false` without
- * recording when a drip is still in cooldown. Must stay synchronous (no
- * `await` between the read and the write) for the TOCTOU guarantee to hold.
- */
+/** Synchronously claim a drip slot so concurrent requests for one wallet cannot all pass. */
 export function reserveDrip(
   walletAddress: Address,
   now: number = Date.now(),
@@ -86,10 +67,7 @@ export function reserveDrip(
   return true
 }
 
-/**
- * Release a reservation when the drip fails to submit, so a transient
- * bundler / RPC error doesn't lock the wallet out for the full cooldown.
- */
+/** Release a reservation after submission failure so the wallet can retry. */
 export function releaseDrip(walletAddress: Address): void {
   lastDripAtByRecipient.delete(walletAddress.toLowerCase())
 }
