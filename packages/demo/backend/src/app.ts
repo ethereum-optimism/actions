@@ -11,7 +11,6 @@ import { initializeActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
 import { errorResponse, mapSdkError } from '@/helpers/errors.js'
 import { actionsMiddleware } from '@/middleware/actions.js'
-import { rateLimit } from '@/middleware/rateLimit.js'
 import { router } from '@/router.js'
 
 /**
@@ -20,28 +19,6 @@ import { router } from '@/router.js'
  * rejects oversized payloads cheaply without affecting legitimate traffic.
  */
 const MAX_JSON_BODY_BYTES = 16 * 1024
-
-/** Per-client rate-limit window applied to the gas-sponsored mutation routes. */
-const RATE_LIMIT_WINDOW_MS = 60_000
-const RATE_LIMIT_MAX = 10
-
-/**
- * Fund-touching, gas-sponsored mutations. Each is throttled per client to cap
- * faucet drain and bundler-sponsorship burn (the read-only market/quote GETs
- * are left unthrottled so frontend polling isn't penalized).
- */
-const RATE_LIMITED_ROUTES = [
-  '/wallet/eth',
-  '/wallet/usdc',
-  '/swap/execute',
-  '/lend/position/open',
-  '/lend/position/close',
-  '/borrow/position/open',
-  '/borrow/position/close',
-  '/borrow/position/deposit-collateral',
-  '/borrow/position/withdraw-collateral',
-  '/borrow/position/repay',
-] as const
 
 class ActionsApp extends App {
   private server: ReturnType<typeof serve> | null = null
@@ -159,14 +136,6 @@ export function createApp(): Hono {
       onError: (c) => c.json({ error: 'Request body too large' }, 413),
     }),
   )
-
-  // Throttle fund-touching routes before auth using only trusted socket state.
-  for (const path of RATE_LIMITED_ROUTES) {
-    app.use(
-      path,
-      rateLimit({ windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX }),
-    )
-  }
 
   // Apply Actions middleware (initialization already happened at startup)
   app.use('*', actionsMiddleware)

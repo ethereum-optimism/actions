@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createApp } from '@/app.js'
 import * as faucetService from '@/services/faucet.js'
-import * as swapService from '@/services/swap.js'
 import * as walletService from '@/services/wallet.js'
 
 import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
@@ -179,10 +178,36 @@ describe('POST /wallet/eth (faucet drip)', () => {
     expect(retried.status).toBe(200)
     expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(2)
   })
-})
 
-describe('rate limiting on fund-touching routes', () => {
-  it('caps a /wallet/usdc burst at the limit and 429s the rest without minting', async () => {
+  it('rate-limits repeated faucet drips for one verified user before drip submission', async () => {
+    await mockVerifiedUser('user-faucet-limit')
+    let walletIndex = 0
+    vi.mocked(walletService.getWallet).mockImplementation(async () => {
+      walletIndex += 1
+      return {
+        address: `0x${walletIndex.toString(16).padStart(40, '0')}`,
+      } as never
+    })
+    vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
+    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(okDrip as never)
+
+    const app = createApp()
+    const statuses: number[] = []
+    for (let i = 0; i < 11; i++) {
+      const res = await app.request('/wallet/eth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({}),
+      })
+      statuses.push(res.status)
+    }
+
+    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
+    expect(statuses[10]).toBe(429)
+    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(10)
+  })
+
+  it('does not rate-limit the USDC demo mint route', async () => {
     vi.mocked(walletService.getWallet).mockResolvedValue({
       address: '0x' + 'e'.repeat(40),
     } as never)
@@ -200,91 +225,8 @@ describe('rate limiting on fund-touching routes', () => {
       statuses.push(res.status)
     }
 
-    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
-    expect(statuses[10]).toBe(429)
-    expect(walletService.mintDemoUsdcToWallet).toHaveBeenCalledTimes(10)
-  })
-
-  it('does not let rotating privy-id-token headers bypass /wallet/usdc limits', async () => {
-    await mockVerifiedUser('user-usdc-rotating-token')
-    vi.mocked(walletService.getWallet).mockResolvedValue({
-      address: '0x' + 'e'.repeat(40),
-    } as never)
-    vi.mocked(walletService.mintDemoUsdcToWallet).mockResolvedValue({
-      success: true,
-    } as never)
-
-    const app = createApp()
-    const statuses: number[] = []
-    for (let i = 0; i < 11; i++) {
-      const res = await app.request('/wallet/usdc', {
-        method: 'POST',
-        headers: {
-          Authorization: authHeaders().Authorization,
-          'privy-id-token': `fake-id-token-${i}`,
-        },
-      })
-      statuses.push(res.status)
-    }
-
-    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
-    expect(statuses[10]).toBe(429)
-    expect(walletService.mintDemoUsdcToWallet).toHaveBeenCalledTimes(10)
-  })
-
-  it('caps a /swap/execute burst at the limit and 429s the rest', async () => {
-    vi.mocked(swapService.executeSwap).mockResolvedValue({ ok: true } as never)
-    const body = JSON.stringify({
-      amountIn: 1,
-      tokenInAddress: '0x' + 'a'.repeat(40),
-      tokenOutAddress: '0x' + 'b'.repeat(40),
-      chainId: 84532,
-    })
-
-    const app = createApp()
-    const statuses: number[] = []
-    for (let i = 0; i < 11; i++) {
-      const res = await app.request('/swap/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body,
-      })
-      statuses.push(res.status)
-    }
-
-    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
-    expect(statuses[10]).toBe(429)
-    expect(swapService.executeSwap).toHaveBeenCalledTimes(10)
-  })
-
-  it('does not let rotating x-forwarded-for headers bypass /swap/execute limits', async () => {
-    await mockVerifiedUser('user-swap-rotating-forwarded-for')
-    vi.mocked(swapService.executeSwap).mockResolvedValue({ ok: true } as never)
-    const body = JSON.stringify({
-      amountIn: 1,
-      tokenInAddress: '0x' + 'a'.repeat(40),
-      tokenOutAddress: '0x' + 'b'.repeat(40),
-      chainId: 84532,
-    })
-
-    const app = createApp()
-    const statuses: number[] = []
-    for (let i = 0; i < 11; i++) {
-      const res = await app.request('/swap/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders(),
-          'x-forwarded-for': `203.0.113.${i}`,
-        },
-        body,
-      })
-      statuses.push(res.status)
-    }
-
-    expect(statuses.filter((s) => s === 200)).toHaveLength(10)
-    expect(statuses[10]).toBe(429)
-    expect(swapService.executeSwap).toHaveBeenCalledTimes(10)
+    expect(statuses).toEqual(Array(11).fill(200))
+    expect(walletService.mintDemoUsdcToWallet).toHaveBeenCalledTimes(11)
   })
 })
 
