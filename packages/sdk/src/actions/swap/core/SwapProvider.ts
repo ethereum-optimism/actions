@@ -164,9 +164,7 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     this.assertChainSupported(params.chainId)
-    // Run the value-relevant guards before quoting so a quote can never encode
-    // a negative-floor calldata that execute() would have rejected. Scoped to
-    // the slippage/amount guards needed to close the negative-min-out path.
+    // Validate slippage and amounts before quote calldata is built.
     validateNotBothAmounts(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)

@@ -276,9 +276,7 @@ describe('encodeUniversalRouterSwap', () => {
     gasEstimate: 150000n,
   }
 
-  // Provider-derived bounds for baseQuote at 0.5% slippage:
-  //   amountOutMinRaw = 500000000000000000 * 9950/10000
-  //   amountInMaxRaw  = 100000000 + 100000000 * 50/10000
+  // Provider-derived bounds for baseQuote at 0.5% slippage.
   const AMOUNT_OUT_MIN = 497500000000000000n
   const AMOUNT_IN_MAX = 100500000n
 
@@ -382,7 +380,7 @@ describe('encodeUniversalRouterSwap', () => {
     expect(calldata.length).toBeGreaterThan(10)
   })
 
-  it('bakes the provider-derived bound into calldata without recomputing (F005)', () => {
+  it('bakes the provider-derived bound into calldata without recomputing', () => {
     const exactIn = encodeUniversalRouterSwap({
       amountInRaw: 100000000n,
       assetIn: USDC,

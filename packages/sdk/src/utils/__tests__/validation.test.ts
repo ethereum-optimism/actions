@@ -80,8 +80,7 @@ describe('validateSlippage', () => {
   })
 
   it('enforces the absolute >= 1 ceiling independent of maxSlippage', () => {
-    // 1.5 <= maxSlippage (2.0) but the absolute ceiling still rejects it, so a
-    // misconfigured maxSlippage > 1 cannot admit a negative-floor slippage.
+    // The absolute ceiling still rejects when maxSlippage exceeds 1.
     expect(() => validateSlippage(1.5, 2.0)).toThrow(SlippageOutOfRangeError)
   })
 

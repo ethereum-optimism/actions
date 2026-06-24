@@ -306,9 +306,7 @@ describe('SwapProvider', () => {
       expect(quote.route).toBeDefined()
     })
 
-    // F186: getQuote previously skipped validateSwapExecute, so a slippage in
-    // [maxSlippage, Infinity) or a non-finite slippage reached the bounds math
-    // and a negative/zero floor was encoded into the returned quote's calldata.
+    // Invalid quote slippage must be rejected before calldata bounds are built.
     it.each([1.5, NaN])(
       'rejects slippage %p instead of returning a negative-floor quote',
       async (slippage) => {
