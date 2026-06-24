@@ -2,8 +2,11 @@
 # Reproduce a single-vendor install and assert issue #43 manifest invariants.
 set -euo pipefail
 
+# Resolve paths relative to the SDK package so CI can run this from the repo root.
 SDK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE_DIR="$(mktemp -d)"
+
+# Always remove the temporary consumer project, even when install or probe fails.
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 echo "==> Building SDK"
@@ -11,6 +14,7 @@ echo "==> Building SDK"
 
 echo "==> Packing SDK tarball"
 TARBALL="$(cd "$SDK_DIR" && pnpm pack --pack-destination "$FIXTURE_DIR" | tail -1)"
+
 # pnpm prints the absolute path; fall back to a glob if it printed a bare name.
 if [ ! -f "$TARBALL" ]; then
   TARBALL="$(ls "$FIXTURE_DIR"/*.tgz | head -1)"
@@ -18,6 +22,8 @@ fi
 echo "    tarball: $TARBALL"
 
 echo "==> Creating clean single-vendor (Turnkey) fixture at $FIXTURE_DIR"
+
+# Copy the probe into the fixture so it resolves packages like a real consumer.
 cp "$SDK_DIR/scripts/verify-consumer-install.mjs" "$FIXTURE_DIR/verify-consumer-install.mjs"
 
 # Optional vendor peers must stay uninstalled with auto-install-peers=false.
@@ -43,9 +49,13 @@ cat > "$FIXTURE_DIR/package.json" <<PKGJSON
 PKGJSON
 
 echo "==> Installing fixture (peer auto-install OFF, Turnkey-only)"
+
+# Prefix install output so package-manager noise stays visually scoped.
 (cd "$FIXTURE_DIR" && pnpm install --no-frozen-lockfile --config.confirmModulesPurge=false 2>&1 | sed 's/^/    /')
 
 echo "==> Running consumer-install probe"
+
+# Run from the fixture so module resolution cannot fall back to the workspace.
 (cd "$FIXTURE_DIR" && node verify-consumer-install.mjs)
 
 echo "==> Consumer-install check OK"
