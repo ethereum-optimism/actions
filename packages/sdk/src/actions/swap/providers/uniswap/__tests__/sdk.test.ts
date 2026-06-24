@@ -1,18 +1,13 @@
 import {
   type Address,
   decodeAbiParameters,
-  decodeFunctionData,
   type Hex,
+  isAddress,
   type PublicClient,
   zeroAddress,
 } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  EXACT_INPUT_SINGLE_PARAMS,
-  EXACT_OUTPUT_SINGLE_PARAMS,
-  UNIVERSAL_ROUTER_ABI,
-} from '@/actions/swap/providers/uniswap/abis.js'
 import {
   calculatePriceImpact,
   encodeUniversalRouterSwap,
@@ -20,6 +15,14 @@ import {
 } from '@/actions/swap/providers/uniswap/encoding.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
+
+import {
+  decodeMaxAmountIn,
+  decodeMinAmountOut,
+  decodeRouterInput,
+  expectHex,
+  isReadonlyArray,
+} from './calldataTestUtils.js'
 
 const USDC: Asset = {
   type: 'erc20',
@@ -61,6 +64,34 @@ function createMockPublicClient(
     }),
     readContract: vi.fn().mockResolvedValue(MOCK_SQRT_PRICE),
   } as unknown as PublicClient
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function expectContractArgs(value: unknown): readonly unknown[] {
+  if (!isRecord(value) || !isReadonlyArray(value.args)) {
+    throw new Error('contract call args are malformed')
+  }
+  return value.args
+}
+
+function expectPoolKeyArgs(value: unknown): {
+  poolKey: { currency0: Address; currency1: Address }
+} {
+  if (!isRecord(value) || !isRecord(value.poolKey)) {
+    throw new Error('pool key args are malformed')
+  }
+  const { currency0, currency1 } = value.poolKey
+  if (
+    typeof currency0 !== 'string' ||
+    typeof currency1 !== 'string' ||
+    !isAddress(currency0) ||
+    !isAddress(currency1)
+  ) {
+    throw new Error('pool key currencies are malformed')
+  }
+  return { poolKey: { currency0, currency1 } }
 }
 
 describe('getQuote', () => {
@@ -143,7 +174,7 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = expectPoolKeyArgs(expectContractArgs(call)[0])
     // currency0 should be the lower address
     expect(
       args.poolKey.currency0.toLowerCase() <
@@ -166,7 +197,7 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = expectPoolKeyArgs(expectContractArgs(call)[0])
     // Native ETH should be address(0), sorted as currency0 (lowest possible address)
     expect(args.poolKey.currency0).toBe(zeroAddress)
   })
@@ -186,7 +217,7 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = expectPoolKeyArgs(expectContractArgs(call)[0])
     // Native ETH should be address(0) regardless of swap direction
     expect(args.poolKey.currency0).toBe(zeroAddress)
   })
@@ -279,68 +310,6 @@ describe('encodeUniversalRouterSwap', () => {
   // Provider-derived bounds for baseQuote at 0.5% slippage.
   const AMOUNT_OUT_MIN = 497500000000000000n
   const AMOUNT_IN_MAX = 100500000n
-
-  const isHex = (value: unknown): value is Hex =>
-    typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value)
-
-  const isReadonlyArray = (value: unknown): value is readonly unknown[] =>
-    Array.isArray(value)
-
-  const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-
-  const expectHex = (value: unknown, label: string): Hex => {
-    if (!isHex(value)) throw new Error(`${label} is not hex`)
-    return value
-  }
-
-  const expectBigInt = (value: unknown, label: string): bigint => {
-    if (typeof value !== 'bigint') throw new Error(`${label} is not bigint`)
-    return value
-  }
-
-  const decodeRouterInput = (calldata: Hex): Hex => {
-    const { functionName, args } = decodeFunctionData({
-      abi: UNIVERSAL_ROUTER_ABI,
-      data: calldata,
-    })
-    expect(functionName).toBe('execute')
-    if (!isReadonlyArray(args) || !isReadonlyArray(args[1])) {
-      throw new Error('execute args are malformed')
-    }
-    return expectHex(args[1][0], 'router input')
-  }
-
-  const decodeV4SwapParams = (calldata: Hex): readonly unknown[] => {
-    const [, swapParams] = decodeAbiParameters(
-      [{ type: 'bytes' }, { type: 'bytes[]' }],
-      decodeRouterInput(calldata),
-    )
-    if (!isReadonlyArray(swapParams)) {
-      throw new Error('V4 swap params are malformed')
-    }
-    return swapParams
-  }
-
-  /** Decode the amountOutMinimum baked into exact-in calldata. */
-  const decodeMinAmountOut = (calldata: Hex): bigint => {
-    const [swap] = decodeAbiParameters(
-      EXACT_INPUT_SINGLE_PARAMS,
-      expectHex(decodeV4SwapParams(calldata)[0], 'exact-in params'),
-    )
-    if (!isRecord(swap)) throw new Error('exact-in swap is malformed')
-    return expectBigInt(swap.amountOutMinimum, 'amountOutMinimum')
-  }
-
-  /** Decode the amountInMaximum baked into exact-out calldata. */
-  const decodeMaxAmountIn = (calldata: Hex): bigint => {
-    const [swap] = decodeAbiParameters(
-      EXACT_OUTPUT_SINGLE_PARAMS,
-      expectHex(decodeV4SwapParams(calldata)[0], 'exact-out params'),
-    )
-    if (!isRecord(swap)) throw new Error('exact-out swap is malformed')
-    return expectBigInt(swap.amountInMaximum, 'amountInMaximum')
-  }
 
   it('encodes exact-in swap calldata', () => {
     const calldata = encodeUniversalRouterSwap({

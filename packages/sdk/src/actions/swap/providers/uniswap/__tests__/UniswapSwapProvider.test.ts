@@ -1,6 +1,5 @@
 import {
   type Address,
-  decodeAbiParameters,
   decodeFunctionData,
   erc20Abi,
   type Hex,
@@ -10,17 +9,19 @@ import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MockETHAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
-import {
-  EXACT_INPUT_SINGLE_PARAMS,
-  EXACT_OUTPUT_SINGLE_PARAMS,
-  UNIVERSAL_ROUTER_ABI,
-} from '@/actions/swap/providers/uniswap/abis.js'
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import { UniswapSwapProvider } from '@/actions/swap/providers/uniswap/UniswapSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
+
+import {
+  decodeMaxAmountIn,
+  decodeMinAmountOut,
+  expectBigInt,
+  isReadonlyArray,
+} from './calldataTestUtils.js'
 
 const CHAIN_ID = baseSepolia.id as SupportedChainId
 
@@ -83,66 +84,6 @@ function createProvider(
     ...configOverrides,
   }
   return new UniswapSwapProvider(config, createMockChainManager(quoteResult))
-}
-
-const isHex = (value: unknown): value is Hex =>
-  typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value)
-
-const isReadonlyArray = (value: unknown): value is readonly unknown[] =>
-  Array.isArray(value)
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-function expectHex(value: unknown, label: string): Hex {
-  if (!isHex(value)) throw new Error(`${label} is not hex`)
-  return value
-}
-
-function expectBigInt(value: unknown, label: string): bigint {
-  if (typeof value !== 'bigint') throw new Error(`${label} is not bigint`)
-  return value
-}
-
-function decodeRouterInput(calldata: Hex): Hex {
-  const { functionName, args } = decodeFunctionData({
-    abi: UNIVERSAL_ROUTER_ABI,
-    data: calldata,
-  })
-  expect(functionName).toBe('execute')
-  if (!isReadonlyArray(args) || !isReadonlyArray(args[1])) {
-    throw new Error('execute args are malformed')
-  }
-  return expectHex(args[1][0], 'router input')
-}
-
-function decodeV4SwapParams(calldata: Hex): readonly unknown[] {
-  const [, swapParams] = decodeAbiParameters(
-    [{ type: 'bytes' }, { type: 'bytes[]' }],
-    decodeRouterInput(calldata),
-  )
-  if (!isReadonlyArray(swapParams)) {
-    throw new Error('V4 swap params are malformed')
-  }
-  return swapParams
-}
-
-function decodeMinAmountOut(calldata: Hex): bigint {
-  const [swap] = decodeAbiParameters(
-    EXACT_INPUT_SINGLE_PARAMS,
-    expectHex(decodeV4SwapParams(calldata)[0], 'exact-in params'),
-  )
-  if (!isRecord(swap)) throw new Error('exact-in swap is malformed')
-  return expectBigInt(swap.amountOutMinimum, 'amountOutMinimum')
-}
-
-function decodeMaxAmountIn(calldata: Hex): bigint {
-  const [swap] = decodeAbiParameters(
-    EXACT_OUTPUT_SINGLE_PARAMS,
-    expectHex(decodeV4SwapParams(calldata)[0], 'exact-out params'),
-  )
-  if (!isRecord(swap)) throw new Error('exact-out swap is malformed')
-  return expectBigInt(swap.amountInMaximum, 'amountInMaximum')
 }
 
 function decodeErc20ApprovalAmount(data: Hex): bigint {
