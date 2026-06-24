@@ -297,7 +297,9 @@ export abstract class SwapProvider<
     const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
-    // Reject min-out floors that disable protection or exceed the quote.
+    // The min-out floor is the only on-chain slippage protection. A floor
+    // outside [0, amountOutRaw] means protection is disabled (negative) or
+    // impossible (above the quote), so fail loud rather than silently sign it.
     if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
       throw new InvalidParamsError({
         param: 'slippage',
@@ -311,7 +313,15 @@ export abstract class SwapProvider<
     return { amountOutMinRaw, amountOutMin }
   }
 
-  /** Compute max input after slippage, rounded up so displayed and enforced max-in match. */
+  /**
+   * Compute the maximum input for an exact-output swap after slippage.
+   * Symmetric to {@link computeSlippageBounds} on the input side. The ceiling
+   * can only grow with slippage, so it needs no negative-floor clamp; callers
+   * pass this through to the encoder so the displayed and enforced max-in are
+   * the same number.
+   * @param amountInRaw - Quoted input as raw bigint
+   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
+   */
   protected computeAmountInMaxRaw(
     amountInRaw: bigint,
     slippage: number,

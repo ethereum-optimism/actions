@@ -210,7 +210,10 @@ export type EncodeSwapParams =
   | (EncodeSwapBaseParams & {
       amountInRaw: bigint
       amountOutRaw?: undefined
-      /** Provider-derived min-out floor for exact-input swaps. */
+      /**
+       * Provider-derived minimum output floor for exact-input swaps. Passed in
+       * so displayed and enforced bounds are the same number.
+       */
       amountOutMinRaw: bigint
       amountInMaxRaw?: undefined
     })
@@ -218,7 +221,10 @@ export type EncodeSwapParams =
       amountInRaw?: undefined
       amountOutRaw: bigint
       amountOutMinRaw?: undefined
-      /** Provider-derived max-in ceiling for exact-output swaps. */
+      /**
+       * Provider-derived maximum input ceiling for exact-output swaps. Passed
+       * in so approvals, native value, and calldata use the same number.
+       */
       amountInMaxRaw: bigint
     })
 
