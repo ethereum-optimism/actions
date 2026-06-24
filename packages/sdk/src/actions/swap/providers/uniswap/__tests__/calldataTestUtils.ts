@@ -9,7 +9,7 @@ import {
 export const isReadonlyArray = (value: unknown): value is readonly unknown[] =>
   Array.isArray(value)
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export function expectHex(value: unknown, label: string): Hex {

@@ -22,6 +22,7 @@ import {
   decodeRouterInput,
   expectHex,
   isReadonlyArray,
+  isRecord,
 } from './calldataTestUtils.js'
 
 const USDC: Asset = {
@@ -65,9 +66,6 @@ function createMockPublicClient(
     readContract: vi.fn().mockResolvedValue(MOCK_SQRT_PRICE),
   } as unknown as PublicClient
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 function expectContractArgs(value: unknown): readonly unknown[] {
   if (!isRecord(value) || !isReadonlyArray(value.args)) {
