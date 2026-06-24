@@ -465,7 +465,7 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
-  // Flooring to whole bps is conservative because it tightens bounds.
+  // Safe but not ideal, flooring to whole bps is conservative because it tightens bounds. This issue expands flexibility:
   // https://github.com/ethereum-optimism/actions/issues/379
   private computeSlippageBps(slippage: number): bigint {
     validateSlippage(slippage, this.maxSlippage)
