@@ -149,9 +149,7 @@ describe('WalletBorrowNamespace - quote dispatch', () => {
   })
 
   it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
-    // F212: a reverted-but-mined receipt must not be denormalized into a
-    // BorrowReceipt with quote-derived positionAfter. The wallet failing
-    // closed propagates through dispatch.
+    // Reverted receipts must propagate instead of producing quote-derived success data.
     const { wallet, mocks } = makeWallet()
     mocks.send.mockRejectedValue(
       new TransactionConfirmedButRevertedError(

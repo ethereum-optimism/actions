@@ -161,8 +161,7 @@ describe('WalletSwapNamespace', () => {
     })
 
     it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
-      // F212: a reverted underlying receipt must not be returned as a
-      // SwapReceipt. The wallet failing closed propagates through dispatch.
+      // Reverted receipts must propagate instead of producing quote-derived success data.
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       vi.mocked(wallet.send).mockRejectedValue(

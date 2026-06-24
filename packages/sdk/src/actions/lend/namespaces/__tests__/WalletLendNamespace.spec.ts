@@ -203,9 +203,7 @@ describe('WalletLendNamespace', () => {
   })
 
   it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
-    // F212: a reverted underlying receipt must not be returned as a
-    // LendTransactionReceipt. The wallet failing closed propagates through
-    // dispatch instead of building a success envelope.
+    // Reverted receipts must propagate instead of producing quote-derived success data.
     vi.mocked(mockWallet.send).mockRejectedValue(
       new TransactionConfirmedButRevertedError(
         'transaction confirmed but reverted',
