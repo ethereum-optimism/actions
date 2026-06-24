@@ -11,8 +11,7 @@ describe('assertFundingLanded', () => {
   })
 
   it('throws fail-loud when the balance did not move by the requested amount', () => {
-    // The headline fund-safety property: a short/zero delta never passes
-    // silently. Underfunded by 1 unit here.
+    // A short or zero funding delta must fail loudly.
     expect(() =>
       assertFundingLanded(0n, 1_233_999_999n, 1_234_000_000n),
     ).toThrow(/expected balance to increase by 1234000000, got 1233999999/)
@@ -27,9 +26,7 @@ describe('assertFundingLanded', () => {
 
 describe('fundWallet', () => {
   it('throws when USDC funding is requested for a chain with no whale entry', async () => {
-    // `base` (8453) is intentionally absent from the per-chain whale map. The
-    // whale lookup happens before any RPC call, so this fails loud (and offline)
-    // rather than logging and proceeding against a zero balance.
+    // Missing whale config fails loudly before any RPC call.
     await expect(
       fundWallet({
         // Never contacted: the missing-whale guard throws first.

@@ -28,8 +28,7 @@ interface UsdcFunding {
 
 /** Per-chain USDC token + a whale holding enough USDC to fund tests. */
 const USDC_FUNDING: Readonly<Partial<Record<number, UsdcFunding>>> = {
-  // OP-first: native USDC on Optimism, funded from the Aave V3 aToken
-  // reserve (~1.6M USDC at time of writing).
+  // Optimism native USDC funded from the Aave V3 aToken reserve.
   [optimism.id]: {
     usdc: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
     whale: '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5',
@@ -122,8 +121,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
   } = config
   const chainId = chain.id
 
-  // Resolve the whale up-front so an unsupported chain fails loudly before any
-  // RPC call (and so the failure is deterministically testable offline).
+  // Resolve the whale before RPC so unsupported chains fail loudly and offline.
   let funding: UsdcFunding | undefined
   if (fundUsdc) {
     funding = USDC_FUNDING[chainId]
@@ -155,8 +153,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
     )
 
     await testClient.impersonateAccount({ address: funding.whale })
-    // The whale may be a contract (e.g. an aToken reserve) with USDC but no
-    // ETH; give it gas money so the impersonated transfer can be mined.
+    // Contract whales may hold USDC but no ETH, so fund gas before transfer.
     await testClient.setBalance({
       address: funding.whale,
       value: parseEther('1'),
@@ -173,9 +170,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
         functionName: 'transfer',
         args: [targetAddress, amountUnits],
       })
-      // `waitForTransactionReceipt` resolves for reverted txs too; USDC's
-      // `transfer` returns a bool that viem does not check, so assert the
-      // receipt status directly. A reverted/failed transfer fails loud here.
+      // waitForTransactionReceipt resolves for reverts, so assert status directly.
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
         throw new Error(

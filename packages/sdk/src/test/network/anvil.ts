@@ -72,8 +72,7 @@ async function probeChainId(rpcUrl: string): Promise<number | null> {
     })
     if (!res.ok) return null
     const json = (await res.json()) as { result?: unknown }
-    // A JSON-RPC error body (or an unforked node returning HTML) lacks a
-    // hex-string `result`; treat anything else as "not ready".
+    // Treat any non-hex result as "not ready".
     if (typeof json.result !== 'string') return null
     const chainId = Number.parseInt(json.result, 16)
     return Number.isInteger(chainId) && chainId > 0 ? chainId : null
@@ -104,9 +103,7 @@ export async function startAnvilFork(
     { stdio: 'ignore' },
   )
 
-  // Surface a missing `anvil` binary (ENOENT) or an early exit (e.g. a port
-  // collision the ephemeral allocation lost the race on) as a loud, specific
-  // error instead of an opaque "did not start in time" after the full timeout.
+  // Surface spawn failures and early exits instead of a generic readiness timeout.
   let spawnFailure: Error | null = null
   proc.on('error', (err) => {
     spawnFailure = new Error(`Failed to spawn anvil: ${err.message}`)

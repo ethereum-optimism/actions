@@ -12,9 +12,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 import type { FundWalletConfig } from '@/test/network/index.js'
 import { fundWallet } from '@/test/network/index.js'
 
-// Re-exported from the consolidated fork harness for back-compat: there is one
-// fork-harness entry point (`src/test/network`), surfaced here too so existing
-// importers keep working.
+// Re-export the consolidated fork harness for backward compatibility.
 export {
   type AnvilFork,
   createForkChainManager,
