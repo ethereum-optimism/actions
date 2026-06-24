@@ -297,9 +297,7 @@ export abstract class SwapProvider<
     const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
-    // The min-out floor is the only on-chain slippage protection. A floor
-    // outside [0, amountOutRaw] means protection is disabled (negative) or
-    // impossible (above the quote), so fail loud rather than silently sign it.
+    // Reject min-out floors that disable protection or exceed the quote.
     if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
       throw new InvalidParamsError({
         param: 'slippage',
@@ -313,15 +311,7 @@ export abstract class SwapProvider<
     return { amountOutMinRaw, amountOutMin }
   }
 
-  /**
-   * Compute the maximum input for an exact-output swap after slippage.
-   * Symmetric to {@link computeSlippageBounds} on the input side. The ceiling
-   * can only grow with slippage, so it needs no negative-floor clamp; callers
-   * pass this through to the encoder so the displayed and enforced max-in are
-   * the same number.
-   * @param amountInRaw - Quoted input as raw bigint
-   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
-   */
+  /** Compute max input after slippage, rounded up so displayed and enforced max-in match. */
   protected computeAmountInMaxRaw(
     amountInRaw: bigint,
     slippage: number,
@@ -467,9 +457,8 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
-  // Flooring to whole bps is conservative because it tightens bounds rather than
-  // allowing extra slippage. Raw amount inputs are tracked in
-  // https://github.com/ethereum-optimism/actions/issues/379 for exact callers.
+  // Flooring to whole bps is conservative because it tightens bounds.
+  // https://github.com/ethereum-optimism/actions/issues/379
   private computeSlippageBps(slippage: number): bigint {
     validateSlippage(slippage, this.maxSlippage)
     return BigInt(Math.floor(slippage * Number(BPS_DENOMINATOR)))

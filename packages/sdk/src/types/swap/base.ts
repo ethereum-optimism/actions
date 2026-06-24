@@ -217,10 +217,7 @@ export interface SwapQuote {
   amountOutMin: number
   /** Minimum output as raw bigint after slippage. Source of truth for on-chain execution. */
   amountOutMinRaw: bigint
-  /**
-   * Maximum input as raw bigint after slippage for exact-output swaps.
-   * Source of truth for approvals, native value, and on-chain execution.
-   */
+  /** Maximum input as raw bigint after slippage for exact-output swaps. */
   amountInMaxRaw?: bigint
 
   // ── Price (display approximations derived from number amounts) ──
