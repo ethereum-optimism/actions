@@ -24,8 +24,8 @@ vendor SDKs they never use. No runtime behavior change.
   breaking vendor major is no longer silently accepted into the signing path.
 - The node/react wallet barrels re-export `PrivyHostedWalletProvider`,
   `PrivyWallet`, and `DynamicWallet` as **type-only** exports. Providers are
-  still constructed lazily via the hosted-wallet registry (`createActions({ ...,
-  type: 'privy' })`); only the eager runtime re-export — which pulled
+  still constructed lazily via the hosted-wallet registry with provider type
+  `privy`; only the eager runtime re-export, which pulled
   `@privy-io/node` / `@dynamic-labs/ethereum` into every consumer's import graph
-  — is removed. Direct `new PrivyHostedWalletProvider(...)` from the SDK root was
+  is removed. Direct `new PrivyHostedWalletProvider(...)` from the SDK root was
   never the supported construction path.

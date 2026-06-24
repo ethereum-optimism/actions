@@ -37,7 +37,7 @@ auto-install-peers=false
 NPMRC
 
 # `viem` is the SDK's one required (non-optional) peer, so the consumer must
-# supply it. The Turnkey set is any in-range build — the fixture only needs *a*
+# supply it. The Turnkey set is any in-range build; the fixture only needs *a*
 # single vendor present to prove the other 9 stay absent; the probe does not
 # assert these exact versions. `permissionless` / `@morpho-org/*` are NOT listed
 # here: they arrive transitively from the packed SDK's own `dependencies`, and

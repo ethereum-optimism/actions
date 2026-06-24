@@ -10,7 +10,7 @@
 //      ERR_MODULE_NOT_FOUND.
 //   2. The signing-path runtime deps (viem, permissionless, @morpho-org/*)
 //      resolve inside the band the SDK itself declares (read from the installed
-//      SDK package.json — no second source of truth to drift), so a fresh
+//      SDK package.json, with no second source of truth to drift), so a fresh
 //      consumer install cannot drift to an untested build.
 //
 // Exits non-zero (and prints the reason) on any violation so CI fails closed.
@@ -93,7 +93,7 @@ for (const vendor of ['@privy-io/node', '@dynamic-labs/ethereum']) {
   try {
     sdkRequire.resolve(vendor)
     failures.push(
-      `Unused vendor "${vendor}" is resolvable from the SDK — the install ` +
+      `Unused vendor "${vendor}" is resolvable from the SDK; the install ` +
         `should have left it absent (optional peer, auto-install off).`,
     )
   } catch {
@@ -109,7 +109,7 @@ for (const entry of [
     await import(entry)
   } catch (err) {
     failures.push(
-      `Importing "${entry}" failed — likely an eager static import of an ` +
+      `Importing "${entry}" failed, likely an eager static import of an ` +
         `uninstalled optional vendor SDK: ${err.message}`,
     )
   }
@@ -129,7 +129,7 @@ const PINNED = [
 for (const [pkg, field] of PINNED) {
   const range = sdkManifest[field]?.[pkg]
   if (!range) {
-    failures.push(`SDK manifest is missing ${field}.${pkg} — expected a pin`)
+    failures.push(`SDK manifest is missing ${field}.${pkg}, expected a pin`)
     continue
   }
   let resolved
