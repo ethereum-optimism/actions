@@ -26,17 +26,34 @@ interface UsdcFunding {
   whale: Address
 }
 
+type PublicForkClient = ReturnType<typeof createPublicClient>
+type TestForkClient = ReturnType<typeof createTestClient>
+
+interface ForkClients {
+  publicClient: PublicForkClient
+  testClient: TestForkClient
+}
+
+const DEFAULT_ETH_AMOUNT = '10'
+const DEFAULT_USDC_AMOUNT = '1000'
+const USDC_DECIMALS = 6
+const WHALE_GAS_AMOUNT = '1'
+
+const OPTIMISM_USDC = '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85'
+const OPTIMISM_AAVE_V3_USDC_ATOKEN =
+  '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5'
+const UNICHAIN_USDC = '0x078d782b760474a361dda0af3839290b0ef57ad6'
+const UNICHAIN_USDC_WHALE = '0x5752e57DcfA070e3822d69498185B706c293C792'
+
 /** Per-chain USDC token + a whale holding enough USDC to fund tests. */
 const USDC_FUNDING: Readonly<Partial<Record<number, UsdcFunding>>> = {
-  // Optimism native USDC funded from the Aave V3 aToken reserve.
   [optimism.id]: {
-    usdc: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-    whale: '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5',
+    usdc: OPTIMISM_USDC,
+    whale: OPTIMISM_AAVE_V3_USDC_ATOKEN,
   },
-  // Unichain pair retained for the supersim funding path.
   [unichain.id]: {
-    usdc: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-    whale: '0x5752e57DcfA070e3822d69498185B706c293C792',
+    usdc: UNICHAIN_USDC,
+    whale: UNICHAIN_USDC_WHALE,
   },
 }
 
@@ -68,7 +85,7 @@ export interface FundWalletConfig {
  * @returns Raw USDC balance (6 decimals).
  */
 async function readUsdcBalance(
-  publicClient: ReturnType<typeof createPublicClient>,
+  publicClient: PublicForkClient,
   usdc: Address,
   owner: Address,
 ): Promise<bigint> {
@@ -101,6 +118,109 @@ export function assertFundingLanded(
   }
 }
 
+function resolveUsdcFunding(chainId: number): UsdcFunding {
+  const funding = USDC_FUNDING[chainId]
+  if (!funding) {
+    throw new Error(
+      `fundWallet: no USDC whale configured for chainId ${chainId}; cannot fund USDC`,
+    )
+  }
+  return funding
+}
+
+function createForkClients(rpcUrl: string, chain: Chain): ForkClients {
+  const transport = http(rpcUrl)
+  return {
+    publicClient: createPublicClient({ chain, transport }),
+    testClient: createTestClient({ chain, mode: 'anvil', transport }),
+  }
+}
+
+async function setEthBalance(
+  testClient: TestForkClient,
+  address: Address,
+  amount: string,
+): Promise<void> {
+  await testClient.setBalance({ address, value: parseEther(amount) })
+}
+
+async function transferUsdcFromWhale(params: {
+  chain: Chain
+  chainId: number
+  funding: UsdcFunding
+  publicClient: PublicForkClient
+  rpcUrl: string
+  targetAddress: Address
+  amount: bigint
+}): Promise<void> {
+  const {
+    chain,
+    chainId,
+    funding,
+    publicClient,
+    rpcUrl,
+    targetAddress,
+    amount,
+  } = params
+  const whaleClient = createWalletClient({
+    account: funding.whale,
+    chain,
+    transport: http(rpcUrl),
+  })
+  const hash = await whaleClient.writeContract({
+    address: funding.usdc,
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [targetAddress, amount],
+  })
+  const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  if (receipt.status !== 'success') {
+    throw new Error(
+      `fundWallet: USDC transfer reverted on chainId ${chainId} (status ${receipt.status})`,
+    )
+  }
+}
+
+async function fundUsdcBalance(params: {
+  chain: Chain
+  funding: UsdcFunding
+  publicClient: PublicForkClient
+  rpcUrl: string
+  targetAddress: Address
+  testClient: TestForkClient
+  usdcAmount: string
+}): Promise<void> {
+  const {
+    chain,
+    funding,
+    publicClient,
+    targetAddress,
+    testClient,
+    usdcAmount,
+  } = params
+  const amountUnits = parseUnits(usdcAmount, USDC_DECIMALS)
+  const before = await readUsdcBalance(
+    publicClient,
+    funding.usdc,
+    targetAddress,
+  )
+
+  await testClient.impersonateAccount({ address: funding.whale })
+  await setEthBalance(testClient, funding.whale, WHALE_GAS_AMOUNT)
+  try {
+    await transferUsdcFromWhale({
+      ...params,
+      chainId: chain.id,
+      amount: amountUnits,
+    })
+  } finally {
+    await testClient.stopImpersonatingAccount({ address: funding.whale })
+  }
+
+  const after = await readUsdcBalance(publicClient, funding.usdc, targetAddress)
+  assertFundingLanded(before, after, amountUnits)
+}
+
 /**
  * Fund a wallet with ETH and optionally USDC on an Anvil fork.
  * @description Funds a fork-local wallet and verifies requested balances.
@@ -115,77 +235,23 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
     rpcUrl,
     chain,
     targetAddress,
-    amount = '10',
-    fundUsdc = false,
-    usdcAmount = '1000',
+    amount = DEFAULT_ETH_AMOUNT,
+    fundUsdc: shouldFundUsdc = false,
+    usdcAmount = DEFAULT_USDC_AMOUNT,
   } = config
-  const chainId = chain.id
+  const funding = shouldFundUsdc ? resolveUsdcFunding(chain.id) : undefined
+  const { publicClient, testClient } = createForkClients(rpcUrl, chain)
 
-  // Resolve the whale before RPC so unsupported chains fail loudly and offline.
-  let funding: UsdcFunding | undefined
-  if (fundUsdc) {
-    funding = USDC_FUNDING[chainId]
-    if (!funding) {
-      throw new Error(
-        `fundWallet: no USDC whale configured for chainId ${chainId}; cannot fund USDC`,
-      )
-    }
-  }
+  await setEthBalance(testClient, targetAddress, amount)
+  if (!funding) return
 
-  const testClient = createTestClient({
+  await fundUsdcBalance({
     chain,
-    mode: 'anvil',
-    transport: http(rpcUrl),
+    funding,
+    publicClient,
+    rpcUrl,
+    targetAddress,
+    testClient,
+    usdcAmount,
   })
-  const publicClient = createPublicClient({ chain, transport: http(rpcUrl) })
-
-  await testClient.setBalance({
-    address: targetAddress,
-    value: parseEther(amount),
-  })
-
-  if (fundUsdc && funding) {
-    const amountUnits = parseUnits(usdcAmount, 6)
-    const before = await readUsdcBalance(
-      publicClient,
-      funding.usdc,
-      targetAddress,
-    )
-
-    await testClient.impersonateAccount({ address: funding.whale })
-    // Contract whales may hold USDC but no ETH, so fund gas before transfer.
-    await testClient.setBalance({
-      address: funding.whale,
-      value: parseEther('1'),
-    })
-    try {
-      const whaleClient = createWalletClient({
-        account: funding.whale,
-        chain,
-        transport: http(rpcUrl),
-      })
-      const hash = await whaleClient.writeContract({
-        address: funding.usdc,
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [targetAddress, amountUnits],
-      })
-      // waitForTransactionReceipt resolves for reverts, so assert status directly.
-      const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') {
-        throw new Error(
-          `fundWallet: USDC transfer reverted on chainId ${chainId} (status ${receipt.status})`,
-        )
-      }
-    } finally {
-      await testClient.stopImpersonatingAccount({ address: funding.whale })
-    }
-
-    const after = await readUsdcBalance(
-      publicClient,
-      funding.usdc,
-      targetAddress,
-    )
-    assertFundingLanded(before, after, amountUnits)
-  }
 }
