@@ -114,6 +114,9 @@ When adding a new concrete provider to any SDK domain (Lend, Swap, Borrow, or a 
 
 - Clear names beat clever tricks. No one-letter locals outside loop indices.
 - Comments explain **why**, not **what**. The code already says what it does.
+- Do not rewrite existing comments just to shorten them. Leave unrelated docs and comments alone.
+- New or changed inline `//` comments should be concise and usually one line. If the explanation needs structure, tags, or API contract details, use JSDoc instead of a stack of inline comments.
+- Do not include internal sub-issue IDs (for example `F123`) in comments, test names, or docs. Link the real GitHub issue only when the context is useful.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them. Git history is the archive.
 - Prefer `const` over `let`; never `var`.
 - Use destructuring, optional chaining (`?.`), nullish coalescing (`??`), and template literals where they make the code clearer, not to score points.
@@ -128,6 +131,7 @@ When adding a new concrete provider to any SDK domain (Lend, Swap, Borrow, or a 
   - `@param <name>`: per parameter, describing semantics (units, invariants, preconditions).
   - `@returns`: what the caller gets back, including edge cases like `undefined` / `null` / empty arrays.
   - `@throws`: enumerate every error class or condition the caller might need to handle.
+- **Do not flatten function or class JSDoc into single-line comments** just to satisfy inline-comment concision. Keep useful `@description`, `@param`, `@returns`, `@throws`, and semantic notes.
 - **Protected/private helpers worth documenting**: if the helper's contract is non-obvious (async side effects, specific error behavior, numeric-precision assumptions), add a brief JSDoc. A one-line block is fine.
 - **Don't duplicate the code in prose.** `@description` should add information the signature doesn't already carry (units, assumptions, call-site expectations), not restate what types already say.
 - **Cross-reference siblings** with `{@link}` when a method has a related peer (e.g., `openPosition` links to `closePosition`).

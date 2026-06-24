@@ -85,6 +85,9 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 ### [Readability](./CONTRIBUTING.md#readability)
 
 - Clear names beat clever tricks. Comments explain **why**, not **what**.
+- Do not rewrite existing comments just to shorten them.
+- New or changed inline `//` comments should be concise and usually one line.
+- Do not include internal sub-issue IDs like `F123` in comments, test names, or docs.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them.
 - `const` over `let`; never `var`. Async/await over promise chains.
 - **No em-dashes (`—`) in code comments, JSDoc, or repo docs.** Use commas, colons, semicolons, periods, or parentheses instead.
@@ -92,6 +95,7 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 ### [Documentation](./CONTRIBUTING.md#documentation)
 
 - JSDoc every public function/method/class with `@description` / `@param` / `@returns` / `@throws`.
+- Do not flatten function/class JSDoc into single-line comments to satisfy inline-comment concision.
 - Don't restate types in prose. Add semantics, units, preconditions.
 - Update JSDoc in the same commit as behavior changes. Stale docs are worse than missing ones.
 
