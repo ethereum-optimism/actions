@@ -1,19 +1,4 @@
-// Probe run inside an isolated single-vendor consumer fixture.
-//
-// Purpose (F149/F165/F166/F170): prove that the *published* SDK, installed the
-// way a real downstream consumer installs it, honours the manifest invariants:
-//
-//   1. A static `import` of either SDK entry (node and react) must NOT eagerly
-//      load the unused vendor SDKs. We install only the Turnkey vendor set (peer
-//      auto-install off), so `@privy-io/node` and `@dynamic-labs/ethereum` are
-//      absent on disk. If the SDK eager-loaded them, the import would throw
-//      ERR_MODULE_NOT_FOUND.
-//   2. The signing-path runtime deps (viem, permissionless, @morpho-org/*)
-//      resolve inside the band the SDK itself declares (read from the installed
-//      SDK package.json, with no second source of truth to drift), so a fresh
-//      consumer install cannot drift to an untested build.
-//
-// Exits non-zero (and prints the reason) on any violation so CI fails closed.
+// Probe a single-vendor consumer install for optional vendors and dep ranges.
 
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -21,10 +6,7 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs'
 
 const fixtureDir = process.cwd()
 
-// pnpm does not hoist the SDK's own dependencies to the fixture root, so deps
-// like `permissionless` / `@morpho-org/*` are only resolvable *from* the
-// installed SDK package. Anchor a require there (via the real, dereferenced
-// path so Node walks pnpm's nested store).
+// Anchor resolution inside the installed SDK so pnpm's nested store is visible.
 const sdkPkgDir = realpathSync(
   join(fixtureDir, 'node_modules', '@eth-optimism', 'actions-sdk'),
 )
@@ -85,10 +67,7 @@ function satisfies(version, range) {
     })
 }
 
-// --- 1. Eager-import probe -------------------------------------------------
-// The unused vendors are intentionally NOT installed in this fixture. A clean
-// import of BOTH entries is the proof that neither barrel statically pulls them
-// in (node -> @privy-io/node, react -> @dynamic-labs/ethereum).
+// Unused vendors are absent; clean imports prove neither barrel eager-loads them.
 for (const vendor of ['@privy-io/node', '@dynamic-labs/ethereum']) {
   try {
     sdkRequire.resolve(vendor)
@@ -115,9 +94,7 @@ for (const entry of [
   }
 }
 
-// --- 2. Pinned-range probe -------------------------------------------------
-// The expected range is read from the SDK's own manifest (peerDependencies for
-// viem, dependencies for the rest), so there is exactly one source of truth.
+// Read expected ranges from the installed SDK manifest as the source of truth.
 const PINNED = [
   ['viem', 'peerDependencies'],
   ['permissionless', 'dependencies'],
