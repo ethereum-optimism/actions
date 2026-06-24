@@ -426,6 +426,14 @@ describe('SwapProvider', () => {
     })
   })
 
+  describe('computeAmountInMaxRaw()', () => {
+    it('rounds up non-divisible exact-output slippage math', () => {
+      const provider = new MockSwapProvider()
+
+      expect(provider.testComputeAmountInMaxRaw(1n, 0.005)).toBe(2n)
+    })
+  })
+
   describe('getMarket()', () => {
     it('should throw if chain not supported', async () => {
       const provider = new MockSwapProvider()

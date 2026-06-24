@@ -329,7 +329,10 @@ export abstract class SwapProvider<
     slippage: number,
   ): bigint {
     const slippageBps = this.computeSlippageBps(slippage)
-    return amountInRaw + (amountInRaw * slippageBps) / BPS_DENOMINATOR
+    return (
+      (amountInRaw * (BPS_DENOMINATOR + slippageBps) + BPS_DENOMINATOR - 1n) /
+      BPS_DENOMINATOR
+    )
   }
 
   protected resolveMarketConfig(
