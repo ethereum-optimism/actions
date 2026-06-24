@@ -108,16 +108,7 @@ export function validateWalletAddress(
   validateNotZeroAddress(walletAddress, label)
 }
 
-/**
- * Reject a slippage tolerance that cannot safely reach the bounds math.
- *
- * Enforces an absolute `[0, 1)` invariant in addition to the integrator's
- * relative `maxSlippage`. The `>= 1` ceiling is independent of `maxSlippage`
- * so a misconfigured `maxSlippage > 1` can no longer admit a value that drives
- * `computeSlippageBounds` to a negative (protection-disabling) `amountOutMinRaw`.
- * Non-finite values (`NaN` / `Infinity`) are rejected because the bare `<`/`>`
- * comparisons are silently `false` for `NaN`.
- */
+/** Reject non-finite slippage and enforce both `[0, 1)` bounds and `maxSlippage`. */
 export function validateSlippage(slippage: number, maxSlippage: number): void {
   if (
     !Number.isFinite(slippage) ||

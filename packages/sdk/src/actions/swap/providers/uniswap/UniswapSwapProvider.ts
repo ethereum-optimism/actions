@@ -1,4 +1,4 @@
-import { formatUnits, type Hex } from 'viem'
+import { formatUnits } from 'viem'
 
 import { expandMarkets, findMarket } from '@/actions/swap/core/markets.js'
 import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
@@ -136,43 +136,38 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       assetOut,
     )
 
-    let amountInMaxRaw: bigint | undefined
-    let swapCalldata: Hex
-
-    if (amountOutRaw !== undefined) {
-      amountInMaxRaw = this.computeAmountInMaxRaw(quote.amountInRaw, slippage)
-      swapCalldata = encodeUniversalRouterSwap({
-        amountOutRaw,
-        amountInMaxRaw,
-        assetIn,
-        assetOut,
-        deadline,
-        recipient,
-        chainId,
-        quote,
-        universalRouterAddress: addresses.universalRouter,
-        fee: marketConfig.fee,
-        tickSpacing: marketConfig.tickSpacing,
-      })
-    } else {
-      swapCalldata = encodeUniversalRouterSwap({
-        amountInRaw,
-        amountOutMinRaw,
-        assetIn,
-        assetOut,
-        deadline,
-        recipient,
-        chainId,
-        quote,
-        universalRouterAddress: addresses.universalRouter,
-        fee: marketConfig.fee,
-        tickSpacing: marketConfig.tickSpacing,
-      })
-    }
+    const swapAmounts =
+      amountOutRaw !== undefined
+        ? {
+            amountOutRaw,
+            amountInMaxRaw: this.computeAmountInMaxRaw(
+              quote.amountInRaw,
+              slippage,
+            ),
+          }
+        : {
+            amountInRaw,
+            amountOutMinRaw,
+          }
+    const amountInMaxRaw =
+      'amountInMaxRaw' in swapAmounts ? swapAmounts.amountInMaxRaw : undefined
+    const swapCalldata = encodeUniversalRouterSwap({
+      ...swapAmounts,
+      assetIn,
+      assetOut,
+      deadline,
+      recipient,
+      chainId,
+      quote,
+      universalRouterAddress: addresses.universalRouter,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
+    })
 
     const finalAmountInRaw =
       amountOutRaw !== undefined ? quote.amountInRaw : amountInRaw
 
+    // Native exact-output swaps prepay max input because ETH has no approval path.
     const executionValue = isNativeAsset(assetIn)
       ? (amountInMaxRaw ?? finalAmountInRaw)
       : 0n
