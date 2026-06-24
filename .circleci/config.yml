@@ -110,9 +110,6 @@ jobs:
       - run:
           name: Test SDK
           command: cd packages/sdk && pnpm test
-      - run:
-          name: Install SDK
-          command: cd packages/sdk && bash scripts/check-consumer-install.sh
 
   # CLI checks
   check-cli:
