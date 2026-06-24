@@ -467,6 +467,9 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // Flooring to whole bps is conservative because it tightens bounds rather than
+  // allowing extra slippage. Raw amount inputs are tracked in
+  // https://github.com/ethereum-optimism/actions/issues/379 for exact callers.
   private computeSlippageBps(slippage: number): bigint {
     validateSlippage(slippage, this.maxSlippage)
     return BigInt(Math.floor(slippage * Number(BPS_DENOMINATOR)))
