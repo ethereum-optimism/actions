@@ -21,12 +21,13 @@ import {
 } from 'viem'
 import { optimism, unichain } from 'viem/chains'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+interface UsdcFunding {
+  usdc: Address
+  whale: Address
+}
 
 /** Per-chain USDC token + a whale holding enough USDC to fund tests. */
-const USDC_FUNDING: Partial<
-  Record<SupportedChainId, { usdc: Address; whale: Address }>
-> = {
+const USDC_FUNDING: Readonly<Partial<Record<number, UsdcFunding>>> = {
   // OP-first: native USDC on Optimism, funded from the Aave V3 aToken
   // reserve (~1.6M USDC at time of writing).
   [optimism.id]: {
@@ -119,11 +120,11 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
     fundUsdc = false,
     usdcAmount = '1000',
   } = config
-  const chainId = chain.id as SupportedChainId
+  const chainId = chain.id
 
   // Resolve the whale up-front so an unsupported chain fails loudly before any
   // RPC call (and so the failure is deterministically testable offline).
-  let funding: { usdc: Address; whale: Address } | undefined
+  let funding: UsdcFunding | undefined
   if (fundUsdc) {
     funding = USDC_FUNDING[chainId]
     if (!funding) {
