@@ -297,9 +297,7 @@ export abstract class SwapProvider<
     const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
-    // The min-out floor is the only on-chain slippage protection. A floor
-    // outside [0, amountOutRaw] means protection is disabled (negative) or
-    // impossible (above the quote), so fail loud rather than silently sign it.
+    // Reject min-out floors that disable protection or exceed the quote.
     if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
       throw new InvalidParamsError({
         param: 'slippage',
