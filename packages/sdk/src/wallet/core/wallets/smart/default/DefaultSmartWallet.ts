@@ -212,7 +212,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * and ERC-4337 UserOperation creation automatically.
    * @param transactionData - The transaction data to execute
    * @param chainId - Target blockchain chain ID
-   * @returns Promise resolving to the transaction hash
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
@@ -248,9 +249,6 @@ export class DefaultSmartWallet extends SmartWallet {
 
       return userOperationReceipt
     } catch (error) {
-      // Preserve the named revert error so it is not reshaped into a generic
-      // message; this keeps the user-facing contract aligned with the
-      // deploy/rotation siblings that already fail closed on a reverted receipt.
       if (error instanceof TransactionConfirmedButRevertedError) {
         throw error
       }
@@ -268,8 +266,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * The transaction is sent as a UserOperation through the bundler service.
    * @param transactionData - Transaction details (to, value, data)
    * @param chainId - Target blockchain network ID
-   * @returns Promise resolving to UserOperation hash
-   * @throws Error if transaction fails or validation errors occur
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async send(
     transactionData: TransactionData,
@@ -305,9 +303,6 @@ export class DefaultSmartWallet extends SmartWallet {
 
       return receipt
     } catch (error) {
-      // Preserve the named revert error so it is not reshaped into a generic
-      // message; this keeps the user-facing contract aligned with the
-      // deploy/rotation siblings that already fail closed on a reverted receipt.
       if (error instanceof TransactionConfirmedButRevertedError) {
         throw error
       }
