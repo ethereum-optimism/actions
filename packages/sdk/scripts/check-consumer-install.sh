@@ -2,11 +2,8 @@
 # Reproduce a single-vendor install and assert issue #43 manifest invariants.
 set -euo pipefail
 
-# Resolve paths relative to the SDK package so CI can run this from the repo root.
 SDK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE_DIR="$(mktemp -d)"
-
-# Always remove the temporary consumer project, even when install or probe fails.
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 echo "==> Building SDK"
@@ -22,16 +19,10 @@ fi
 echo "    tarball: $TARBALL"
 
 echo "==> Creating clean single-vendor (Turnkey) fixture at $FIXTURE_DIR"
-
-# Copy the probe into the fixture so it resolves packages like a real consumer.
-cp "$SDK_DIR/scripts/verify-consumer-install.mjs" "$FIXTURE_DIR/verify-consumer-install.mjs"
-
-# Optional vendor peers must stay uninstalled with auto-install-peers=false.
 cat > "$FIXTURE_DIR/.npmrc" <<'NPMRC'
 auto-install-peers=false
 NPMRC
 
-# viem is required; Turnkey proves one vendor works while the rest stay absent.
 cat > "$FIXTURE_DIR/package.json" <<PKGJSON
 {
   "name": "actions-sdk-consumer-fixture",
@@ -49,13 +40,91 @@ cat > "$FIXTURE_DIR/package.json" <<PKGJSON
 PKGJSON
 
 echo "==> Installing fixture (peer auto-install OFF, Turnkey-only)"
-
-# Prefix install output so package-manager noise stays visually scoped.
 (cd "$FIXTURE_DIR" && pnpm install --no-frozen-lockfile --config.confirmModulesPurge=false 2>&1 | sed 's/^/    /')
 
 echo "==> Running consumer-install probe"
+(
+cd "$FIXTURE_DIR"
+node --input-type=module <<'NODE'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
 
-# Run from the fixture so module resolution cannot fall back to the workspace.
-(cd "$FIXTURE_DIR" && node verify-consumer-install.mjs)
+const fixtureRequire = createRequire(join(process.cwd(), 'package.json'))
+const sdkManifest = JSON.parse(
+  readFileSync(
+    join(
+      process.cwd(),
+      'node_modules',
+      '@eth-optimism',
+      'actions-sdk',
+      'package.json',
+    ),
+    'utf8',
+  ),
+)
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message)
+}
+
+const expectedRanges = [
+  ['dependencies', '@morpho-org/blue-sdk', '>=4.13.1 <4.14.0'],
+  ['dependencies', '@morpho-org/blue-sdk-viem', '>=3.2.0 <3.3.0'],
+  ['dependencies', '@morpho-org/morpho-ts', '>=2.4.6 <2.5.0'],
+  ['dependencies', 'permissionless', '>=0.2.57 <0.3.0'],
+  ['peerDependencies', '@dynamic-labs/ethereum', '>=4.31.4 <5.0.0'],
+  ['peerDependencies', '@dynamic-labs/waas-evm', '>=4.31.4 <5.0.0'],
+  ['peerDependencies', '@dynamic-labs/wallet-connector-core', '>=4.31.4 <5.0.0'],
+  ['peerDependencies', '@privy-io/react-auth', '>=2.24.0 <3.0.0'],
+  ['peerDependencies', '@privy-io/node', '>=0.3.0 <0.4.0'],
+  ['peerDependencies', '@turnkey/core', '>=1.1.1 <2.0.0'],
+  ['peerDependencies', '@turnkey/http', '>=3.12.1 <4.0.0'],
+  ['peerDependencies', '@turnkey/sdk-server', '>=4.9.1 <5.0.0'],
+  ['peerDependencies', '@turnkey/react-wallet-kit', '>=1.1.1 <2.0.0'],
+  ['peerDependencies', '@turnkey/viem', '>=0.14.1 <0.15.0'],
+  ['peerDependencies', 'viem', '>=2.33.0 <2.34.0'],
+]
+const optionalPeers = [
+  '@dynamic-labs/ethereum',
+  '@dynamic-labs/waas-evm',
+  '@dynamic-labs/wallet-connector-core',
+  '@privy-io/react-auth',
+  '@privy-io/node',
+  '@turnkey/core',
+  '@turnkey/http',
+  '@turnkey/sdk-server',
+  '@turnkey/react-wallet-kit',
+  '@turnkey/viem',
+]
+
+for (const [field, packageName, expectedRange] of expectedRanges) {
+  assert(
+    sdkManifest[field]?.[packageName] === expectedRange,
+    `${field}.${packageName} must be "${expectedRange}"`,
+  )
+}
+
+for (const packageName of optionalPeers) {
+  assert(
+    sdkManifest.peerDependenciesMeta?.[packageName]?.optional === true,
+    `${packageName} must be marked as an optional peer`,
+  )
+}
+
+for (const packageName of ['@privy-io/node', '@dynamic-labs/ethereum']) {
+  try {
+    fixtureRequire.resolve(packageName)
+    throw new Error(`${packageName} should not be installed in this fixture`)
+  } catch (error) {
+    if (error.code !== 'MODULE_NOT_FOUND') throw error
+  }
+}
+
+await import('@eth-optimism/actions-sdk')
+await import('@eth-optimism/actions-sdk/react')
+console.log('  ok  consumer package contract verified')
+NODE
+)
 
 echo "==> Consumer-install check OK"
