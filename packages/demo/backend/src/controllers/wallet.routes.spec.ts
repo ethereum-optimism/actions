@@ -141,6 +141,62 @@ describe('POST /wallet/eth (faucet drip)', () => {
     expect(statuses.filter((s) => s === 429)).toHaveLength(5)
     expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(1)
   })
+
+  it('releases the drip reservation when submission returns unsuccessful', async () => {
+    await mockVerifiedUser('user-drip-unsuccessful')
+    const retryWallet = '0x' + '7'.repeat(40)
+    vi.mocked(walletService.getWallet).mockResolvedValue({
+      address: retryWallet,
+    } as never)
+    vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
+    vi.mocked(faucetService.dripEthToWallet)
+      .mockResolvedValueOnce({ success: false } as never)
+      .mockResolvedValueOnce(okDrip as never)
+
+    const app = createApp()
+    const failed = await app.request('/wallet/eth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({}),
+    })
+    const retried = await app.request('/wallet/eth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({}),
+    })
+
+    expect(failed.status).toBe(500)
+    expect(retried.status).toBe(200)
+    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(2)
+  })
+
+  it('releases the drip reservation when submission rejects', async () => {
+    await mockVerifiedUser('user-drip-reject')
+    const retryWallet = '0x' + '8'.repeat(40)
+    vi.mocked(walletService.getWallet).mockResolvedValue({
+      address: retryWallet,
+    } as never)
+    vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
+    vi.mocked(faucetService.dripEthToWallet)
+      .mockRejectedValueOnce(new Error('bundler down'))
+      .mockResolvedValueOnce(okDrip as never)
+
+    const app = createApp()
+    const failed = await app.request('/wallet/eth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({}),
+    })
+    const retried = await app.request('/wallet/eth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({}),
+    })
+
+    expect(failed.status).toBe(500)
+    expect(retried.status).toBe(200)
+    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('rate limiting on fund-touching routes', () => {

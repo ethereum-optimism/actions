@@ -1,9 +1,19 @@
 import { MarketNotAllowedError } from '@eth-optimism/actions-sdk'
+import type { Context } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createApp } from '@/app.js'
 import * as borrowService from '@/services/borrow.js'
+import * as lendService from '@/services/lend.js'
 import * as walletService from '@/services/wallet.js'
+
+vi.mock('@hono/node-server/conninfo', () => ({
+  getConnInfo: vi.fn((c: Pick<Context, 'req'>) => ({
+    remote: {
+      address: c.req.header('x-test-remote-address') ?? '127.0.0.1',
+    },
+  })),
+}))
 
 vi.mock('@/services/borrow.js', () => ({
   getMarkets: vi.fn(),
@@ -62,6 +72,10 @@ const MARKET_ID = {
   chainId: 84532,
   marketId: '0x' + 'a'.repeat(64),
 }
+const LEND_MARKET_ID = {
+  address: '0x' + 'b'.repeat(40),
+  chainId: 84532,
+}
 const WALLET = '0xaabbccddeeff00112233445566778899aabbccdd'
 
 function authHeaders() {
@@ -71,15 +85,43 @@ function authHeaders() {
   }
 }
 
+function authHeadersForAttempt(attempt: number) {
+  return {
+    'Content-Type': 'application/json',
+    ...authHeaders(),
+    'x-test-remote-address': `198.51.100.${attempt}`,
+  }
+}
+
+async function burstMutation(path: string, body: unknown) {
+  const app = createApp()
+  const statuses: number[] = []
+  for (let i = 0; i < 11; i++) {
+    const res = await app.request(path, {
+      method: 'POST',
+      headers: authHeadersForAttempt(i),
+      body: JSON.stringify(body),
+    })
+    statuses.push(res.status)
+  }
+  return statuses
+}
+
 beforeEach(async () => {
   vi.resetAllMocks()
+  await mockVerifiedUser('user-a')
+})
+
+async function mockVerifiedUser(userId: string) {
   const { getPrivyClient } = await import('@/config/actions.js')
   vi.mocked(getPrivyClient).mockReturnValue({
     utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
+      auth: () => ({
+        verifyAuthToken: vi.fn().mockResolvedValue({ user_id: userId }),
+      }),
     }),
   } as never)
-})
+}
 
 describe('borrow routes', () => {
   describe('GET /borrow/markets', () => {
@@ -174,6 +216,41 @@ describe('borrow routes', () => {
         body: JSON.stringify({ nothing: 'here' }),
       })
       expect(res.status).toBe(400)
+    })
+  })
+
+  describe('post-auth mutation rate limiting', () => {
+    it('caps /lend/position/open by verified user before the handler runs', async () => {
+      await mockVerifiedUser('user-lend-limit')
+      vi.mocked(lendService.openPosition).mockResolvedValue({
+        blockExplorerUrls: [],
+      } as never)
+
+      const statuses = await burstMutation('/lend/position/open', {
+        amount: 1,
+        tokenAddress: 'native',
+        marketId: LEND_MARKET_ID,
+      })
+
+      expect(statuses.filter((s) => s === 200)).toHaveLength(10)
+      expect(statuses[10]).toBe(429)
+      expect(lendService.openPosition).toHaveBeenCalledTimes(10)
+    })
+
+    it('caps /borrow/position/open by verified user before the handler runs', async () => {
+      await mockVerifiedUser('user-borrow-limit')
+      vi.mocked(borrowService.openPosition).mockResolvedValue({
+        blockExplorerUrls: [],
+      } as never)
+
+      const statuses = await burstMutation('/borrow/position/open', {
+        marketId: MARKET_ID,
+        borrowAmount: { amountRaw: '1' },
+      })
+
+      expect(statuses.filter((s) => s === 200)).toHaveLength(10)
+      expect(statuses[10]).toBe(429)
+      expect(borrowService.openPosition).toHaveBeenCalledTimes(10)
     })
   })
 
