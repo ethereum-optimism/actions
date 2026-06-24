@@ -5,6 +5,8 @@ import * as faucetService from '@/services/faucet.js'
 import * as swapService from '@/services/swap.js'
 import * as walletService from '@/services/wallet.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@/services/wallet.js', () => ({
   getWallet: vi.fn(),
   getBorrowPosition: vi.fn(),
@@ -41,30 +43,12 @@ vi.mock('@/middleware/actions.js', () => ({
   },
 }))
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 const okDrip = { success: true, userOpHash: '0x' + 'd'.repeat(64) }
 
 beforeEach(async () => {
   vi.resetAllMocks()
-  mockVerifiedUser('user-a')
+  await mockVerifiedUser('user-a')
 })
-
-async function mockVerifiedUser(userId: string) {
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({
-        verifyAuthToken: vi.fn().mockResolvedValue({ user_id: userId }),
-      }),
-    }),
-  } as never)
-}
 
 describe('POST /wallet/eth (faucet drip)', () => {
   it('rejects an unauthenticated request and signs no drip', async () => {

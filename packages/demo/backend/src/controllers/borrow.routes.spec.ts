@@ -7,6 +7,8 @@ import * as borrowService from '@/services/borrow.js'
 import * as lendService from '@/services/lend.js'
 import * as walletService from '@/services/wallet.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@hono/node-server/conninfo', () => ({
   getConnInfo: vi.fn((c: Pick<Context, 'req'>) => ({
     remote: {
@@ -78,13 +80,6 @@ const LEND_MARKET_ID = {
 }
 const WALLET = '0xaabbccddeeff00112233445566778899aabbccdd'
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 function authHeadersForAttempt(attempt: number) {
   return {
     'Content-Type': 'application/json',
@@ -111,17 +106,6 @@ beforeEach(async () => {
   vi.resetAllMocks()
   await mockVerifiedUser('user-a')
 })
-
-async function mockVerifiedUser(userId: string) {
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({
-        verifyAuthToken: vi.fn().mockResolvedValue({ user_id: userId }),
-      }),
-    }),
-  } as never)
-}
 
 describe('borrow routes', () => {
   describe('GET /borrow/markets', () => {
