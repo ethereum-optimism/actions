@@ -130,6 +130,16 @@ export class MockChainManager {
       getBalance: vi.fn().mockImplementation(() => {
         return Promise.resolve(this.config.defaultBalance)
       }),
+      multicall: vi
+        .fn()
+        .mockImplementation(({ contracts }: { contracts: unknown[] }) => {
+          return Promise.resolve(
+            contracts.map(() => ({
+              status: 'success' as const,
+              result: this.config.defaultBalance,
+            })),
+          )
+        }),
     } as any
   }
 
