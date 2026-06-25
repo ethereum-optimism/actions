@@ -27,6 +27,7 @@ import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
+  GetPositionsParams,
   LendClosePositionParams,
   LendMarket,
   LendMarketConfig,
@@ -181,6 +182,50 @@ export abstract class LendProvider<
     this.validateMarketAllowed(marketId)
 
     return this._getPosition({ marketId, walletAddress })
+  }
+
+  /**
+   * Get this provider's positions for a wallet across its configured markets
+   * @description Walks the provider's market allowlist (optionally filtered by
+   * `chainId`) and fetches each position concurrently. Per-market failures are
+   * isolated via `Promise.allSettled` and dropped from the result so a single
+   * bad RPC can't poison the batch. Returns every queried market's position
+   * (including zero balances); zero-balance filtering is applied by the
+   * aggregating namespace.
+   * @param walletAddress - User wallet address to check positions for
+   * @param params - Optional chain filter
+   * @returns Promise resolving to the positions that resolved successfully
+   * @throws AddressRequiredError if `walletAddress` is missing
+   */
+  async getPositions(
+    walletAddress: Address,
+    params: GetPositionsParams = {},
+  ): Promise<LendMarketPosition[]> {
+    if (!walletAddress) {
+      throw new AddressRequiredError('walletAddress')
+    }
+
+    if (params.chainId !== undefined) {
+      validateChainSupported(params.chainId, this.supportedChainIds())
+    }
+
+    const markets = this.filterMarketConfigs(params.chainId)
+
+    const settled = await Promise.allSettled(
+      markets.map((market) =>
+        this.getPosition(walletAddress, {
+          address: market.address,
+          chainId: market.chainId,
+        }),
+      ),
+    )
+
+    return settled
+      .filter(
+        (result): result is PromiseFulfilledResult<LendMarketPosition> =>
+          result.status === 'fulfilled',
+      )
+      .map((result) => result.value)
   }
 
   /**

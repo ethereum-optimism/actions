@@ -4,6 +4,8 @@ import { Command } from 'commander'
 import { runWalletLendClose } from '@/commands/wallet/lend/close.js'
 import { runWalletLendOpen } from '@/commands/wallet/lend/open.js'
 import { runWalletLendPosition } from '@/commands/wallet/lend/position.js'
+import { runWalletLendPositions } from '@/commands/wallet/lend/positions.js'
+import { CHAIN_EXAMPLES } from '@/resolvers/chains.js'
 
 /**
  * @description Builds the `wallet lend` subcommand tree. Children resolve their market through the config allowlist and dispatch to the matching `wallet.lend.*` method. Read-only `markets` and `market` aliases live on the root `actions lend` tree to avoid forcing PRIVATE_KEY for purely public reads.
@@ -53,5 +55,23 @@ export function walletLendCommand(): Command {
       'market name from the config allowlist (e.g. "Gauntlet USDC", "gauntlet-usdc")',
     )
     .action(runWalletLendPosition)
+  command
+    .command('positions')
+    .description(
+      "Aggregate the wallet's positions across every configured market and provider in one call.",
+    )
+    .option(
+      '--chain <shortname>',
+      `filter to positions on one chain by shortname (e.g. ${CHAIN_EXAMPLES.shortname}); mutually exclusive with --chain-id`,
+    )
+    .option(
+      '--chain-id <id>',
+      `filter to positions on one chain by numeric id (e.g. ${CHAIN_EXAMPLES.chainId}); mutually exclusive with --chain`,
+    )
+    .option(
+      '--non-zero-only',
+      'drop zero-balance positions (default: return every configured market)',
+    )
+    .action(runWalletLendPositions)
   return command
 }

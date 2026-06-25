@@ -20,6 +20,7 @@ export function buildLendOperations(
   | 'getTokenBalances'
   | 'getMarkets'
   | 'getPosition'
+  | 'getPositions'
   | 'openPosition'
   | 'closePosition'
 > {
@@ -29,6 +30,8 @@ export function buildLendOperations(
     getMarkets: async () => actionsApi.getMarkets(await getAuthHeaders()),
     getPosition: async (marketId) =>
       actionsApi.getPosition({ marketId }, await getAuthHeaders()),
+    getPositions: async (params) =>
+      actionsApi.getPositions(params, await getAuthHeaders()),
     openPosition: async (params) =>
       actionsApi.openLendPosition(params, await getAuthHeaders()),
     closePosition: async (params) =>
