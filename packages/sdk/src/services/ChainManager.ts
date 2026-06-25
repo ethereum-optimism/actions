@@ -34,6 +34,33 @@ function pollingIntervalForChain(chainId: SupportedChainId): number {
 }
 
 /**
+ * viem chain definitions for SDK-supported chains that the Superchain-only
+ * `@eth-optimism/viem/chains` registry (`chainById`) does not include: the
+ * Ethereum L1 chains. Used as a fallback so settlement-layer reads (notably
+ * ENS resolution, which runs on Ethereum mainnet) can be configured with an
+ * operator-trusted RPC instead of relying on a public fallback.
+ */
+const L1_VIEM_CHAINS: Partial<Record<SupportedChainId, Chain>> = {
+  [mainnet.id]: mainnet,
+  [sepolia.id]: sepolia,
+}
+
+/**
+ * @description Resolves the viem {@link Chain} for a supported chain id,
+ * preferring the Superchain registry (`chainById`) and falling back to the
+ * Ethereum L1 definitions in {@link L1_VIEM_CHAINS}.
+ * @param chainId - A {@link SupportedChainId} to resolve.
+ * @returns The viem {@link Chain}, or `undefined` when the id is unknown to
+ * both registries.
+ * @internal Not part of the public SDK surface; exported only so
+ * `MockChainManager` can mirror `ChainManager`'s resolution logic. No stability
+ * guarantee.
+ */
+export function viemChainFor(chainId: SupportedChainId): Chain | undefined {
+  return chainById[chainId] ?? L1_VIEM_CHAINS[chainId]
+}
+
+/**
  * Chain Manager Service
  * @description Manages public clients and chain infrastructure for the Verbs SDK.
  * Provides utilities for accessing RPC and bundler URLs, and creating clients for supported chains.
@@ -158,9 +185,15 @@ export class ChainManager {
    * Get chain information for a specific chain ID
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
+   * @throws {ChainNotSupportedError} When `chainId` is resolvable by neither
+   * the Superchain registry nor the Ethereum L1 fallback.
    */
   getChain(chainId: SupportedChainId): Chain {
-    return chainById[chainId]
+    const chain = viemChainFor(chainId)
+    if (!chain) {
+      throw new ChainNotSupportedError({ chainId })
+    }
+    return chain
   }
 
   /**
@@ -196,7 +229,7 @@ export class ChainManager {
     const clients = new Map<SupportedChainId, PublicClient>()
 
     for (const chainConfig of chains) {
-      const chain = chainById[chainConfig.chainId]
+      const chain = viemChainFor(chainConfig.chainId)
       if (!chain) {
         throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }

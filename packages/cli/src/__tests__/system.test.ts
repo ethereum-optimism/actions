@@ -230,6 +230,40 @@ describe('actions CLI (built binary)', () => {
       expect(body.error).toMatch(/not both/)
     })
 
+    it('ens resolve without MAINNET_RPC_URL -> stderr JSON code:config exit 3', async () => {
+      const { stdout, stderr, code } = await run(
+        ['--json', 'ens', 'resolve', 'vitalik.eth'],
+        { MAINNET_RPC_URL: '' },
+      )
+      expect(code).toBe(3)
+      expect(stdout).toBe('')
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('config')
+      expect(body.retryable).toBe(false)
+    })
+
+    it('ens resolve with a non-name input -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        ['--json', 'ens', 'resolve', 'notaname'],
+        { MAINNET_RPC_URL: 'http://127.0.0.1:1' },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid ENS name/)
+    })
+
+    it('ens reverse with a non-address input -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        ['--json', 'ens', 'reverse', 'not-an-address'],
+        { MAINNET_RPC_URL: 'http://127.0.0.1:1' },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid address/)
+    })
+
     it('swap quote with unknown --provider -> stderr JSON code:validation exit 2', async () => {
       const { stderr, code } = await run([
         '--json',

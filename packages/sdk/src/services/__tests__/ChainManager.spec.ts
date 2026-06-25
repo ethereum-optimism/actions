@@ -9,10 +9,11 @@ import type {
 } from 'viem'
 import { createPublicClient, fallback, http } from 'viem'
 import { createBundlerClient } from 'viem/account-abstraction'
-import { unichain } from 'viem/chains'
+import { mainnet, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig, PimlicoBundlerConfig } from '@/types/chain.js'
 
@@ -102,6 +103,28 @@ describe('ChainManager', () => {
       expect(() => new ChainManager(multiChainConfigs)).toThrow(
         `Chain ${unichain.id} is not supported`,
       )
+    })
+
+    it('should configure Ethereum mainnet, which the Superchain registry omits', () => {
+      // mainnet (chain 1) is a supported chain for ENS reads but is absent from
+      // @eth-optimism/viem/chains; the L1 fallback must let it be constructed.
+      expect(chainById[mainnet.id]).toBeUndefined()
+      const mgr = new ChainManager([
+        { chainId: mainnet.id, rpcUrls: ['https://mainnet.example'] },
+      ])
+      expect(mgr.getChain(mainnet.id).id).toBe(mainnet.id)
+      expect(mgr.tryGetPublicClient(mainnet.id)?.chain?.id).toBe(mainnet.id)
+    })
+  })
+
+  describe('getChain', () => {
+    it('throws ChainNotSupportedError for an id unknown to both registries', () => {
+      // getChain previously returned chainById[id] typed as Chain but actually
+      // undefined for unknown ids, silently handing viem an undefined chain.
+      // It now throws the typed error so callers fail loudly.
+      expect(() =>
+        chainManager.getChain(99999 as unknown as SupportedChainId),
+      ).toThrow(ChainNotSupportedError)
     })
   })
 

@@ -1,5 +1,7 @@
 import {
   ActionsError,
+  EnsResolutionError,
+  EnsRpcError,
   ProviderNotConfiguredError,
   serializeBigInt,
 } from '@eth-optimism/actions-sdk'
@@ -108,6 +110,8 @@ function sdkErrorDetails(err: ActionsError): Record<string, unknown> {
  * @description Maps any thrown value into a `CliError` with the right code:
  * - `CliError` instances pass through unchanged.
  * - `ProviderNotConfiguredError` → `config`.
+ * - `EnsResolutionError` → `validation` (a well-formed name that is unregistered, normalizes to nothing, or resolves to the zero address is a permanent, non-retryable failure - it must not surface as a retryable `network` error).
+ * - `EnsRpcError` → `network` (a transient mainnet RPC failure during ENS resolution; retryable). The explicit branch pins this mapping so it survives a future refactor that makes `EnsRpcError` extend `ActionsError` (which would otherwise silently reclassify it as non-retryable `validation`).
  * - Other `ActionsError` subclasses → `validation` (carries the SDK error's own properties as `details`).
  * - viem `ContractFunctionRevertedError` → `onchain`.
  * - Anything else → retryable `network`.
@@ -122,6 +126,12 @@ export function toCliError(err: unknown): CliError {
   if (err instanceof CliError) return err
   if (err instanceof ProviderNotConfiguredError) {
     return new CliError('config', err.shortMessage, sdkErrorDetails(err))
+  }
+  if (err instanceof EnsResolutionError) {
+    return new CliError('validation', err.message, { input: err.input })
+  }
+  if (err instanceof EnsRpcError) {
+    return new CliError('network', err.message, { input: err.input })
   }
   if (err instanceof ActionsError) {
     return new CliError('validation', err.shortMessage, sdkErrorDetails(err))
@@ -281,6 +291,14 @@ export function isEpipeError(err: unknown): boolean {
   )
 }
 
+// SDK error messages can embed attacker-controlled on-chain ENS text (e.g.
+// `EnsResolutionError`/`EnsRpcError` quote the offending name, which originates
+// from a reverse record an attacker controls). Rendered verbatim to a terminal
+// those bytes can carry ANSI/OSC escapes that rewrite the screen or window
+// title. Strip C0/C1 control bytes from the human-readable `error` line. The
+// JSON path is unaffected: `JSON.stringify` already escapes control characters.
+const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
+
 /**
  * @description Writes an error envelope to stderr and exits with the
  * taxonomy's mapped exit code. The body matches the contract
@@ -311,7 +329,7 @@ export function writeError(err: unknown): never {
         null,
         2,
       ) + '\n'
-    : `Error (${code}): ${message}\n`
+    : `Error (${code}): ${message.replace(CONTROL_CHARS, '')}\n`
   try {
     process.stderr.write(body)
   } catch (writeErr) {
