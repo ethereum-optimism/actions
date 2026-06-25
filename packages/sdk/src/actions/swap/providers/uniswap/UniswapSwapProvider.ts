@@ -7,8 +7,10 @@ import {
   getUniswapAddresses,
 } from '@/actions/swap/providers/uniswap/addresses.js'
 import {
+  buildPath,
   encodeUniversalRouterSwap,
   getQuote,
+  type MultiHopParams,
 } from '@/actions/swap/providers/uniswap/encoding.js'
 import {
   configToMarkets,
@@ -116,6 +118,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       this.resolveQuoteDefaults(params)
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
 
+    // A configured 2+ hop path takes precedence over a direct pool for this pair.
+    const multiHop: MultiHopParams | undefined =
+      marketConfig.path && marketConfig.path.length >= 2
+        ? buildPath(marketConfig.assets[0], marketConfig.path)
+        : undefined
+
     const quote = await getQuote({
       assetIn,
       assetOut,
@@ -127,6 +135,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       poolManagerAddress: addresses.poolManager,
       fee: marketConfig.fee,
       tickSpacing: marketConfig.tickSpacing,
+      multiHop,
     })
 
     const swapCalldata = encodeUniversalRouterSwap({
@@ -142,6 +151,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       universalRouterAddress: addresses.universalRouter,
       fee: marketConfig.fee,
       tickSpacing: marketConfig.tickSpacing,
+      multiHop,
     })
 
     const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
@@ -171,8 +181,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         routerAddress: addresses.universalRouter,
         value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
         providerContext: {
-          fee: marketConfig.fee,
-          tickSpacing: marketConfig.tickSpacing,
+          // For multi-hop routes this reports the first hop's pool params only;
+          // the full per-hop breakdown lives in `route.pools`.
+          fee: marketConfig.fee ?? marketConfig.path?.[0]?.fee,
+          tickSpacing:
+            marketConfig.tickSpacing ?? marketConfig.path?.[0]?.tickSpacing,
           permit2Address: addresses.permit2,
         },
       },
@@ -219,21 +232,28 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
   /**
    * Resolve and validate Uniswap market config for a pair.
-   * @throws If pair not in allowlist or missing fee/tickSpacing
+   * A pair must define either a direct pool (`fee` + `tickSpacing`) or a
+   * multi-hop `path` (2+ hops).
+   * @throws If pair not in allowlist or missing both pool params and a path
    */
   private resolveUniswapConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): UniswapMarketConfig & { fee: number; tickSpacing: number } {
+  ): UniswapMarketConfig {
     const config = this.resolveMarketConfig(assetIn, assetOut, chainId) as
       | UniswapMarketConfig
       | undefined
-    if (config?.fee === undefined || config?.tickSpacing === undefined) {
+
+    const hasDirectPool =
+      config?.fee !== undefined && config?.tickSpacing !== undefined
+    const hasPath = (config?.path?.length ?? 0) >= 2
+
+    if (!config || (!hasDirectPool && !hasPath)) {
       throw new AssetMetadataRequiredError(
-        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+        `fee and tickSpacing (or a multi-hop path) must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )
     }
-    return config as UniswapMarketConfig & { fee: number; tickSpacing: number }
+    return config
   }
 }

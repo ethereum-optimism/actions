@@ -10,6 +10,18 @@ const POOL_KEY_COMPONENTS = [
 ] as const
 
 /**
+ * PathKey tuple components for multi-hop V4 routes.
+ * @see https://github.com/Uniswap/v4-periphery/blob/main/src/libraries/PathKey.sol
+ */
+export const PATH_KEY_COMPONENTS = [
+  { name: 'intermediateCurrency', type: 'address' },
+  { name: 'fee', type: 'uint24' },
+  { name: 'tickSpacing', type: 'int24' },
+  { name: 'hooks', type: 'address' },
+  { name: 'hookData', type: 'bytes' },
+] as const
+
+/**
  * V4 Quoter ABI (subset for quoting)
  * @see https://docs.uniswap.org/contracts/v4/reference/periphery/interfaces/IQuoter
  */
@@ -48,6 +60,46 @@ export const QUOTER_ABI = [
           { name: 'zeroForOne', type: 'bool' },
           { name: 'exactAmount', type: 'uint128' },
           { name: 'hookData', type: 'bytes' },
+        ],
+      },
+    ],
+    outputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'gasEstimate', type: 'uint256' },
+    ],
+  },
+  {
+    name: 'quoteExactInput',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'exactCurrency', type: 'address' },
+          { name: 'path', type: 'tuple[]', components: PATH_KEY_COMPONENTS },
+          { name: 'exactAmount', type: 'uint128' },
+        ],
+      },
+    ],
+    outputs: [
+      { name: 'amountOut', type: 'uint256' },
+      { name: 'gasEstimate', type: 'uint256' },
+    ],
+  },
+  {
+    name: 'quoteExactOutput',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'exactCurrency', type: 'address' },
+          { name: 'path', type: 'tuple[]', components: PATH_KEY_COMPONENTS },
+          { name: 'exactAmount', type: 'uint128' },
         ],
       },
     ],
@@ -108,6 +160,37 @@ export const EXACT_OUTPUT_SINGLE_PARAMS = [
       { name: 'amountOut', type: 'uint128' },
       { name: 'amountInMaximum', type: 'uint128' },
       { name: 'hookData', type: 'bytes' },
+    ],
+  },
+] as const
+
+/**
+ * ABI type for ExactInputParams (multi-hop, exact in).
+ * Matches the deployed V4Router shape used by this repo's single-hop encoding
+ * (no `minHopPriceX36` — that field exists only in newer v4-periphery).
+ * @see https://docs.uniswap.org/contracts/v4/reference/periphery/interfaces/IV4Router
+ */
+export const EXACT_INPUT_PARAMS = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'currencyIn', type: 'address' },
+      { name: 'path', type: 'tuple[]', components: [...PATH_KEY_COMPONENTS] },
+      { name: 'amountIn', type: 'uint128' },
+      { name: 'amountOutMinimum', type: 'uint128' },
+    ],
+  },
+] as const
+
+/** ABI type for ExactOutputParams (multi-hop, exact out) */
+export const EXACT_OUTPUT_PARAMS = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'currencyOut', type: 'address' },
+      { name: 'path', type: 'tuple[]', components: [...PATH_KEY_COMPONENTS] },
+      { name: 'amountOut', type: 'uint128' },
+      { name: 'amountInMaximum', type: 'uint128' },
     ],
   },
 ] as const

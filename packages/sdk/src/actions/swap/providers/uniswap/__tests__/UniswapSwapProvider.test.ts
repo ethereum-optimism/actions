@@ -1,8 +1,17 @@
-import type { Address, PublicClient } from 'viem'
+import {
+  type Address,
+  decodeAbiParameters,
+  decodeFunctionData,
+  type PublicClient,
+} from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MockWETHAsset } from '@/__mocks__/MockAssets.js'
+import {
+  EXACT_INPUT_PARAMS,
+  UNIVERSAL_ROUTER_ABI,
+} from '@/actions/swap/providers/uniswap/abis.js'
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import { UniswapSwapProvider } from '@/actions/swap/providers/uniswap/UniswapSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -109,7 +118,7 @@ describe('UniswapSwapProvider', () => {
       expect(result.transactionData.permit2Approval).toBeDefined()
     })
 
-    it('throws without fee/tickSpacing in market filter', async () => {
+    it('throws without fee/tickSpacing or a path in market filter', async () => {
       const provider = createProvider({
         marketAllowlist: [{ assets: [USDC, OP], chainId: CHAIN_ID }],
       })
@@ -123,7 +132,7 @@ describe('UniswapSwapProvider', () => {
           walletAddress:
             '0x4444444444444444444444444444444444444444' as Address,
         }),
-      ).rejects.toThrow('fee and tickSpacing must be configured')
+      ).rejects.toThrow('fee and tickSpacing (or a multi-hop path)')
     })
   })
 
@@ -154,6 +163,61 @@ describe('UniswapSwapProvider', () => {
 
       // 1 USDC = 1000000 (6 decimals)
       expect(quote.amountInRaw).toBe(1000000n)
+    })
+
+    it('routes a path-configured pair through multi-hop end-to-end', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, OP],
+            chainId: CHAIN_ID,
+            path: [
+              { asset: MockWETHAsset, fee: 500, tickSpacing: 10 },
+              { asset: OP, fee: 3000, tickSpacing: 60 },
+            ],
+          },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+      })
+
+      // Route reflects the configured intermediate, not a direct pool.
+      expect(quote.route.path).toEqual([USDC, MockWETHAsset, OP])
+      expect(quote.route.pools).toHaveLength(2)
+
+      // Decoded calldata uses the multi-hop SWAP_EXACT_IN action (0x07).
+      const { args } = decodeFunctionData({
+        abi: UNIVERSAL_ROUTER_ABI,
+        data: quote.execution.swapCalldata,
+      })
+      const [, inputs] = args as readonly [
+        `0x${string}`,
+        ReadonlyArray<`0x${string}`>,
+        bigint,
+      ]
+      const [actions, actionParams] = decodeAbiParameters(
+        [{ type: 'bytes' }, { type: 'bytes[]' }],
+        inputs[0]!,
+      )
+      expect(actions).toBe('0x070c0f')
+
+      const [decoded] = decodeAbiParameters(
+        EXACT_INPUT_PARAMS,
+        (actionParams as ReadonlyArray<`0x${string}`>)[0]!,
+      )
+      const p = decoded as {
+        currencyIn: string
+        path: ReadonlyArray<{ intermediateCurrency: string }>
+      }
+      expect(p.currencyIn.toLowerCase()).toBe(
+        (USDC.address[CHAIN_ID] as string).toLowerCase(),
+      )
+      expect(p.path).toHaveLength(2)
     })
   })
 
