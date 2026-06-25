@@ -2,8 +2,10 @@ import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createMockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
+import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { QuoteRecipientMissingError } from '@/core/error/errors.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 describe('WalletSwapNamespace', () => {
@@ -230,6 +232,29 @@ describe('WalletSwapNamespace', () => {
       })
 
       expect(quote.recipient).toBe(customRecipient)
+    })
+
+    it('rejects a price-only quote passed to execute (no recipient to bind)', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const actions = new ActionsSwapNamespace({ uniswap: provider })
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      // A PriceQuote from actions.swap.getQuote carries quotedAt (so execute
+      // routes it down the pre-built-quote path) but has no recipient. It must
+      // fail loudly rather than silently re-quoting to the wallet — re-quote
+      // via wallet.swap.getQuote to execute.
+      const priceQuote = await actions.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      await expect(namespace.execute(priceQuote)).rejects.toThrow(
+        QuoteRecipientMissingError,
+      )
+      expect(provider.mockExecute).not.toHaveBeenCalled()
     })
   })
 

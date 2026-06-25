@@ -22,7 +22,7 @@ describe('BaseSwapNamespace', () => {
   }
 
   describe('getQuote', () => {
-    it('delegates to provider getQuote', async () => {
+    it('delegates to provider getQuote and returns a price-only quote', async () => {
       const provider = createMockSwapProvider()
       const namespace = new ActionsSwapNamespace({ uniswap: provider })
 
@@ -35,9 +35,26 @@ describe('BaseSwapNamespace', () => {
 
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
       expect(result.price).toBe(1.5)
-      expect(result.execution).toBeDefined()
-      expect(result.execution.swapCalldata).toMatch(/^0x/)
       expect(result.provider).toBe('uniswap')
+    })
+
+    it('strips execution and recipient so no msg.sender sentinel leaks', async () => {
+      const provider = createMockSwapProvider()
+      const namespace = new ActionsSwapNamespace({ uniswap: provider })
+
+      const result = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      // PriceQuote is intentionally un-executable: dropping recipient prevents
+      // the Universal Router msg.sender sentinel (address(1)) from leaking into
+      // a public field that consumers would trust for display/accounting.
+      expect(result).not.toHaveProperty('execution')
+      expect(result).not.toHaveProperty('recipient')
+      expect(result).not.toHaveProperty('approvalMode')
     })
 
     it('throws if no provider configured', async () => {
@@ -80,6 +97,10 @@ describe('BaseSwapNamespace', () => {
 
       // Should pick velodrome because 1.8 > 1.2 (higher amountOut)
       expect(result.provider).toBe('velodrome')
+      // The price-routing branch returns through toPriceQuote too — still no
+      // sentinel recipient leak.
+      expect(result).not.toHaveProperty('recipient')
+      expect(result).not.toHaveProperty('execution')
     })
 
     it('skips providers that fail to quote', async () => {
@@ -186,6 +207,13 @@ describe('BaseSwapNamespace', () => {
       expect(quotes).toHaveLength(2)
       expect(quotes[0].provider).toBe('velodrome')
       expect(quotes[1].provider).toBe('uniswap')
+      // The plural path strips through the same toPriceQuote — no element may
+      // leak the sentinel recipient or execution data.
+      for (const quote of quotes) {
+        expect(quote).not.toHaveProperty('execution')
+        expect(quote).not.toHaveProperty('recipient')
+        expect(quote).not.toHaveProperty('approvalMode')
+      }
     })
 
     it('skips failed providers and returns successful ones', async () => {

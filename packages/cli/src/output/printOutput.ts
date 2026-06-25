@@ -9,9 +9,9 @@ import type {
   LendMarket,
   LendMarketPosition,
   LendProviderName,
+  PriceQuote,
   SupportedChainId,
   SwapMarket,
-  SwapQuote,
   TokenBalance,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
@@ -113,8 +113,8 @@ interface Printers {
   borrowPosition: BorrowMarketPosition
   swapMarkets: readonly SwapMarket[]
   swapMarket: SwapMarket
-  swapQuote: SwapQuote
-  swapQuotes: readonly SwapQuote[]
+  swapQuote: PriceQuote
+  swapQuotes: readonly PriceQuote[]
   swapExecute: SwapExecuteDoc
 }
 
@@ -309,7 +309,7 @@ function formatSwapMarkets(markets: readonly SwapMarket[]): void {
   for (const m of markets) formatSwapMarket(m)
 }
 
-function formatSwapQuote(q: SwapQuote): void {
+function formatSwapQuote(q: PriceQuote): void {
   writeLine(
     `${q.amountIn} ${q.assetIn.metadata.symbol} -> ${q.amountOut} ${q.assetOut.metadata.symbol} (provider=${q.provider}, chain=${q.chainId})`,
   )
@@ -319,7 +319,7 @@ function formatSwapQuote(q: SwapQuote): void {
   writeLine(`  amountOutMin=${q.amountOutMin} expiresAt=${q.expiresAt}`)
 }
 
-function formatSwapQuotes(quotes: readonly SwapQuote[]): void {
+function formatSwapQuotes(quotes: readonly PriceQuote[]): void {
   if (quotes.length === 0) {
     writeLine('(no quotes)')
     return

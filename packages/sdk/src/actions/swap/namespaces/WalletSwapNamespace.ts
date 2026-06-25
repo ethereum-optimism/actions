@@ -3,7 +3,10 @@ import { isAddressEqual } from 'viem'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
+import {
+  QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+} from '@/core/error/errors.js'
 import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { RecipientResolver } from '@/services/nameservices/ens/utils.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -34,21 +37,22 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   }
 
   /**
-   * Get a swap quote with the wallet address as recipient.
+   * Get a full, executable swap quote with the wallet address as recipient.
    * Ensures calldata is encoded for the real wallet, not a placeholder.
    */
-  override async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    return super.getQuote({
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    return this.resolveQuote({
       ...params,
       recipient: params.recipient ?? this.wallet.address,
     })
   }
 
   /**
-   * Get quotes from all providers with the wallet address as recipient.
+   * Get full, executable quotes from all providers with the wallet address as
+   * recipient.
    */
-  override async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
-    return super.getQuotes({
+  async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    return this.resolveQuotes({
       ...params,
       recipient: params.recipient ?? this.wallet.address,
     })
@@ -89,8 +93,16 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * quote's recipient differs from `wallet.address`; silently swapping
    * recipients would route output tokens to the wrong address on routers that
    * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   *
+   * Also guards the case where a price-only quote (from
+   * `actions.swap.getQuote`) reaches `execute`: it carries `quotedAt` (so it
+   * routes here) but has no `recipient`, so it fails loudly with a clear
+   * domain error instead of a cryptic address-comparison crash.
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
+    if (!quote.recipient) {
+      throw new QuoteRecipientMissingError()
+    }
     if (!isAddressEqual(quote.recipient, this.wallet.address)) {
       throw new QuoteRecipientMismatchError({
         quoteRecipient: quote.recipient,
