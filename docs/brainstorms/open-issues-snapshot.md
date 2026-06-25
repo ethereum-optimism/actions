@@ -1,0 +1,96 @@
+# Open issues snapshot (ethereum-optimism/actions)
+
+Generated for the production-readiness review. Subagents Read this for dedup / candidate-issue mapping.
+
+- #511 [] Add docs for all recent features
+- #497 [good first issue ] Adopt shared Aave pool/gateway accessors in lend provider
+- #495 [] May cleanup tickets
+- #493 [enhancement ] Re-assess market kind/provider discriminator strings across Lend/Swap/Borrow
+- #483 [agent:todo ] Generalize SDK public export surface tests
+- #477 [agent:todo ] Consolidate validation and lifecycle abstractions across action providers
+- #476 [agent:todo ] Retrofit lend/swap to narrowed wallet helper and drop unsafe receipt casts
+- #475 [agent:todo ] Adopt branded zod schemas across lend/swap/wallet controllers
+- #474 [agent:todo ] Retrofit lend/swap error handling to named errors + mapSdkError + global onError
+- #472 [] Add BridgeProvider and InteropBridgeProvider for cross-chain Actions flows
+- #471 [] Record Actions borrow demo
+- #470 [] Research spike: Prod testing matrix plan
+- #464 [] Record CLI Loom
+- #456 [] perf(sdk): pipeline EOAWallet.sendBatch for additional ~3.5s win
+- #454 [] SDK + CLI: getPositions() to fetch all wallet lend positions in one call
+- #453 [] CLI: ENS namespace (resolve, reverse, info)
+- #452 [] Batch Wallet.getBalance asset fetches via Multicall3
+- #449 [] Morpho: support native ETH deposits and withdrawals via Bundler3 (parity with Aave WETHGateway)
+- #446 [] Demo: editing buy amount on Velodrome doesn't auto-populate sell amount
+- #444 [] Velodrome universal router silently ignores user-supplied recipient
+- #440 [] Uniswap provider: support multi-hop swaps (V4 EXACT_IN / EXACT_OUT)
+- #437 [] Document executor vs recipient invariant in WalletSwapNamespace strict check
+- #436 [] Decouple walletAddress from quote.recipient in _buildApprovals
+- #435 [] Sentinel recipient leaks via actions.swap.getQuote — split price quote from executable quote
+- #432 [Wiz-remediation ] Wiz - 'main' Branch Scan Overview
+- #429 [] Stream per-tx progress events from wallet send/sendBatch
+- #427 [] Borrow PR #6: Borrow Clean up work
+- #422 [agent MVP ] CLI: smart wallet support + wallet periphery commands (MVP PR 4)
+- #419 [] CLI: extract serializeBigInt to shared SDK util
+- #418 [agent ] CLI: CI smoke tests
+- #417 [agent ] CLI: human-readable --pretty output rendering
+- #416 [agent ] CLI: multi-wallet / nonce-indexed smart wallets
+- #415 [agent ] CLI: session-key flow (agent runs as delegated session key)
+- #414 [agent ] CLI: onchain guardrails (spending caps, Call Policies)
+- #413 [agent ] CLI: wallet.send / sendBatch / transfer commands
+- #412 [agent ] CLI: 1-of-2 signer onboarding (add user as co-signer)
+- #411 [agent ] CLI: interactive agent-driven config onboarding
+- #403 [] Wallet Refactor: Implement ZeroDevSmartWallet (ERC-7579 modular, enables agent session keys)
+- #402 [] Wallet Refactor: Rename DefaultSmartWallet to CoinbaseSmartWallet; verify SmartWallet base supports second impl
+- #401 [] Wallet Refactor: Add ConnectedWalletProvider (WalletConnect / injected / Coinbase Wallet)
+- #400 [] Wallet Refactor: Per-protocol restructure: Base.ts + node/ + react/ shared-base pattern
+- #399 [] Wallet Refactor: Introduce WalletProvider<TConfig> base with protected _methods pattern
+- #398 [] Wallet Refactor: Collapse thin wallet subclasses into concrete ExternalWallet
+- #397 [] Wallet Refactor: Rename EOAWallet to ExternalWallet
+- #396 [] REFACTOR: Wallet layer - align with lend/borrow provider pattern
+- #394 [] bug: TransactionOptions is declared but never applied to transactions
+- #393 [] refactor: rename ChainManager to ChainProvider
+- #381 [] Resolve existing lint warnings (155 total)
+- #379 [] feat(sdk): accept optional *Raw bigint amounts on wallet/actions namespace methods
+- #373 [agent ] Add calldata integrity validation to SwapProvider quote execution
+- #371 [agent ] Name service agnostic identity resolution
+- #370 [agent ] Wallet Refactor: Rename send/sendTokens (viem alignment) and DRY up token transfer + signing
+- #367 [] fix: add @param JSDoc to WalletSwapNamespace overrides
+- #337 [good first issue help wanted ] Replace all `any` types with specific types
+- #335 [good first issue help wanted ] Full e2e system tests
+- #334 [good first issue help wanted ] Lend provider blocklist and abstraction gaps
+- #332 [] Add network fork tests to CI
+- #331 [good first issue help wanted ] Optimize getQuote to skip calldata encoding when wallet is not needed
+- #330 [good first issue help wanted ] Wallet Refactor: Rename hosted wallet provider to embedded wallet provider
+- #328 [good first issue help wanted ] Standardize provider contract address storage
+- #318 [agent ] Validate sqRt math aligns with Uniswap sdk math
+- #315 [] Run Actions in prod on OPM
+- #308 [] Prototype: Agent Actions dashboard
+- #307 [] Prototype: Agent Actions contracts
+- #304 [] Prototype: Actions CLI
+- #303 [good first issue help wanted ] Align lend amount types with swap pattern
+- #302 [good first issue ] Actions SDK should return block explorer URLs
+- #283 [] Research ActionsConfig level tree-shakeability
+- #268 [] ActionConfig should function as a source of truth
+- #258 [good first issue ] Add Spark Lend Provider support
+- #257 [] Research adding 4626 vault support directly
+- #255 [] Replace sdk deps with contract configs on all supported chains
+- #251 [] Add support for Aave v4
+- #241 [] Pull important addresses from provider repos
+- #239 [] WalletConnect / EOA wallet support
+- #238 [] Spec for Funding Flows
+- #237 [] Recovery flows
+- #236 [] Research 7702 overlap
+- #232 [good first issue help wanted ] Expose a way to get public client for a chain via the actions sdk
+- #216 [] Remove type simple from Bundler config
+- #211 [] Replace LendProvider API dependencies with onchain fetching
+- #209 [] Improve LendProvider return types
+- #180 [] Make ActionsConfig usable for frontend only setup
+- #163 [] Update `DefaultSmartWallet` so that the entire owners array is not necessary
+- #133 [good first issue help wanted ] LendProvider: Improve Approval logic
+- #131 [] Test that peer dependencies work as expected and the sdk builds without all dependencies installed
+- #130 [] LendProvider: `getMarkets()` fetch available MarketConfigs via API
+- #112 [] LendProvider: manually fetch APY for `getMarkets()` + `getMarket(id)` 
+- #98 [] Decide how to handle smart wallet deployment
+- #93 [good first issue ] `transfer` method in Wallet base class
+- #90 [] Fork repo for Smart Wallet deployment factory
+- #82 [] Create bundler client abstraction and consume in ChainManager
