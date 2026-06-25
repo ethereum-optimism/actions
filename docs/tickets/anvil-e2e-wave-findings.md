@@ -8,6 +8,21 @@ This file is the shared handoff for follow-up Anvil e2e tickets. Before implemen
 - Current EOA PR: [its-applekid/actions#60](https://github.com/its-applekid/actions/pull/60)
 - Current Uniswap PR: [its-applekid/actions#62](https://github.com/its-applekid/actions/pull/62)
 
+## Follow-up e2e ticket map
+
+These tickets are created for the next standard e2e phase but are not queued for aiur until `agent:todo` is added.
+
+| ID | Ticket |
+| --- | --- |
+| P3-I1 | [4337 local lane](https://github.com/its-applekid/actions/issues/63) |
+| P3-W2 | [Hosted wallets standard e2e](https://github.com/its-applekid/actions/issues/64) |
+| P3-W3 | [Smart wallet standard e2e](https://github.com/its-applekid/actions/issues/65) |
+| P3-P2 | [Velodrome swap standard e2e](https://github.com/its-applekid/actions/issues/66) |
+| P3-P3L | [Aave lend standard e2e](https://github.com/its-applekid/actions/issues/67) |
+| P3-P4L | [Morpho lend standard e2e](https://github.com/its-applekid/actions/issues/68) |
+| P3-P3B | [Aave borrow standard e2e](https://github.com/its-applekid/actions/issues/69) |
+| P3-P4B | [Morpho borrow standard e2e](https://github.com/its-applekid/actions/issues/70) |
+
 ## Implementation shape
 
 - Keep provider PRs small: one test file, one changeset if the SDK package changed, and only provider-specific scenario data.
