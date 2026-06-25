@@ -101,7 +101,7 @@ Run each phase as one batch of branches, in phase order: a phase starts only onc
 
 ### Phase 1 (16 tickets)
 
-Highest priority. All six named chokepoints land here (`prebuilt-quote-calldata-integrity`, `swap-recipient-encoding-ignored`, `lend-asset-market-validation`, `slippage-bounds-negative-minout`, `hosted-signer-address-reconcile`, `sdk-dependency-pinning-and-optionality`) alongside the highest-severity, highest-leverage fund-safety fixes and the test-infra prerequisites that unblock the most downstream work, including all four blockers of the `e2e-anvil-feature-test` capstone.
+Highest priority. All six named chokepoints land here (`prebuilt-quote-calldata-integrity`, `swap-recipient-encoding-ignored`, `lend-asset-market-validation`, `slippage-bounds-negative-minout`, `hosted-signer-address-reconcile`, `sdk-dependency-pinning-and-optionality`) alongside the highest-severity, highest-leverage fund-safety fixes and the Anvil harness work that unblocks standard-usage e2e.
 
 [`prebuilt-quote-calldata-integrity`](./prebuilt-quote-calldata-integrity.md), [`swap-recipient-encoding-ignored`](./swap-recipient-encoding-ignored.md), [`lend-asset-market-validation`](./lend-asset-market-validation.md), [`slippage-bounds-negative-minout`](./slippage-bounds-negative-minout.md), [`hosted-signer-address-reconcile`](./hosted-signer-address-reconcile.md), [`sdk-dependency-pinning-and-optionality`](./sdk-dependency-pinning-and-optionality.md), [`network-fork-test-harness-consolidation`](./network-fork-test-harness-consolidation.md), [`hosted-wallet-signer-test-coverage`](./hosted-wallet-signer-test-coverage.md), [`validator-and-receipt-unit-coverage`](./validator-and-receipt-unit-coverage.md), [`calldata-encoder-differential-oracles`](./calldata-encoder-differential-oracles.md), [`backend-faucet-auth-and-rate-limit`](./backend-faucet-auth-and-rate-limit.md), [`eoa-batch-mid-revert-allowance`](./eoa-batch-mid-revert-allowance.md), [`receipt-status-as-success`](./receipt-status-as-success.md), [`smart-wallet-owner-set-reconcile`](./smart-wallet-owner-set-reconcile.md), [`recipient-validation-symmetry`](./recipient-validation-symmetry.md), [`lend-borrow-full-exit-max-sentinel`](./lend-borrow-full-exit-max-sentinel.md)
 
@@ -125,9 +125,20 @@ Medium-to-low severity hardening and typed-surface cleanup: export-surface and d
 
 ### Phase 5 (14 tickets)
 
-Lowest-priority tail: low/info cleanup (string sanitization, init-retry, chain-aware market resolution, serializeBigInt), the remaining frontend polish, and the `e2e-anvil-feature-test` capstone, which lands last because all four of its test-infra blockers sit in Phase 1.
+Lowest-priority tail: low/info cleanup (string sanitization, init-retry, chain-aware market resolution, serializeBigInt), the remaining frontend polish, and the original `e2e-anvil-feature-test` umbrella. The umbrella is now split into smaller Anvil e2e tickets by the overlay below.
 
 [`e2e-anvil-feature-test`](./e2e-anvil-feature-test.md), [`cli-pre-send-confirmation`](./cli-pre-send-confirmation.md), [`contract-address-provenance-pinning`](./contract-address-provenance-pinning.md), [`frontend-borrow-quote-param-parity`](./frontend-borrow-quote-param-parity.md), [`frontend-collateral-address-identity`](./frontend-collateral-address-identity.md), [`frontend-config-parity-and-stub-pricing`](./frontend-config-parity-and-stub-pricing.md), [`frontend-double-submit-guards`](./frontend-double-submit-guards.md), [`frontend-mirror-reconcile`](./frontend-mirror-reconcile.md), [`frontend-wallet-signer-identity`](./frontend-wallet-signer-identity.md), [`market-resolution-chain-aware`](./market-resolution-chain-aware.md), [`permit2-payload-bounds`](./permit2-payload-bounds.md), [`sdk-error-string-sanitization`](./sdk-error-string-sanitization.md), [`serializebigint-type-safety`](./serializebigint-type-safety.md), [`wallet-namespace-init-retry`](./wallet-namespace-init-retry.md)
+
+## Anvil e2e split overlay
+
+This overlay governs the smaller tickets under [`e2e-anvil-feature-test`](./e2e-anvil-feature-test.md) / upstream issue #335. It does not renumber the full 74-ticket backlog; it keeps in-flight bug-fix PRs in Phase 1, starts standard-usage Anvil e2e in Phases 2-3, and moves bug-specific/adversarial validation to a later phase. Follow-up Anvil e2e tickets should link to [`anvil-e2e-wave-findings.md`](./anvil-e2e-wave-findings.md) before implementation.
+
+| Phase | IDs | Tickets |
+| --- | --- | --- |
+| 1 | P1-D1 | Shared fork harness; in-flight bug-fix PRs continue here but do not block standard e2e |
+| 2 | P2-E0, P2-W1, P2-P1 | Anvil helpers, EOA wallet, Uniswap swap |
+| 3 | P3-I1, P3-W2, P3-W3, P3-P2, P3-P3L, P3-P4L, P3-P3B, P3-P4B | 4337 lane, hosted wallets, smart wallet, Velodrome swap, Aave lend, Morpho lend, Aave borrow, Morpho borrow |
+| Later | P4-B1, P4-B2, P4-B3, P4-B4, P4-B5, P4-B6, P4-B7, P4-B8, P4-B9, P4-X1 | Real bug-specific tracks and adversarial e2e: receipt, batch, signer mismatch, recipient, slippage, asset/market binding, owner reconcile |
 
 ## Hot files (multi-ticket, sequence within a phase)
 
@@ -210,4 +221,3 @@ Each row is a set of same-phase tickets that edit the same file. These are the a
 | 5 | `packages/sdk/src/actions/lend/providers/morpho/MorphoLendProvider.ts` | `e2e-anvil-feature-test`, `sdk-error-string-sanitization` |
 | 5 | `packages/sdk/src/utils/validation.ts` | `market-resolution-chain-aware`, `permit2-payload-bounds` |
 | 5 | `packages/sdk/src/wallet/core/wallets/smart/default/DefaultSmartWallet.ts` | `e2e-anvil-feature-test`, `contract-address-provenance-pinning`, `sdk-error-string-sanitization`, `wallet-namespace-init-retry` |
-

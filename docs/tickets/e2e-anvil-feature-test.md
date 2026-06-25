@@ -18,7 +18,7 @@ Every fund-moving primitive in the SDK ships today with a test suite that **cann
 
 The fund-safety consequence: the whole cluster of already-ledgered logic bugs is **structurally un-falsifiable** by the current suite. A wrong swap recipient (V4 `TAKE_ALL` / universal sentinel), a residual infinite Permit2 allowance after a reverted batch, a stale quote that should reject but signs, a smart-wallet op signed against a stale owner set after rotation, a hosted wallet whose reported `.address` is not the key it actually signs with — every one of these passes green today. A green CI on this surface currently means "the encoder is self-consistent," not "the funds land at the right address in the right amount." This ticket is the single consolidated feature-test that makes those mechanics observable: real signed transactions, broadcast on an OP fork, with exact-amount recipient-balance deltas and the three adversarial bodies (recipient-in-bytes, residual-allowance, quote-aging) as required test code.
 
-This is **one** ticket by design. Each per-surface finding below recommends folding into this single Anvil feature-test rather than filing separate per-case e2e tickets; the seven `CONSOLIDATED E2E SPEC` rows (F188 swap, F200 lend, F210 borrow, F223 wallet-core, F230 wallet-hosted, F241 wallet-smart, F254 core-services) are the per-surface slices of this one harness.
+This stays one umbrella issue by design, but implementation now splits into small issue/PR slices under that umbrella. The seven `CONSOLIDATED E2E SPEC` rows (F188 swap, F200 lend, F210 borrow, F223 wallet-core, F230 wallet-hosted, F241 wallet-smart, F254 core-services) are the per-surface slices of one harness, not a reason to land one giant PR.
 
 ## Findings
 
@@ -72,14 +72,64 @@ The fix is not more mocks. It is **one** real OP-fork feature-test on a consolid
 
 ## Recommended approach
 
-Build **one** consolidated Anvil feature-test on the shared harness — do not split into per-case e2e tickets. This is the consolidated end-to-end deliverable referenced throughout the ledger; it lands later, on top of the four blocking prerequisites below. All work is in test/harness code plus the SDK test utilities (`packages/sdk/src/utils/test.ts`); no production-path refactor is required by this ticket. The demo and CLI are out of scope here (this ticket is SDK testing only).
+Build **one** consolidated Anvil e2e program on the shared harness, but land it as small, dependency-ordered issue/PR slices. This is the consolidated end-to-end deliverable referenced throughout the ledger; the umbrella stays on issue #335, while the implementation tickets below keep each PR concise. All work is in test/harness code plus SDK test utilities; no production-path refactor is required by this ticket. The demo and CLI are out of scope here (this ticket is SDK testing only).
 
-**Prerequisites (blockers — must land first):**
+Before starting any follow-up Anvil e2e slice, read the current wave handoff in [`anvil-e2e-wave-findings.md`](./anvil-e2e-wave-findings.md). Keep that file updated after each review/fix cycle so future provider and wallet tickets inherit the same implementation and review guidance.
 
-1. **`network-fork-test-harness-consolidation`** — `startAnvilFork` allocates an ephemeral OS-assigned port and returns the bound port (no fixed-port registry, no 18545/18547 collisions); the readiness probe validates the JSON-RPC `eth_chainId` equals the expected fork chain (not any HTTP 200); `fundWallet` **throws** on a requested-but-failed transfer (no `console.log`-and-continue) and looks the USDC address + whale up **per-chain** (not the single Unichain whale); the two divergent inline `createForkChainManager` stubs are unified into one. This is the PR #348 harness-fix set.
-2. **`calldata-encoder-differential-oracles`** — interim, no-bundler unit decode of the produced swap / `executeBatch` / borrow-bundle calldata using the **real** independent ABI (`coinbaseSmartWalletAbi`, `blueAbi`, router ABI) as an oracle, asserting the inner `(to, value, data)` / recipient / amount / `onBehalf` tuples. Anchors the encode step before the multi-day bundler work and gives the e2e its independent oracles (F242/F248).
-3. **`validator-and-receipt-unit-coverage`** — direct unit tests for `validateSlippage` (NaN / >1), `validateRecipient`, `validateNotZeroAddress`, `validateQuoteNotExpired`, and the receipt success-gate, which currently have zero direct coverage; the e2e asserts these fire **before** signing.
-4. **`hosted-wallet-signer-test-coverage`** — the un-mocked unit seam: a shared construction-time signer self-test (`recoverMessageAddress(signer.signMessage(probe)) === wallet.address`) wired with a known local key, plus the Dynamic `createSigner` raw-digest closure recovery and the Privy/Turnkey `signTypedData` CustomSource cast recovery. The full real-credential recovery lands in this e2e.
+## Split phase plan
+
+This phase overlay supersedes the earlier dependency-gated capstone shape. The first Anvil wave should exercise standard SDK usage and catch real bugs as normal user flows fail. Bug-specific and adversarial cases move to a later phase; test-improvement-only tickets are not blockers for this e2e work.
+
+### Phase 1 - existing work continues
+
+In-flight bug-fix PRs stay in Phase 1 and can continue independently. They are no longer blockers for starting standard-usage Anvil e2e, except where a test genuinely cannot run without infrastructure.
+
+| ID | Title |
+| --- | --- |
+| P1-D1 | Shared fork harness |
+
+### Phase 2 - standard e2e foundation
+
+| ID | Title |
+| --- | --- |
+| P2-E0 | Anvil e2e helpers |
+| P2-W1 | EOA wallet standard e2e |
+| P2-P1 | Uniswap swap standard e2e |
+
+### Phase 3 - remaining standard e2e
+
+| ID | Title |
+| --- | --- |
+| P3-I1 | 4337 local lane |
+| P3-W2 | Hosted wallets standard e2e |
+| P3-W3 | Smart wallet standard e2e |
+| P3-P2 | Velodrome swap standard e2e |
+| P3-P3L | Aave lend standard e2e |
+| P3-P4L | Morpho lend standard e2e |
+| P3-P3B | Aave borrow standard e2e |
+| P3-P4B | Morpho borrow standard e2e |
+
+### Later bug-focused phases
+
+These are real bug-fix or bug-regression tracks, not prerequisites for standard-usage Anvil e2e.
+
+| ID | Title |
+| --- | --- |
+| P4-B1 | Reverted receipt bug |
+| P4-B2 | EOA batch-revert bug |
+| P4-B3 | Hosted signer-mismatch bug |
+| P4-B4 | Swap recipient-encoding bug |
+| P4-B5 | Recipient symmetry bug |
+| P4-B6 | Slippage bounds bug |
+| P4-B7 | Lend asset-validation bug |
+| P4-B8 | Market binding bug |
+| P4-B9 | Owner reconcile bug |
+| P4-X1 | Bug-specific adversarial e2e |
+
+**Hard prerequisites (status and blockers):**
+
+1. **`network-fork-test-harness-consolidation`** is done via upstream PR #518. This is the true prerequisite for all Anvil e2e work.
+2. **4337 local lane** is required only for the smart-wallet standard e2e slice. It should not block EOA, hosted-wallet, swap, lend, or borrow e2e.
 
 **The consolidated feature-test (OP-mainnet fork only, USDC-as-input via a per-chain pinned whale):**
 
@@ -90,7 +140,7 @@ Build **one** consolidated Anvil feature-test on the shared harness — do not s
 - **Wallet-core send / sendBatch through EOA + DefaultSmartWallet.** Drive real signed `send`/`sendBatch` through both `EOAWallet` and `DefaultSmartWallet` with exact-amount recipient deltas. The smart-wallet leg additionally covers: counterfactual deploy (derive address from the real factory `getAddress`, fund it, `deploy()` via a real bundler, assert deployed code lives at exactly the pre-derived address); `executeBatch` with two calls asserting both inner effects atomically; and one full owner-rotation — `addSigner(newEOA)` → reload owners via `findSignerIndexOnChain` → **sign a subsequent op with the new signer** (the only construction that catches F087's stale in-memory owner set) → `removeSigner(oldEOA)` and assert the removed key can no longer sign. The owner-rotation case is load-bearing.
 - **Permit2 / EIP-712 signature recovery.** Sign a real Permit2 `PermitTransferFrom` typed-data struct through each hosted provider's `signTypedData` and assert `verifyTypedData({ address: signer.address, … })` is true (validates the F073 CustomSource cast and the Dynamic raw-digest closure). Permit2 signature payloads are in signing-path scope.
 
-**Required adversarial test bodies (these are the load-bearing constructions):**
+**Later bug-focused test bodies (not blockers for the standard-usage wave):**
 
 - **(a) recipient-in-bytes** — use a distinct third recipient and decode the **signed** swap/borrow calldata, asserting the encoded recipient equals the recipient passed to `getQuote` and that exact address received the output (catches the V4 `TAKE_ALL` / universal sentinel cluster, #444/F054, and borrow `onBehalf`/`receiver` spoofing).
 - **(b) residual-allowance** — after a max-mode approval whose action leg reverts, assert no infinite (`maxUint256`) allowance is left dangling and that any standing allowance's spender is the correct vault/pool/router (catches F021/F042/F050/F053/F198); exact-mode leaves zero.
@@ -119,17 +169,14 @@ Test / harness / spec loci (the fix lands here, not in the related logic-bug sou
 
 ## Acceptance criteria / tests
 
-- A single consolidated network/e2e test, OP-mainnet fork only, gated on real Privy/Turnkey/Dynamic credentials being present; CI **fails fast** (not silently skips) when the creds or RPC are missing.
-- The four blockers have landed: ephemeral-port + chainId-validated harness, throw-on-funding-failure + per-chain whale map, calldata differential-oracle decoders, validator/receipt unit coverage, and the hosted-wallet signer self-test seam.
-- Every on-chain assertion is **exact-amount** against an oracle computed **independently** of the SDK's own quote/encoder (pool `getAmountsOut`, real protocol ABIs); no assertion compares the SDK output to `quote.amountOut` or decodes with the same ABI used to encode.
-- Swap: every shipping router variant executes once on-chain; recipient delta == independently-recomputed output and `>= amountOutMin`; wallet input == exactly `amountInRaw`.
-- Lend: Morpho and Aave supply→withdraw roundtrip returns the underlying to within 1 wei of start; `getATokenAddress` == known aToken; `getVault` SDK-path == forced-fallback shape.
-- Borrow: open credits loan-token by exactly `borrowAmountRaw`, debits collateral by `collateralAmountRaw`, decoded `onBehalf/receiver == walletAddress`, `getPosition().healthFactor` non-null; close executes.
-- Wallet-core: real-signed `send`/`sendBatch` through both `EOAWallet` and `DefaultSmartWallet` with exact recipient deltas; smart-wallet counterfactual deploy lands code at the pre-derived address; `executeBatch` applies both inner effects atomically.
-- Owner-rotation: after `addSigner`, an op **signed with the new signer** succeeds and the stale in-memory owner set is refreshed (test fails today, F087); only-owner `removeSigner` reverts/guards (F039); wrong-`ownerIndex` op is bundler-rejected (F023).
-- Hosted signer-identity: for each provider `recoverMessageAddress(signer.signMessage(probe)) === wallet.address === signer.address`; the wrong-address Privy construction rejects or never reports the wrong address.
-- Permit2/EIP-712: a real `PermitTransferFrom` struct signed through each provider passes `verifyTypedData`.
-- The three adversarial bodies (recipient-in-bytes decode, residual `maxUint256` allowance + correct spender, quote-aging time-travel revert with validator-fired-before-signing) are present and asserting.
+- Standard-usage Anvil e2e helpers exist for a funded wallet, ActionsConfig construction, token balance snapshots, receipt waits, and provider scenario setup.
+- Standard wallet e2e covers creating/funding an EOA wallet and executing ordinary `send` / `sendBatch` success paths with exact recipient deltas.
+- Standard swap e2e covers ordinary Uniswap and Velodrome swap flows through the public SDK API, asserting wallet input and output deltas from chain state.
+- Standard lend e2e covers ordinary Aave and Morpho supply/withdraw flows through the public SDK API, asserting position and balance changes from chain state.
+- Standard borrow e2e covers ordinary Aave and Morpho open/close flows through the public SDK API, asserting position and balance changes from chain state.
+- Hosted-wallet e2e covers ordinary provider construction and signing flows when the required test credentials are present; missing credentials should make only that lane unavailable.
+- Smart-wallet e2e is gated only on the 4337 local lane; it should not block EOA, hosted-wallet, swap, lend, or borrow e2e.
+- Bug-specific checks for wrong recipients, stale quotes, residual allowances, stale owner sets, and reverted receipts live in the later bug-focused phase rather than blocking the standard-usage e2e wave.
 
 ## Notes
 
