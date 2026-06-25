@@ -1,14 +1,22 @@
 // Morpho demo magic: auto-pledges unpledged lend-vault shares as borrow collateral, once per market per mount.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 
 import { morphoBorrowMarketForVault } from '@/constants/markets'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import type { MarketPosition } from '@/types/market'
 
+function sameVault(a: MarketPosition, b: MarketPosition): boolean {
+  return (
+    a.marketId.address.toLowerCase() === b.marketId.address.toLowerCase() &&
+    a.marketId.chainId === b.marketId.chainId
+  )
+}
+
 export function useReconcileMorphoCollateral(
   marketPositions: MarketPosition[],
   handleTransaction: UseBorrowProviderReturn['handleTransaction'],
+  setMarketPositions: Dispatch<SetStateAction<MarketPosition[]>>,
 ): void {
   const reconciledRef = useRef<Set<string>>(new Set())
   useEffect(() => {
@@ -24,6 +32,27 @@ export function useReconcileMorphoCollateral(
       const key = `${position.marketId.chainId}:${position.marketId.address.toLowerCase()}`
       if (reconciledRef.current.has(key)) return
       reconciledRef.current.add(key)
+
+      // Optimistically move the shares from the vault (direct) to collateral
+      // (pledged) in one update. Without this the borrow position's pledged
+      // collateral lands before the lend vault refetches to zero, so the
+      // displayed balance briefly double-counts the same shares.
+      const pledgedSnapshot = position.directDepositedAmount
+      setMarketPositions((prev) =>
+        prev.map((p) =>
+          sameVault(p, position)
+            ? {
+                ...p,
+                directDepositedAmount: '0',
+                directDepositedShares: null,
+                directDepositedSharesRaw: null,
+                depositedSharesRaw: null,
+                pledgedCollateralAmount: pledgedSnapshot,
+              }
+            : p,
+        ),
+      )
+
       void handleTransaction('depositCollateral', {
         marketId: {
           kind: borrowMarket.kind,
@@ -33,8 +62,16 @@ export function useReconcileMorphoCollateral(
         amount: { max: true },
       }).catch((error) => {
         reconciledRef.current.delete(key)
+        // Roll back the optimistic pledge so the shares show as direct again.
+        setMarketPositions((prev) =>
+          prev.map((p) =>
+            sameVault(p, position)
+              ? { ...p, ...position, pledgedCollateralAmount: null }
+              : p,
+          ),
+        )
         console.warn('Collateral reconciliation failed', error)
       })
     })
-  }, [marketPositions, handleTransaction])
+  }, [marketPositions, handleTransaction, setMarketPositions])
 }

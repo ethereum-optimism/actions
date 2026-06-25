@@ -189,6 +189,66 @@ describe('Action', () => {
     expect(cta).toBeDisabled()
   })
 
+  const ILLIQUID_AAVE = {
+    address: '0x4200000000000000000000000000000000000006',
+    chainId: 11155420,
+  }
+
+  it('shows the locked illiquid withdraw amount (not 0) in the review modal', () => {
+    // Healthy pledge so the capped 0.0001 withdraw keeps the CTA enabled.
+    const healthyPledge = buildBorrowMarketPosition({
+      collateralAsset: usdcAsset,
+      borrowAsset: opAsset,
+      collateralAmount: 100_000_000n,
+      collateralAmountFormatted: '100',
+      collateralShares: 100_000_000n,
+      borrowAmount: 1_000_000_000_000_000_000n,
+      borrowAmountFormatted: '1',
+      healthFactor: 50,
+      ltv: 0.01,
+    })
+    render(
+      <Action
+        {...defaultProps}
+        assetBalance="100.00"
+        depositedAmount="100.00"
+        directDepositedAmount="0.00"
+        asset={usdcAsset}
+        provider="aave"
+        marketId={ILLIQUID_AAVE}
+      />,
+      { wrapper: withBorrowCtx([healthyPledge]) },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }))
+    // The amount is locked to the illiquid cap; opening the review must reflect
+    // that capped amount, not an empty "0".
+    fireEvent.click(screen.getByRole('button', { name: /Withdraw USDC/i }))
+    expect(screen.getByText('You withdraw')).toBeInTheDocument()
+    // Rendered as a label: "0.00" full size + "01" dimmed (i.e. 0.0001, not 0).
+    expect(screen.getByText('0.00')).toBeInTheDocument()
+    expect(screen.getByText('01')).toBeInTheDocument()
+  })
+
+  it('shows a testnet-specific message when an illiquid Aave withdraw fails', async () => {
+    const onTransaction = vi.fn().mockRejectedValue(new Error('insufficient'))
+    render(
+      <Action
+        {...defaultProps}
+        assetBalance="100.00"
+        depositedAmount="100.00"
+        directDepositedAmount="0.00"
+        provider="aave"
+        marketId={ILLIQUID_AAVE}
+        onTransaction={onTransaction}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }))
+    fireEvent.click(screen.getByRole('button', { name: /Withdraw USDC/i }))
+    expect(
+      await screen.findByText(/testnet-specific issue/i),
+    ).toBeInTheDocument()
+  })
+
   it('switches between Lend and Withdraw mode via ModeToggle', () => {
     render(
       <Action

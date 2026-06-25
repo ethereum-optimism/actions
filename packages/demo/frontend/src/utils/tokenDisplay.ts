@@ -104,6 +104,24 @@ export function formatAmountParts(
 }
 
 /**
+ * Format a token amount string for a review label: the integer part and first
+ * two decimals at full size (`main`), the next few decimals smaller and dimmed
+ * (`secondary`). Keeps a long, full-precision value (e.g. a max-repay debt of
+ * `100.000044233754392392`) from rendering as one oversized number.
+ */
+export function formatReviewAmount(value: string): {
+  main: string
+  secondary: string
+} {
+  const [wholeRaw, decimals = ''] = value.split('.')
+  const whole = wholeRaw || '0'
+  const main = `${whole}.${decimals.slice(0, 2).padEnd(2, '0')}`
+  // Up to six more decimals, trailing zeros trimmed, so the dim tail stays short.
+  const secondary = decimals.slice(2, 8).replace(/0+$/, '')
+  return { main, secondary }
+}
+
+/**
  * Split a number into main and secondary decimal parts for display.
  * Shows first 4 decimals as main, rest as secondary (smaller text).
  */

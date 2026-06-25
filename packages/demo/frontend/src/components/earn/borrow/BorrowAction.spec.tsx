@@ -5,7 +5,7 @@ import type {
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AaveETHBorrowUSDCDemo } from '@/constants/markets'
 import {
@@ -16,10 +16,17 @@ import type { BorrowPosition, MarketPosition } from '@/types/market'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import { BorrowAction } from './BorrowAction'
 
+// Mutable execution state + a projection spy so a test can assert the borrow
+// amount is zeroed in the projection while a tx is executing.
+const { txState, projectionSpy } = vi.hoisted(() => ({
+  txState: { isExecuting: false },
+  projectionSpy: vi.fn(),
+}))
+
 // Stub transaction/projection hooks so tests exercise market selection and repay gating only.
 vi.mock('@/hooks/useBorrowTransaction', () => ({
   useBorrowTransaction: () => ({
-    isExecuting: false,
+    isExecuting: txState.isExecuting,
     runTransaction: vi.fn(),
     txModal: { isOpen: false, status: 'loading', onClose: vi.fn() },
     toast: { visible: false, title: '', description: '', onClose: vi.fn() },
@@ -29,13 +36,21 @@ vi.mock('@/hooks/useBorrowQuotePreview', () => ({
   useBorrowQuotePreview: () => ({ livePreview: null, isPreviewLoading: false }),
 }))
 vi.mock('@/hooks/useBorrowProjection', () => ({
-  useBorrowProjection: () => ({
-    currentLtv: 0,
-    projectedLtv: 0,
-    wouldLiquidate: false,
-    projectedHealthFactor: Number.POSITIVE_INFINITY,
-  }),
+  useBorrowProjection: (args: { amountNum: number }) => {
+    projectionSpy(args)
+    return {
+      currentLtv: 0,
+      projectedLtv: 0,
+      wouldLiquidate: false,
+      projectedHealthFactor: Number.POSITIVE_INFINITY,
+    }
+  },
 }))
+
+beforeEach(() => {
+  txState.isExecuting = false
+  projectionSpy.mockClear()
+})
 
 const OPS = 11155420 as SupportedChainId
 const ETH: Asset = {
@@ -167,6 +182,26 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     return buttons[buttons.length - 1]
   }
 
+  it('blocks repay when the USDC balance lives only on the non-borrow chain', () => {
+    // Total balance is 50, but it is all on the swap chain (84532); the borrow
+    // chain (OPS) holds nothing, so the repay cannot be funded here.
+    const raw = 50_000000n
+    const crossChainOnly = {
+      asset: USDC_DEMO,
+      totalBalance: 50,
+      totalBalanceRaw: raw,
+      chains: { 84532: { balance: 50, balanceRaw: raw } },
+    } as unknown as TokenBalance
+    renderRepay({
+      borrowPositions: [aaveDebtPosition],
+      tokenBalances: [crossChainOnly],
+    })
+    expect(
+      screen.getByText(/need USDC to repay this loan/i),
+    ).toBeInTheDocument()
+    expect(repayCta()).toBeDisabled()
+  })
+
   it('blocks repay with a re-acquire notice when the USDC balance is zero', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
@@ -238,6 +273,34 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     })
     expect(screen.queryByText(/repay up to/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /get USDC/i })).toBeNull()
+  })
+})
+
+describe('BorrowAction health projection during execution', () => {
+  const lastProjectionAmount = () => {
+    const calls = projectionSpy.mock.calls
+    return calls[calls.length - 1]?.[0]?.amountNum
+  }
+
+  it('projects the typed borrow amount when idle', () => {
+    render(<BorrowAction selectedLendPosition={ethLendPosition} />, {
+      wrapper: makeBorrowContextWrapper(ctx(aaveMarket)),
+    })
+    fireEvent.change(screen.getByPlaceholderText('0'), {
+      target: { value: '5' },
+    })
+    expect(lastProjectionAmount()).toBe(5)
+  })
+
+  it('zeroes the projected borrow amount while executing so the bar cannot overshoot', () => {
+    txState.isExecuting = true
+    render(<BorrowAction selectedLendPosition={ethLendPosition} />, {
+      wrapper: makeBorrowContextWrapper(ctx(aaveMarket)),
+    })
+    fireEvent.change(screen.getByPlaceholderText('0'), {
+      target: { value: '5' },
+    })
+    expect(lastProjectionAmount()).toBe(0)
   })
 })
 
