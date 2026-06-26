@@ -28,6 +28,7 @@ type AuthParams = {
   proof: Hash
 }
 
+/** Best-effort zero-balance pre-check; `reserveDrip` is the real cooldown gate. */
 export async function isWalletEligibleForFaucet(
   walletAddress: Address,
 ): Promise<boolean> {
@@ -36,13 +37,47 @@ export async function isWalletEligibleForFaucet(
     transport: env.OP_SEPOLIA_RPC_URL ? http(env.OP_SEPOLIA_RPC_URL) : http(),
   })
   const balance = await publicClient.getBalance({ address: walletAddress })
-  if (balance > 0) {
+  return balance === 0n
+}
+
+/** Per-recipient cooldown state for this single-process demo backend. */
+export const FAUCET_DRIP_COOLDOWN_MS = 24 * 60 * 60 * 1000
+export const MAX_TRACKED_DRIP_RECIPIENTS = 10_000
+
+const lastDripAtByRecipient = new Map<string, number>()
+
+/** Synchronously claim a drip slot so concurrent requests for one wallet cannot all pass. */
+export function reserveDrip(
+  walletAddress: Address,
+  now: number = Date.now(),
+): boolean {
+  const key = walletAddress.toLowerCase()
+  sweepExpiredDripReservations(now)
+  const lastDripAt = lastDripAtByRecipient.get(key)
+  if (lastDripAt !== undefined && now - lastDripAt < FAUCET_DRIP_COOLDOWN_MS) {
     return false
   }
-  // TODO: When aave lending is implemented, check if the wallet already has a position open
-  // and return false if it does.
-
+  if (
+    lastDripAt === undefined &&
+    lastDripAtByRecipient.size >= MAX_TRACKED_DRIP_RECIPIENTS
+  ) {
+    return false
+  }
+  lastDripAtByRecipient.set(key, now)
   return true
+}
+
+/** Release a reservation after submission failure so the wallet can retry. */
+export function releaseDrip(walletAddress: Address): void {
+  lastDripAtByRecipient.delete(walletAddress.toLowerCase())
+}
+
+function sweepExpiredDripReservations(now: number): void {
+  for (const [key, lastDripAt] of lastDripAtByRecipient) {
+    if (now - lastDripAt >= FAUCET_DRIP_COOLDOWN_MS) {
+      lastDripAtByRecipient.delete(key)
+    }
+  }
 }
 
 export async function dripEthToWallet(walletAddress: Address) {
