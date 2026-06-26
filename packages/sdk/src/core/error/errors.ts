@@ -132,7 +132,7 @@ export class InvalidAmountError extends ActionsError {
   amount: number
 
   constructor(amount: number) {
-    super('Amount must be positive', {
+    super('Amount must be a positive finite number', {
       metaMessages: [`Received: ${amount}`],
     })
     this.amount = amount
@@ -249,8 +249,10 @@ export class SlippageOutOfRangeError extends ActionsError {
   maxSlippage: number
 
   constructor(slippage: number, maxSlippage: number) {
+    const effectiveRange =
+      maxSlippage >= 1 ? '[0, 100%)' : `[0, ${maxSlippage * 100}%]`
     super(`Slippage ${slippage} is out of range`, {
-      metaMessages: [`Allowed range: [0, ${maxSlippage * 100}%]`],
+      metaMessages: [`Allowed range: finite ${effectiveRange}`],
     })
     this.slippage = slippage
     this.maxSlippage = maxSlippage
