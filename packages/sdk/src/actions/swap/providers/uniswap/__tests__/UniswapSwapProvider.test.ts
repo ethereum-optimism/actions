@@ -220,6 +220,7 @@ describe('UniswapSwapProvider', () => {
         chainId: CHAIN_ID,
         slippage: 0.005,
         recipient: WALLET,
+        walletAddress: WALLET,
       })
       const amountInMaxRaw = quote.amountInMaxRaw
       if (amountInMaxRaw === undefined) {
@@ -264,6 +265,7 @@ describe('UniswapSwapProvider', () => {
         chainId: CHAIN_ID,
         slippage: 0.005,
         recipient: WALLET,
+        walletAddress: WALLET,
       })
       const amountInMaxRaw = quote.amountInMaxRaw
       if (amountInMaxRaw === undefined) {

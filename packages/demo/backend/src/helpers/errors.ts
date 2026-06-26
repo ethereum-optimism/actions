@@ -18,6 +18,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   TransactionConfirmedButRevertedError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
@@ -137,6 +138,10 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
     [
       QuoteRecipientMissingError,
       { status: 400, message: 'Quote recipient is required.' },
+    ],
+    [
+      QuoteWalletAddressMissingError,
+      { status: 400, message: 'Quote wallet address is required.' },
     ],
     [
       AssetNotSupportedOnChainError,

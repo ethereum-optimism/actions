@@ -1,5 +1,7 @@
 import type { Address } from 'viem'
 
+import { QuoteWalletAddressMissingError } from '@/core/error/errors.js'
+
 /**
  * Resolve request-level swap recipient defaults.
  * @param recipient - Explicit output recipient, when provided
@@ -17,13 +19,17 @@ export function resolveSwapRequestRecipient<
 }
 
 /**
- * Resolve the wallet address that owns input tokens for a quote.
- * @param quote - Swap quote recipient and optional wallet binding
+ * Require the wallet address that owns input tokens for a quote.
+ * @param quote - Swap quote with wallet binding
  * @returns Wallet address for wallet validation and allowance checks
+ * @throws If the quote is not wallet-bound
  */
 export function resolveSwapQuoteWalletAddress(quote: {
   walletAddress?: Address
-  recipient: Address
 }): Address {
-  return quote.walletAddress ?? quote.recipient
+  if (!quote.walletAddress) {
+    throw new QuoteWalletAddressMissingError()
+  }
+
+  return quote.walletAddress
 }

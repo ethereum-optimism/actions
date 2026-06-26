@@ -209,6 +209,7 @@ describe('VelodromeSwapProvider', () => {
         amountIn: 100,
         chainId: CHAIN_ID,
         recipient: MOCK_WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(quote.price).toBeTypeOf('number')
@@ -271,6 +272,7 @@ describe('VelodromeSwapProvider', () => {
         amountIn: 100,
         chainId: CHAIN_ID,
         recipient: MOCK_WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       const result = await provider.execute({
@@ -608,6 +610,7 @@ describe('VelodromeSwapProvider', () => {
         amountIn: 100,
         chainId: CHAIN_ID,
         recipient: MOCK_WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(quote.provider).toBe('velodrome')
@@ -632,6 +635,7 @@ describe('VelodromeSwapProvider', () => {
         amountIn: 100,
         chainId: CHAIN_ID,
         recipient: MOCK_WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       const result = await provider.execute({

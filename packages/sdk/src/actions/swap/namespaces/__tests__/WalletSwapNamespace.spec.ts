@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  QuoteRecipientMismatchError,
+  QuoteWalletAddressMissingError,
+} from '@/core/error/errors.js'
 import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -288,12 +292,11 @@ describe('WalletSwapNamespace', () => {
   })
 
   describe('execute with wallet mismatch', () => {
-    it('throws when quote wallet does not match wallet.address', async () => {
+    it('throws when a quote is not bound to a wallet address', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      // Get quote without wallet, so the provider default is not this wallet.
       const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: ETH,
@@ -303,8 +306,8 @@ describe('WalletSwapNamespace', () => {
 
       expect(quote.recipient).not.toBe(mockWalletAddress)
 
-      await expect(namespace.execute(quote)).rejects.toThrow(
-        /generated for a different wallet/i,
+      await expect(namespace.execute(quote)).rejects.toBeInstanceOf(
+        QuoteWalletAddressMissingError,
       )
       // Provider's getQuote was called once (the original); execute did not re-quote.
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
@@ -322,17 +325,40 @@ describe('WalletSwapNamespace', () => {
         assetOut: ETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
-        recipient: otherWallet,
+        recipient: mockWalletAddress,
+        walletAddress: otherWallet,
       })
 
-      expect(quote.recipient).toBe(otherWallet)
+      expect(quote.recipient).toBe(mockWalletAddress)
+      expect(quote.walletAddress).toBe(otherWallet)
 
-      await expect(namespace.execute(quote)).rejects.toThrow(
-        /generated for a different wallet/i,
+      await expect(namespace.execute(quote)).rejects.toBeInstanceOf(
+        QuoteRecipientMismatchError,
       )
     })
 
-    it('executes when quote.recipient equals wallet.address', async () => {
+    it('rejects a walletless quote even when recipient equals wallet.address', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: mockWalletAddress,
+      })
+
+      expect(quote.recipient).toBe(mockWalletAddress)
+      expect(quote.walletAddress).toBeUndefined()
+
+      await expect(namespace.execute(quote)).rejects.toBeInstanceOf(
+        QuoteWalletAddressMissingError,
+      )
+    })
+
+    it('executes wallet-bound quote when recipient equals wallet.address', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
@@ -353,10 +379,8 @@ describe('WalletSwapNamespace', () => {
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
     })
 
-    it('executes when quote.recipient differs only in case from wallet.address', async () => {
-      // Address with hex letters so case actually changes the string. The
-      // wallet uses checksummed casing; the quote uses lowercase. Without
-      // `isAddressEqual` the strict `!==` would falsely reject.
+    it('executes when quote.walletAddress differs only in case from wallet.address', async () => {
+      // Address with hex letters so case actually changes the string.
       const checksummedAddress =
         '0xAbCdEf1234567890aBcDeF1234567890ABcDeF12' as Address
       const lowercaseAddress = checksummedAddress.toLowerCase() as Address
@@ -375,10 +399,12 @@ describe('WalletSwapNamespace', () => {
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
         recipient: lowercaseAddress,
+        walletAddress: lowercaseAddress,
       })
 
       expect(quote.recipient).toBe(lowercaseAddress)
-      expect(quote.recipient).not.toBe(checksummedAddress)
+      expect(quote.walletAddress).toBe(lowercaseAddress)
+      expect(quote.walletAddress).not.toBe(checksummedAddress)
 
       const result = await namespace.execute(quote)
       expect(result.price).toBeDefined()

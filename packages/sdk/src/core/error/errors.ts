@@ -350,6 +350,18 @@ export class QuoteRecipientMismatchError extends ActionsError {
 }
 
 /**
+ * Thrown when wallet-bound execution receives a quote without the wallet that
+ * owns input tokens. Re-quote through the wallet namespace to bind allowances.
+ */
+export class QuoteWalletAddressMissingError extends ActionsError {
+  override name = 'QuoteWalletAddressMissingError' as const
+
+  constructor() {
+    super('Quote.walletAddress missing. Re-quote with wallet.swap.getQuote')
+  }
+}
+
+/**
  * Thrown when a provider's `_getQuote` returns a quote without a `recipient`.
  * Providers must populate the output recipient before approvals or calldata
  * are built.
