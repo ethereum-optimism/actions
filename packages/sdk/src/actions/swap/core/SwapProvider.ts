@@ -515,7 +515,7 @@ export abstract class SwapProvider<
       deadline:
         params.deadline ??
         Math.floor(Date.now() / 1000) + this.quoteExpirationSeconds,
-      recipient: this.resolveDefaultRecipient(params),
+      recipient: this.resolveDefaultRecipient(params) ?? params.walletAddress,
       walletAddress: params.walletAddress,
       chainId: params.chainId,
       approvalMode: params.approvalMode,
@@ -543,18 +543,8 @@ export abstract class SwapProvider<
 
   private resolveDefaultRecipient(params: {
     recipient?: Address
-    walletAddress: Address
-  }): Address
-
-  private resolveDefaultRecipient(params: {
-    recipient?: Address
     walletAddress?: Address
-  }): Address | undefined
-
-  private resolveDefaultRecipient(params: {
-    recipient?: Address
-    walletAddress?: Address
-  }) {
+  }): Address | undefined {
     return params.recipient ?? params.walletAddress
   }
 
