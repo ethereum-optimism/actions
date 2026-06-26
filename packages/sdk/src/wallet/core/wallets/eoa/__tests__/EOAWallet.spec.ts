@@ -229,8 +229,8 @@ describe('EOAWallet', () => {
         .mockResolvedValueOnce(mockReceipt2.transactionHash)
         .mockResolvedValueOnce(mockReceipt3.transactionHash)
 
-      // sendBatch performs exactly one inclusion wait per transaction (the
-      // wait inside `send()`). One mock per tx.
+      // sendBatch performs exactly one inclusion wait per transaction. One
+      // mock per tx.
       vi.mocked(mockPublicClient.waitForTransactionReceipt)
         .mockResolvedValueOnce(mockReceipt)
         .mockResolvedValueOnce(mockReceipt2)
@@ -269,7 +269,7 @@ describe('EOAWallet', () => {
         unichain.id,
       )
 
-      // One inclusion wait per tx, via `send()`.
+      // One inclusion wait per tx.
       expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledTimes(
         2,
       )
@@ -278,14 +278,21 @@ describe('EOAWallet', () => {
       ).not.toHaveBeenCalledWith(expect.objectContaining({ confirmations: 2 }))
     })
 
-    it('should get public client for each transaction', async () => {
+    it('reuses a single wallet client and public client for the whole batch', async () => {
+      const createWalletClientCalls =
+        vi.mocked(createWalletClient).mock.calls.length
+
       await wallet.sendBatch(
-        [mockTransactionData1, mockTransactionData2],
+        [mockTransactionData1, mockTransactionData2, mockTransactionData3],
         unichain.id,
       )
 
-      // One getPublicClient call per transaction (via send()).
-      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(2)
+      // The batch builds the wallet client once and resolves the public client
+      // once, rather than per-transaction.
+      expect(vi.mocked(createWalletClient).mock.calls.length).toBe(
+        createWalletClientCalls + 1,
+      )
+      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(1)
       expect(mockChainManager.getPublicClient).toHaveBeenCalledWith(unichain.id)
     })
 
@@ -317,6 +324,133 @@ describe('EOAWallet', () => {
       expect(receipts[0].transactionHash).toBe(mockReceipt.transactionHash)
       expect(receipts[1].transactionHash).toBe(mockReceipt2.transactionHash)
       expect(receipts[2].transactionHash).toBe(mockReceipt3.transactionHash)
+    })
+
+    it('broadcasts sequentially: tx N+1 is not submitted until tx N resolves', async () => {
+      const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+      const hashes = [
+        mockReceipt.transactionHash,
+        mockReceipt2.transactionHash,
+        mockReceipt3.transactionHash,
+      ]
+      const gates = hashes.map(() => {
+        let resolve!: () => void
+        const promise = new Promise<void>((r) => {
+          resolve = r
+        })
+        return { promise, resolve }
+      })
+      let sendIndex = 0
+      vi.mocked(mockWalletClient.sendTransaction).mockReset()
+      vi.mocked(mockWalletClient.sendTransaction).mockImplementation(
+        (async () => {
+          const i = sendIndex++
+          await gates[i].promise
+          return hashes[i]
+        }) as typeof mockWalletClient.sendTransaction,
+      )
+
+      const pending = wallet.sendBatch(
+        [mockTransactionData1, mockTransactionData2, mockTransactionData3],
+        unichain.id,
+      )
+
+      await flush()
+      // Only the first broadcast has started; the loop is awaiting it.
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(1)
+
+      gates[0].resolve()
+      await flush()
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(2)
+
+      gates[1].resolve()
+      await flush()
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(3)
+
+      gates[2].resolve()
+      const receipts = await pending
+      expect(receipts).toHaveLength(3)
+    })
+
+    it('waits for receipts in parallel', async () => {
+      // Each wait only resolves once all three have been issued. If the
+      // implementation awaited one receipt before requesting the next, the
+      // count would stall at 1 and this test would hang.
+      let releaseAll!: () => void
+      const allIssued = new Promise<void>((resolve) => {
+        releaseAll = resolve
+      })
+      let issued = 0
+      const receiptByHash: Record<string, EOATransactionReceipt> = {
+        [mockReceipt.transactionHash]: mockReceipt,
+        [mockReceipt2.transactionHash]: mockReceipt2,
+        [mockReceipt3.transactionHash]: mockReceipt3,
+      }
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockReset()
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockImplementation(
+        (async ({ hash }: { hash: Hex }) => {
+          issued += 1
+          if (issued === 3) releaseAll()
+          await allIssued
+          return receiptByHash[hash]
+        }) as typeof mockPublicClient.waitForTransactionReceipt,
+      )
+
+      const receipts = await wallet.sendBatch(
+        [mockTransactionData1, mockTransactionData2, mockTransactionData3],
+        unichain.id,
+      )
+
+      expect(issued).toBe(3)
+      expect(receipts).toHaveLength(3)
+    })
+
+    it('returns receipts in input order even when waits resolve out of order', async () => {
+      const receiptByHash: Record<string, EOATransactionReceipt> = {
+        [mockReceipt.transactionHash]: mockReceipt,
+        [mockReceipt2.transactionHash]: mockReceipt2,
+        [mockReceipt3.transactionHash]: mockReceipt3,
+      }
+      // Resolve the later txs' receipts before the earlier ones.
+      const delayByHash: Record<string, number> = {
+        [mockReceipt.transactionHash]: 30,
+        [mockReceipt2.transactionHash]: 10,
+        [mockReceipt3.transactionHash]: 0,
+      }
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockReset()
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockImplementation(
+        (async ({ hash }: { hash: Hex }) => {
+          await new Promise((resolve) => setTimeout(resolve, delayByHash[hash]))
+          return receiptByHash[hash]
+        }) as typeof mockPublicClient.waitForTransactionReceipt,
+      )
+
+      const receipts = await wallet.sendBatch(
+        [mockTransactionData1, mockTransactionData2, mockTransactionData3],
+        unichain.id,
+      )
+
+      expect(receipts[0].transactionHash).toBe(mockReceipt.transactionHash)
+      expect(receipts[1].transactionHash).toBe(mockReceipt2.transactionHash)
+      expect(receipts[2].transactionHash).toBe(mockReceipt3.transactionHash)
+    })
+
+    it('rejects the batch and stops broadcasting when a send throws', async () => {
+      vi.mocked(mockWalletClient.sendTransaction).mockReset()
+      vi.mocked(mockWalletClient.sendTransaction)
+        .mockResolvedValueOnce(mockReceipt.transactionHash)
+        .mockRejectedValueOnce(new Error('insufficient funds'))
+
+      await expect(
+        wallet.sendBatch(
+          [mockTransactionData1, mockTransactionData2, mockTransactionData3],
+          unichain.id,
+        ),
+      ).rejects.toThrow('insufficient funds')
+
+      // Broadcast halts at the failing tx: the first two are attempted, the
+      // third is never sent.
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(2)
     })
   })
 })

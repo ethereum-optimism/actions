@@ -1,6 +1,7 @@
 import type {
   Chain,
   FallbackTransport,
+  Hex,
   HttpTransport,
   LocalAccount,
   WalletClient,
@@ -73,29 +74,33 @@ export abstract class EOAWallet extends Wallet {
   }
 
   /**
-   * Send multiple transactions sequentially from this EOA wallet.
+   * Send multiple transactions from this EOA wallet.
    *
-   * Each transaction is awaited to inclusion (one confirmation) via `send()`
-   * before the next is signed. The `nonceManager` attached in `walletClient()`
-   * keeps nonces in sequence locally, so the wait does not need extra
-   * confirmations to guarantee nonce monotonicity.
+   * Broadcasts transactions sequentially so nonce order matches input order,
+   * then waits for receipts in parallel. This preserves ordered batches like
+   * `[approve, swap]` while avoiding one serialized receipt wait per tx.
    *
    * Note: this method assumes a sequencer-ordered chain (e.g. OP-stack L2s).
    * On chains with deeper reorg risk, consider an additional confirmations
    * pass at the call site.
    * @param transactionData - Array of transactions to send
    * @param chainId - Chain to send the transactions on
-   * @returns Promise resolving to array of transaction receipts (one per transaction)
+   * @returns Promise resolving to transaction receipts in input order
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<EOATransactionReceipt[]> {
-    const receipts: EOATransactionReceipt[] = []
+    const walletClient = await this.walletClient(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+
+    const hashes: Hex[] = []
     for (const tx of transactionData) {
-      const receipt = await this.send(tx, chainId)
-      receipts.push(receipt)
+      hashes.push(await walletClient.sendTransaction(tx))
     }
-    return receipts
+
+    return Promise.all(
+      hashes.map((hash) => publicClient.waitForTransactionReceipt({ hash })),
+    )
   }
 }
