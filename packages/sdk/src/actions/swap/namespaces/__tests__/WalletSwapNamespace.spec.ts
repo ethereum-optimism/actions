@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 describe('WalletSwapNamespace', () => {
@@ -157,6 +158,28 @@ describe('WalletSwapNamespace', () => {
           recipient: customRecipient,
         }),
       )
+    })
+
+    it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
+      // Reverted receipts must propagate instead of producing quote-derived success data.
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      vi.mocked(wallet.send).mockRejectedValue(
+        new TransactionConfirmedButRevertedError(
+          'transaction confirmed but reverted',
+          { transactionHash: '0xreverted' } as never,
+        ),
+      )
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      await expect(
+        namespace.execute({
+          amountIn: 100,
+          assetIn: USDC,
+          assetOut: ETH,
+          chainId: 84532 as SupportedChainId,
+        }),
+      ).rejects.toBeInstanceOf(TransactionConfirmedButRevertedError)
     })
 
     it('throws when no provider configured', async () => {
