@@ -279,7 +279,7 @@ export abstract class SwapProvider<
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = params.recipient ?? params.walletAddress
+    const recipient = this.resolveDefaultRecipient(params)
     const walletAddress = params.walletAddress
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
@@ -515,8 +515,7 @@ export abstract class SwapProvider<
       deadline:
         params.deadline ??
         Math.floor(Date.now() / 1000) + this.quoteExpirationSeconds,
-      // Send output tokens to specified recipient, or back to the initiating wallet
-      recipient: params.recipient ?? params.walletAddress,
+      recipient: this.resolveDefaultRecipient(params),
       walletAddress: params.walletAddress,
       chainId: params.chainId,
       approvalMode: params.approvalMode,
@@ -540,6 +539,23 @@ export abstract class SwapProvider<
       )
       return !blocked
     })
+  }
+
+  private resolveDefaultRecipient(params: {
+    recipient?: Address
+    walletAddress: Address
+  }): Address
+
+  private resolveDefaultRecipient(params: {
+    recipient?: Address
+    walletAddress?: Address
+  }): Address | undefined
+
+  private resolveDefaultRecipient(params: {
+    recipient?: Address
+    walletAddress?: Address
+  }) {
+    return params.recipient ?? params.walletAddress
   }
 
   private findMatchingConfig(
