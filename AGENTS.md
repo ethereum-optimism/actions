@@ -85,7 +85,6 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 ### [Readability](./CONTRIBUTING.md#readability)
 
 - Clear names beat clever tricks. Comments explain **why**, not **what**.
-- Do not rewrite existing comments just to shorten them.
 - New or changed inline `//` comments should be concise and usually one line.
 - Do not include internal sub-issue IDs like `F123` in comments, test names, or docs.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them.
