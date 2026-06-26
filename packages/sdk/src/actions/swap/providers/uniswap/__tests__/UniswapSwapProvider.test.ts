@@ -9,6 +9,7 @@ import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MockETHAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
+import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import { UniswapSwapProvider } from '@/actions/swap/providers/uniswap/UniswapSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -175,6 +176,7 @@ describe('UniswapSwapProvider', () => {
       expect(quote.amountOut).toBeDefined()
       expect(quote.route.path).toEqual([USDC, OP])
       expect(quote.execution).toBeDefined()
+      expect(quote.recipient).toBe(UNIVERSAL_ROUTER_MSG_SENDER)
     })
 
     it('encodes the provider-derived exact-in min-out bound', async () => {
@@ -218,6 +220,7 @@ describe('UniswapSwapProvider', () => {
         chainId: CHAIN_ID,
         slippage: 0.005,
         recipient: WALLET,
+        walletAddress: WALLET,
       })
       const amountInMaxRaw = quote.amountInMaxRaw
       if (amountInMaxRaw === undefined) {
@@ -262,6 +265,7 @@ describe('UniswapSwapProvider', () => {
         chainId: CHAIN_ID,
         slippage: 0.005,
         recipient: WALLET,
+        walletAddress: WALLET,
       })
       const amountInMaxRaw = quote.amountInMaxRaw
       if (amountInMaxRaw === undefined) {

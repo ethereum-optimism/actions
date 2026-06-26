@@ -1,4 +1,4 @@
-import type { Hex } from 'viem'
+import type { Address, Hex } from 'viem'
 import { decodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 
@@ -17,6 +17,14 @@ import {
   FACTORY,
   RECIPIENT,
 } from './encoding.helpers.js'
+
+const CUSTOM_RECIPIENT = '0x000000000000000000000000000000000000bEEF' as Address
+
+function decodeUniversalV3Input(data: Hex) {
+  const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
+  const [, inputs] = args
+  return decodeAbiParameters(V3_SWAP_EXACT_IN_INPUT_PARAMS, inputs[0])
+}
 
 describe('encodeCLSwap', () => {
   it('encodes V3_SWAP_EXACT_IN command (0x00)', () => {
@@ -42,6 +50,28 @@ describe('encodeCLSwap', () => {
     expect(deadline).toBe(BigInt(DEADLINE))
   })
 
+  it.each([
+    ['wallet recipient', RECIPIENT],
+    ['custom recipient', CUSTOM_RECIPIENT],
+  ])('encodes V3_SWAP_EXACT_IN recipient for %s', (_label, recipient) => {
+    const data = encodeCLSwap({
+      assetIn: MockUSDCAsset,
+      assetOut: MockWETHAsset,
+      amountInRaw: 1000000n,
+      amountOutMin: 400000000000000000n,
+      tickSpacing: 100,
+      recipient,
+      deadline: DEADLINE,
+      chainId: BASE_CHAIN_ID,
+    })
+
+    const decoded = decodeUniversalV3Input(data)
+    const recipientIdx = V3_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+      (p) => p.name === 'recipient',
+    )
+    expect(decoded[recipientIdx]).toBe(recipient)
+  })
+
   // Regression for #438: payerIsUser must be true so the router pulls tokens via
   // transferFrom against an ERC20 allowance. See encoding.v2.test.ts for context.
   it('encodes V3_SWAP_EXACT_IN with payerIsUser = true', () => {
@@ -56,12 +86,7 @@ describe('encodeCLSwap', () => {
       chainId: BASE_CHAIN_ID,
     })
 
-    const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
-    const [, inputs] = args
-    const decoded = decodeAbiParameters(
-      V3_SWAP_EXACT_IN_INPUT_PARAMS,
-      inputs[0],
-    )
+    const decoded = decodeUniversalV3Input(data)
     const payerIsUserIdx = V3_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
       (p) => p.name === 'payerIsUser',
     )
