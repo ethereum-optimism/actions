@@ -114,7 +114,7 @@ When adding a new concrete provider to any SDK domain (Lend, Swap, Borrow, or a 
 
 - Clear names beat clever tricks. No one-letter locals outside loop indices.
 - Comments explain **why**, not **what**. The code already says what it does.
-- Do not rewrite existing comments just to shorten them. Leave unrelated docs and comments alone.
+- Do not rewrite existing comments just to shorten them unless explicitly asked. Leave unrelated docs and comments alone.
 - New or changed inline `//` comments should be concise and usually one line. If the explanation needs structure, tags, or API contract details, use JSDoc instead of a stack of inline comments.
 - Do not include internal sub-issue IDs (for example `F123`) in comments, test names, or docs. Link the real GitHub issue only when the context is useful.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them. Git history is the archive.
