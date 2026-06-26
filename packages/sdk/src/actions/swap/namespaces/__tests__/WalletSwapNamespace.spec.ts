@@ -270,8 +270,7 @@ describe('WalletSwapNamespace', () => {
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      // Get quote without wallet (simulates ActionsSwapNamespace quote, recipient
-      // defaults to UNIVERSAL_ROUTER_MSG_SENDER, not the executing wallet)
+      // Get quote without wallet, so the provider default is not this wallet.
       const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: ETH,

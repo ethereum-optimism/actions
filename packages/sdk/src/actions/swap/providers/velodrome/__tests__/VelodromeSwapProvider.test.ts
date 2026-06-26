@@ -14,6 +14,7 @@ import {
   MockUSDCAsset as USDC,
   MockWETHAsset as WETH,
 } from '@/__mocks__/MockAssets.js'
+import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import { UNIVERSAL_ROUTER_ABI } from '@/actions/swap/providers/velodrome/abis.js'
 import { V2_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/v2.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
@@ -207,6 +208,7 @@ describe('VelodromeSwapProvider', () => {
         assetOut: OP,
         amountIn: 100,
         chainId: CHAIN_ID,
+        recipient: MOCK_WALLET,
       })
 
       expect(quote.price).toBeTypeOf('number')
@@ -228,6 +230,7 @@ describe('VelodromeSwapProvider', () => {
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
+        recipient: MOCK_WALLET,
       })
 
       // 1 USDC = 1000000 (6 decimals)
@@ -245,6 +248,19 @@ describe('VelodromeSwapProvider', () => {
           chainId: CHAIN_ID,
         }),
       ).rejects.toThrow('does not support exact-output swaps')
+    })
+
+    it('requires a recipient for non-universal router quotes', async () => {
+      const provider = createProvider()
+
+      await expect(
+        provider.getQuote({
+          assetIn: USDC,
+          assetOut: OP,
+          amountIn: 100,
+          chainId: CHAIN_ID,
+        }),
+      ).rejects.toThrow('Quote.recipient missing')
     })
 
     it('execute with quote skips re-quoting', async () => {
@@ -321,6 +337,33 @@ describe('VelodromeSwapProvider', () => {
 
       expect(decodeUniversalV2Recipient(result.transactionData.swap.data)).toBe(
         MOCK_WALLET,
+      )
+    })
+
+    it('uses the msg.sender sentinel for recipientless universal router quotes', async () => {
+      const provider = createProvider(
+        {
+          marketAllowlist: [
+            {
+              assets: [USDC, WETH],
+              stable: false,
+              chainId: BASE_SEPOLIA_CHAIN_ID,
+            },
+          ],
+        },
+        createMockChainManager([BASE_SEPOLIA_CHAIN_ID]),
+      )
+
+      const quote = await provider.getQuote({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: BASE_SEPOLIA_CHAIN_ID,
+      })
+
+      expect(quote.recipient).toBe(UNIVERSAL_ROUTER_MSG_SENDER)
+      expect(decodeUniversalV2Recipient(quote.execution.swapCalldata)).toBe(
+        UNIVERSAL_ROUTER_MSG_SENDER,
       )
     })
 
@@ -564,6 +607,7 @@ describe('VelodromeSwapProvider', () => {
         assetOut: WETH,
         amountIn: 100,
         chainId: CHAIN_ID,
+        recipient: MOCK_WALLET,
       })
 
       expect(quote.provider).toBe('velodrome')
@@ -648,6 +692,7 @@ describe('VelodromeSwapProvider', () => {
           assetOut: WETH,
           amountIn: 100,
           chainId: MODE_CHAIN_ID,
+          recipient: MOCK_WALLET,
         }),
       ).rejects.toThrow('is not supported')
     })

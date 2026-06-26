@@ -1,11 +1,17 @@
+import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
-import { expandMarkets, findMarket } from '@/actions/swap/core/markets.js'
+import {
+  expandMarkets,
+  findMarket,
+  UNIVERSAL_ROUTER_MSG_SENDER,
+} from '@/actions/swap/core/markets.js'
 import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import {
   getChainConfig,
   getSupportedChainIds,
   getValidMarketConfigs,
+  type VelodromeChainConfig,
 } from '@/actions/swap/providers/velodrome/config.js'
 import {
   encodePoolSwap,
@@ -24,6 +30,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   ExactOutputNotSupportedError,
   MarketNotAllowedError,
+  QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
@@ -152,6 +159,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     )
     const { slippage, now, deadline, recipient, walletAddress, amountInRaw } =
       this.resolveQuoteDefaults(params)
+    const quoteRecipient = this.resolveVelodromeRecipient(recipient, chain)
 
     const { internalQuote, providerContext } = await fetchPoolQuote(
       poolConfig,
@@ -169,7 +177,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       assetOut,
       amountInRaw,
       amountOutMinRaw,
-      recipient,
+      recipient: quoteRecipient,
       deadline,
       chainId,
       chain,
@@ -201,7 +209,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
-      recipient,
+      recipient: quoteRecipient,
       walletAddress,
     }
   }
@@ -241,6 +249,17 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       ),
     })
     return { tokenApproval }
+  }
+
+  private resolveVelodromeRecipient(
+    recipient: Address | undefined,
+    chain: VelodromeChainConfig,
+  ): Address {
+    if (recipient) return recipient
+    if (chain.metadata.routerType === 'universal') {
+      return UNIVERSAL_ROUTER_MSG_SENDER
+    }
+    throw new QuoteRecipientMissingError()
   }
 
   /**

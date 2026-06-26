@@ -5,7 +5,6 @@ import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
-import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   InvalidParamsError,
@@ -271,17 +270,16 @@ export abstract class SwapProvider<
   /**
    * Resolve common quote parameters with provider defaults.
    * Wallet-bound quotes default output to the executor across providers.
-   * Explicit recipients still override the wallet destination.
+   * Provider-specific router sentinels stay in concrete providers.
    * @param params - Raw quote params from the user
-   * @returns Resolved slippage, deadline, recipient, optional wallet address,
+   * @returns Resolved slippage, deadline, optional recipient and wallet address,
    * amountInRaw, and current timestamp
    */
   protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient =
-      params.recipient ?? params.walletAddress ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const recipient = params.recipient ?? params.walletAddress
     const walletAddress = params.walletAddress
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, walletAddress, amountInRaw }

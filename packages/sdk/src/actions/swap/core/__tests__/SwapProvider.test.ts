@@ -250,7 +250,7 @@ describe('SwapProvider', () => {
       )
     })
 
-    it('defaults quote.recipient to UNIVERSAL_ROUTER_MSG_SENDER when no recipient is provided', async () => {
+    it('leaves recipient defaults to the concrete provider', async () => {
       const provider = new MockSwapProvider()
       const quote = await provider.getQuote({
         assetIn: MockUSDC,
@@ -258,7 +258,7 @@ describe('SwapProvider', () => {
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
-      expect(quote.recipient).toBe('0x0000000000000000000000000000000000000001')
+      expect(quote.recipient).toBe('0x9999999999999999999999999999999999999999')
       expect(quote.walletAddress).toBeUndefined()
     })
 

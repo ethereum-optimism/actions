@@ -1,6 +1,10 @@
 import { formatUnits } from 'viem'
 
-import { expandMarkets, findMarket } from '@/actions/swap/core/markets.js'
+import {
+  expandMarkets,
+  findMarket,
+  UNIVERSAL_ROUTER_MSG_SENDER,
+} from '@/actions/swap/core/markets.js'
 import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
@@ -152,12 +156,13 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
           }
     const amountInMaxRaw =
       'amountInMaxRaw' in swapAmounts ? swapAmounts.amountInMaxRaw : undefined
+    const quoteRecipient = recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
     const swapCalldata = encodeUniversalRouterSwap({
       ...swapAmounts,
       assetIn,
       assetOut,
       deadline,
-      recipient,
+      recipient: quoteRecipient,
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,
@@ -204,7 +209,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: quote.gasEstimate,
-      recipient,
+      recipient: quoteRecipient,
       walletAddress,
     }
   }
