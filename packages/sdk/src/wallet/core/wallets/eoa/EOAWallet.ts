@@ -9,6 +9,7 @@ import { createWalletClient, nonceManager } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { TransactionData } from '@/types/lend/index.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -55,9 +56,16 @@ export abstract class EOAWallet extends Wallet {
    * Send a single transaction from this EOA wallet.
    *
    * Creates a wallet client, sends the transaction, and waits for the receipt.
+   *
+   * Fails closed on a mined-but-reverted transaction: a confirmed receipt with
+   * `status: 'reverted'` is thrown as a {@link TransactionConfirmedButRevertedError}
+   * rather than returned as success, so callers never treat a reverted action as
+   * completed. This matches the success gate the rotation/deploy siblings already
+   * apply on their receipts.
    * @param transactionData - Transaction to send (to, value, data, etc.)
    * @param chainId - Chain to send the transaction on
    * @returns Promise resolving to the transaction receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined receipt reverted
    */
   async send(
     transactionData: TransactionData,
@@ -69,6 +77,12 @@ export abstract class EOAWallet extends Wallet {
     const receipt = await publicClient.waitForTransactionReceipt({
       hash: txHash,
     })
+    if (receipt.status === 'reverted') {
+      throw new TransactionConfirmedButRevertedError(
+        'transaction confirmed but reverted',
+        receipt,
+      )
+    }
     return receipt
   }
 
@@ -83,9 +97,16 @@ export abstract class EOAWallet extends Wallet {
    * Note: this method assumes a sequencer-ordered chain (e.g. OP-stack L2s).
    * On chains with deeper reorg risk, consider an additional confirmations
    * pass at the call site.
+   *
+   * Inherits the revert gate from `send()`: a mid-batch reverted leg throws a
+   * {@link TransactionConfirmedButRevertedError} before the next tx is signed,
+   * so a reverted batch is never returned as success (e.g. a max-mode approval
+   * landing followed by a reverted position call cannot leave a standing
+   * allowance reported as a completed batch).
    * @param transactionData - Array of transactions to send
    * @param chainId - Chain to send the transactions on
    * @returns Promise resolving to array of transaction receipts (one per transaction)
+   * @throws {TransactionConfirmedButRevertedError} If any leg's receipt reverted
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
