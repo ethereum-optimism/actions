@@ -270,6 +270,8 @@ export abstract class SwapProvider<
 
   /**
    * Resolve common quote parameters with provider defaults.
+   * Wallet-bound quotes default output to the executor across providers.
+   * Explicit recipients still override the wallet destination.
    * @param params - Raw quote params from the user
    * @returns Resolved slippage, deadline, recipient, optional wallet address,
    * amountInRaw, and current timestamp
