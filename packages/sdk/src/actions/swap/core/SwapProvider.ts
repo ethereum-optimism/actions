@@ -8,6 +8,7 @@ import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  InvalidParamsError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteRecipientMissingError,
@@ -163,6 +164,11 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     this.assertChainSupported(params.chainId)
+    // Validate slippage and amounts before quote calldata is built.
+    validateNotBothAmounts(params.amountIn, params.amountOut)
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     return this._getQuote(params)
   }
 
@@ -288,13 +294,41 @@ export abstract class SwapProvider<
     slippage: number,
     assetOut: Asset,
   ): { amountOutMinRaw: bigint; amountOutMin: number } {
-    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
+    // Reject min-out floors that disable protection or exceed the quote.
+    if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
+      throw new InvalidParamsError({
+        param: 'slippage',
+        expected: `amountOutMinRaw within [0, ${amountOutRaw}]`,
+        received: `${amountOutMinRaw}`,
+      })
+    }
     const amountOutMin = parseFloat(
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
     return { amountOutMinRaw, amountOutMin }
+  }
+
+  /**
+   * Compute the maximum input for an exact-output swap after slippage.
+   * Symmetric to {@link computeSlippageBounds} on the input side. The ceiling
+   * can only grow with slippage, so it needs no negative-floor clamp; callers
+   * pass this through to the encoder so the displayed and enforced max-in are
+   * the same number.
+   * @param amountInRaw - Quoted input as raw bigint
+   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
+   */
+  protected computeAmountInMaxRaw(
+    amountInRaw: bigint,
+    slippage: number,
+  ): bigint {
+    const slippageBps = this.computeSlippageBps(slippage)
+    return (
+      (amountInRaw * (BPS_DENOMINATOR + slippageBps) + BPS_DENOMINATOR - 1n) /
+      BPS_DENOMINATOR
+    )
   }
 
   protected resolveMarketConfig(
@@ -430,6 +464,13 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
+
+  // Safe but not ideal, flooring to whole bps is conservative because it tightens bounds. This issue expands flexibility:
+  // https://github.com/ethereum-optimism/actions/issues/379
+  private computeSlippageBps(slippage: number): bigint {
+    validateSlippage(slippage, this.maxSlippage)
+    return BigInt(Math.floor(slippage * Number(BPS_DENOMINATOR)))
+  }
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     validateQuoteNotExpired(quote.expiresAt)
