@@ -271,15 +271,19 @@ export abstract class SwapProvider<
   /**
    * Resolve common quote parameters with provider defaults.
    * @param params - Raw quote params from the user
-   * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
+   * @returns Resolved slippage, deadline, recipient, walletAddress, amountInRaw, and current timestamp
    */
   protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
     const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    // Allowance owner is the executing wallet, independent of recipient. Only
+    // the raw execute path threads `walletAddress` through; read-only quotes
+    // (no wallet) fall back to recipient and never run allowance checks.
+    const walletAddress = params.walletAddress ?? recipient
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
-    return { slippage, now, deadline, recipient, amountInRaw }
+    return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
   }
 
   /**

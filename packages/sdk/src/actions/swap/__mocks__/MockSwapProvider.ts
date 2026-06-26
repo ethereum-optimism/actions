@@ -5,6 +5,7 @@ import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -14,7 +15,6 @@ import type {
   SwapMarket,
   SwapProviderConfig,
   SwapQuote,
-  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -34,7 +34,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     (params: ResolvedSwapParams) => Promise<SwapTransaction>
   >
   public mockGetQuote: MockedFunction<
-    (params: SwapQuoteParams) => Promise<SwapQuote>
+    (params: SwapQuoteParamsResolved) => Promise<SwapQuote>
   >
   public mockBuildApprovals: MockedFunction<
     (quote: SwapQuote) => Promise<{
@@ -135,7 +135,9 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.mockExecute(params)
   }
 
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  protected async _getQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote> {
     return this.mockGetQuote(params)
   }
 
@@ -178,7 +180,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     }
   }
 
-  private createMockQuote(params: SwapQuoteParams): SwapQuote {
+  private createMockQuote(params: SwapQuoteParamsResolved): SwapQuote {
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + 60
     const slippage = params.slippage ?? 0.005
@@ -222,6 +224,9 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       expiresAt: deadline,
       gasEstimate: 150000n,
       recipient: (params.recipient ??
+        '0x0000000000000000000000000000000000000001') as Address,
+      walletAddress: (params.walletAddress ??
+        params.recipient ??
         '0x0000000000000000000000000000000000000001') as Address,
     }
   }

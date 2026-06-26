@@ -59,6 +59,12 @@ export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
 /** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
 export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
   recipient?: Address
+  /**
+   * Allowance owner (executing wallet) threaded through from the raw execute
+   * path so the quote's `walletAddress` is decoupled from `recipient`. Absent
+   * for read-only quotes, where it falls back to `recipient`.
+   */
+  walletAddress?: Address
 }
 
 /**

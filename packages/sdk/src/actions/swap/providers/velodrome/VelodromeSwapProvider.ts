@@ -89,6 +89,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       slippage: params.slippage,
       deadline: params.deadline,
       recipient: params.recipient,
+      walletAddress: params.walletAddress,
     })
     return this.buildSwapTransactions({
       ...swapQuote,
@@ -149,7 +150,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       assetOut,
       chainId,
     )
-    const { slippage, now, deadline, recipient, amountInRaw } =
+    const { slippage, now, deadline, recipient, walletAddress, amountInRaw } =
       this.resolveQuoteDefaults(params)
 
     const { internalQuote, providerContext } = await fetchPoolQuote(
@@ -201,6 +202,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
       recipient,
+      walletAddress,
     }
   }
 
@@ -218,7 +220,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const allowance = await checkTokenAllowance({
       publicClient,
       token,
-      owner: quote.recipient,
+      owner: quote.walletAddress,
       spender,
     })
 
