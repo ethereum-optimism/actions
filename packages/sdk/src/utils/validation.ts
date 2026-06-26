@@ -34,7 +34,7 @@ export function validateAmountProvided(
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
-  if (amount !== undefined && amount <= 0) {
+  if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
     throw new InvalidAmountError(amount)
   }
 }
@@ -108,8 +108,14 @@ export function validateWalletAddress(
   validateNotZeroAddress(walletAddress, label)
 }
 
+/** Reject non-finite slippage and enforce both `[0, 1)` bounds and `maxSlippage`. */
 export function validateSlippage(slippage: number, maxSlippage: number): void {
-  if (slippage < 0 || slippage > maxSlippage) {
+  if (
+    !Number.isFinite(slippage) ||
+    slippage < 0 ||
+    slippage >= 1 ||
+    slippage > maxSlippage
+  ) {
     throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }

@@ -81,6 +81,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
   protected async _buildApprovals(quote: SwapQuote) {
     const addresses = getUniswapAddresses(quote.chainId)
+    const requiredAmount = quote.amountInMaxRaw ?? quote.amountInRaw
 
     return this.buildPermit2Approvals(
       {
@@ -91,14 +92,14 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         recipient: quote.recipient,
         walletAddress: quote.recipient,
         chainId: quote.chainId,
-        amountInRaw: quote.amountInRaw,
+        amountInRaw: requiredAmount,
         approvalMode: resolveApprovalMode(
           quote.approvalMode,
           this._config.approvalMode,
           this._settings.approvalMode,
         ),
       },
-      quote.amountInRaw,
+      requiredAmount,
       addresses.permit2,
       addresses.universalRouter,
     )
@@ -129,12 +130,31 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
+    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
+      quote.amountOutRaw,
+      slippage,
+      assetOut,
+    )
+
+    const swapAmounts =
+      amountOutRaw !== undefined
+        ? {
+            amountOutRaw,
+            amountInMaxRaw: this.computeAmountInMaxRaw(
+              quote.amountInRaw,
+              slippage,
+            ),
+          }
+        : {
+            amountInRaw,
+            amountOutMinRaw,
+          }
+    const amountInMaxRaw =
+      'amountInMaxRaw' in swapAmounts ? swapAmounts.amountInMaxRaw : undefined
     const swapCalldata = encodeUniversalRouterSwap({
-      amountInRaw: amountOutRaw ? undefined : amountInRaw,
-      amountOutRaw,
+      ...swapAmounts,
       assetIn,
       assetOut,
-      slippage,
       deadline,
       recipient,
       chainId,
@@ -144,13 +164,13 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
+    const finalAmountInRaw =
+      amountOutRaw !== undefined ? quote.amountInRaw : amountInRaw
 
-    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
-      quote.amountOutRaw,
-      slippage,
-      assetOut,
-    )
+    // Native exact-output swaps prepay max input because ETH has no approval path.
+    const executionValue = isNativeAsset(assetIn)
+      ? (amountInMaxRaw ?? finalAmountInRaw)
+      : 0n
 
     return {
       assetIn,
@@ -162,6 +182,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       amountOutRaw: quote.amountOutRaw,
       amountOutMin,
       amountOutMinRaw,
+      amountInMaxRaw,
       price: quote.amountOut / quote.amountIn,
       priceInverse: quote.amountIn / quote.amountOut,
       priceImpact: quote.priceImpact,
@@ -169,7 +190,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       execution: {
         swapCalldata,
         routerAddress: addresses.universalRouter,
-        value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
+        value: executionValue,
         providerContext: {
           fee: marketConfig.fee,
           tickSpacing: marketConfig.tickSpacing,
