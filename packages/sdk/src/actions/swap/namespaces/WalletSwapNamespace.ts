@@ -2,6 +2,10 @@ import { isAddressEqual } from 'viem'
 
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
+import {
+  resolveSwapQuoteWalletAddress,
+  resolveSwapRequestRecipient,
+} from '@/actions/swap/recipients.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
 import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
@@ -40,7 +44,10 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   override async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     const quote = await super.getQuote({
       ...params,
-      recipient: params.recipient ?? this.wallet.address,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        this.wallet.address,
+      ),
       walletAddress: this.wallet.address,
     })
     return { ...quote, walletAddress: this.wallet.address }
@@ -52,7 +59,10 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   override async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
     const quotes = await super.getQuotes({
       ...params,
-      recipient: params.recipient ?? this.wallet.address,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        this.wallet.address,
+      ),
       walletAddress: this.wallet.address,
     })
     return quotes.map((quote) => ({
@@ -96,7 +106,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * with a different wallet would check allowances for the wrong account.
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
-    const quoteWalletAddress = quote.walletAddress ?? quote.recipient
+    const quoteWalletAddress = resolveSwapQuoteWalletAddress(quote)
     if (!isAddressEqual(quoteWalletAddress, this.wallet.address)) {
       throw new QuoteRecipientMismatchError({
         quoteRecipient: quoteWalletAddress,
@@ -118,7 +128,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
       ...params,
       walletAddress: this.wallet.address,
       recipient: await this.resolveRecipient(
-        params.recipient ?? this.wallet.address,
+        resolveSwapRequestRecipient(params.recipient, this.wallet.address),
       ),
     }
   }

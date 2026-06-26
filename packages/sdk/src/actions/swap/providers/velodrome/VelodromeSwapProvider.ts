@@ -25,6 +25,7 @@ import type {
   VelodromeMarketConfig,
   VelodromeSwapProviderConfig,
 } from '@/actions/swap/providers/velodrome/types.js'
+import { resolveSwapQuoteWalletAddress } from '@/actions/swap/recipients.js'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
@@ -228,7 +229,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const allowance = await checkTokenAllowance({
       publicClient,
       token,
-      owner: this.resolveQuoteWalletAddress(quote),
+      owner: resolveSwapQuoteWalletAddress(quote),
       spender,
     })
 

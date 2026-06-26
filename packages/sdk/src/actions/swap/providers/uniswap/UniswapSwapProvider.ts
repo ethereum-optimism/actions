@@ -1,3 +1,4 @@
+import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
 import {
@@ -22,6 +23,7 @@ import type {
   UniswapMarketConfig,
   UniswapSwapProviderConfig,
 } from '@/actions/swap/providers/uniswap/types.js'
+import { resolveSwapQuoteWalletAddress } from '@/actions/swap/recipients.js'
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { AssetMetadataRequiredError } from '@/core/error/errors.js'
@@ -39,6 +41,12 @@ import type {
 } from '@/types/swap/index.js'
 import { resolveApprovalMode } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
+
+function resolveUniswapUniversalRouterRecipient(
+  recipient: Address | undefined,
+): Address {
+  return recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+}
 
 /**
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
@@ -95,7 +103,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         slippage: quote.slippage,
         deadline: quote.deadline,
         recipient: quote.recipient,
-        walletAddress: this.resolveQuoteWalletAddress(quote),
+        walletAddress: resolveSwapQuoteWalletAddress(quote),
         chainId: quote.chainId,
         amountInRaw: requiredAmount,
         approvalMode: resolveApprovalMode(
@@ -156,7 +164,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
           }
     const amountInMaxRaw =
       'amountInMaxRaw' in swapAmounts ? swapAmounts.amountInMaxRaw : undefined
-    const quoteRecipient = recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const quoteRecipient = resolveUniswapUniversalRouterRecipient(recipient)
     const swapCalldata = encodeUniversalRouterSwap({
       ...swapAmounts,
       assetIn,

@@ -5,6 +5,7 @@ import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
+import { resolveSwapRequestRecipient } from '@/actions/swap/recipients.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   InvalidParamsError,
@@ -279,7 +280,10 @@ export abstract class SwapProvider<
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = this.resolveDefaultRecipient(params)
+    const recipient = resolveSwapRequestRecipient(
+      params.recipient,
+      params.walletAddress,
+    )
     const walletAddress = params.walletAddress
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
@@ -464,15 +468,6 @@ export abstract class SwapProvider<
     }
   }
 
-  /**
-   * Resolve the wallet that owns input tokens for a quote.
-   * @param quote - Swap quote being executed
-   * @returns Wallet address for allowance checks
-   */
-  protected resolveQuoteWalletAddress(quote: SwapQuote): Address {
-    return quote.walletAddress ?? quote.recipient
-  }
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
@@ -515,7 +510,10 @@ export abstract class SwapProvider<
       deadline:
         params.deadline ??
         Math.floor(Date.now() / 1000) + this.quoteExpirationSeconds,
-      recipient: this.resolveDefaultRecipient(params) ?? params.walletAddress,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        params.walletAddress,
+      ),
       walletAddress: params.walletAddress,
       chainId: params.chainId,
       approvalMode: params.approvalMode,
@@ -539,13 +537,6 @@ export abstract class SwapProvider<
       )
       return !blocked
     })
-  }
-
-  private resolveDefaultRecipient(params: {
-    recipient?: Address
-    walletAddress?: Address
-  }): Address | undefined {
-    return params.recipient ?? params.walletAddress
   }
 
   private findMatchingConfig(
