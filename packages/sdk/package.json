@@ -11,7 +11,7 @@
   },
   "type": "module",
   "sideEffects": false,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "TypeScript SDK for Actions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -79,16 +79,36 @@
     "viem": ">=2.33.0 <2.34.0"
   },
   "peerDependenciesMeta": {
-    "@dynamic-labs/ethereum": { "optional": true },
-    "@dynamic-labs/waas-evm": { "optional": true },
-    "@dynamic-labs/wallet-connector-core": { "optional": true },
-    "@privy-io/react-auth": { "optional": true },
-    "@privy-io/node": { "optional": true },
-    "@turnkey/core": { "optional": true },
-    "@turnkey/http": { "optional": true },
-    "@turnkey/sdk-server": { "optional": true },
-    "@turnkey/react-wallet-kit": { "optional": true },
-    "@turnkey/viem": { "optional": true }
+    "@dynamic-labs/ethereum": {
+      "optional": true
+    },
+    "@dynamic-labs/waas-evm": {
+      "optional": true
+    },
+    "@dynamic-labs/wallet-connector-core": {
+      "optional": true
+    },
+    "@privy-io/react-auth": {
+      "optional": true
+    },
+    "@privy-io/node": {
+      "optional": true
+    },
+    "@turnkey/core": {
+      "optional": true
+    },
+    "@turnkey/http": {
+      "optional": true
+    },
+    "@turnkey/sdk-server": {
+      "optional": true
+    },
+    "@turnkey/react-wallet-kit": {
+      "optional": true
+    },
+    "@turnkey/viem": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "22.14.0",

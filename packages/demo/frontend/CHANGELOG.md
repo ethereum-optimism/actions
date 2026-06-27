@@ -1,5 +1,12 @@
 # actions-ui
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [[`eafff2c`](https://github.com/ethereum-optimism/actions/commit/eafff2cee8f59bf922a66abd3c4f028d21b2e7f6), [`d296846`](https://github.com/ethereum-optimism/actions/commit/d296846f23fd640e95a9a99461c5207ae38ef6d8), [`7cfe1e2`](https://github.com/ethereum-optimism/actions/commit/7cfe1e22f0c87fad87651e7011ef5881c1d6b229), [`b07e295`](https://github.com/ethereum-optimism/actions/commit/b07e295505953bd3420fa66f0b0d49e97d743466), [`42323a6`](https://github.com/ethereum-optimism/actions/commit/42323a60fa5801d1789139132f908d8204d09dbd), [`338f38e`](https://github.com/ethereum-optimism/actions/commit/338f38e68b4771044a707a60faaa321b6cca55f9), [`287bad7`](https://github.com/ethereum-optimism/actions/commit/287bad74fdd7e93041c74586d0e5ce7447d0e19f), [`3c554c1`](https://github.com/ethereum-optimism/actions/commit/3c554c1a81729ffb1dd307164490ccd6e1c5c9b0)]:
+  - @eth-optimism/actions-sdk@0.8.0
+
 ## 0.2.3
 
 ### Patch Changes
