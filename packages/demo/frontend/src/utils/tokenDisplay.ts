@@ -103,6 +103,17 @@ export function formatAmountParts(
   }
 }
 
+export function formatReviewAmount(value: string): {
+  main: string
+  secondary: string
+} {
+  const [wholeRaw, decimals = ''] = value.split('.')
+  const whole = wholeRaw || '0'
+  const main = `${whole}.${decimals.slice(0, 2).padEnd(2, '0')}`
+  const secondary = decimals.slice(2, 8).replace(/0+$/, '')
+  return { main, secondary }
+}
+
 /**
  * Split a number into main and secondary decimal parts for display.
  * Shows first 4 decimals as main, rest as secondary (smaller text).

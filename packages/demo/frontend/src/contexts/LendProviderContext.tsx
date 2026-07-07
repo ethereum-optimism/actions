@@ -1,4 +1,10 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react'
 import type { Address } from 'viem'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
@@ -12,6 +18,7 @@ interface LendProviderContextValue {
   handleMarketSelect: (market: MarketInfo) => void
   isLoadingMarkets: boolean
   marketPositions: MarketPosition[]
+  setMarketPositions: Dispatch<SetStateAction<MarketPosition[]>>
   // Balance data
   assetBalance: string
   isLoadingBalance: boolean
@@ -71,6 +78,7 @@ export function LendProviderContextProvider({
     handleMarketSelect: lendData.handleMarketSelect,
     isLoadingMarkets: lendData.isLoadingMarkets,
     marketPositions: lendData.marketPositions,
+    setMarketPositions: lendData.setMarketPositions,
     assetBalance: lendData.assetBalance,
     isLoadingBalance: lendData.isLoadingBalance,
     isMintingAsset: lendData.isMintingAsset,

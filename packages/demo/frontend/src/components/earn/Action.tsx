@@ -144,7 +144,7 @@ export function Action({
   } = useWithdrawCollateral({
     asset,
     mode,
-    amount,
+    amount: effectiveAmount,
     amountValue,
     maxAmount,
     directDepositedAmount,
@@ -208,8 +208,13 @@ export function Action({
       setAmount('')
       trackEvent('transaction_success', eventData)
     } catch (e) {
-      const displayMessage =
+      console.error(`[lend] ${mode} failed:`, e)
+      const shortMessage =
         e instanceof ActionsError ? e.shortMessage : undefined
+      const displayMessage =
+        illiquidMarket && mode === 'withdraw'
+          ? 'This market has limited liquidity on testnet. This is a testnet-specific issue, please try again later.'
+          : shortMessage
       setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
@@ -339,9 +344,9 @@ export function Action({
           onConfirm={handleReviewConfirm}
           isExecuting={isLoading}
           flow="withdraw"
-          amount={{ main: amount || '0' }}
+          amount={{ main: effectiveAmount || '0' }}
           amountUsd={formatUsd(
-            parseFloat(amount) || 0,
+            parseFloat(effectiveAmount) || 0,
             stubPriceUsd(asset.metadata.symbol),
           )}
           asset={asset}

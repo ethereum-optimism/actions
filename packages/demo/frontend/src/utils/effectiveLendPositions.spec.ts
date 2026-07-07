@@ -77,6 +77,34 @@ describe('buildEffectiveLendPositions', () => {
     expect(position.depositedAmount).toBe('40.01')
   })
 
+  it('uses an optimistic pledge on the lend position before the borrow position lands', () => {
+    const optimistic = buildMarketPosition({
+      directDepositedAmount: '0',
+      depositedSharesRaw: null,
+      pledgedCollateralAmount: '25',
+      marketId: market.marketId,
+      provider: market.provider,
+    })
+    const [position] = buildEffectiveLendPositions([market], [optimistic], [])
+    expect(position.depositedAmount).toBe('25.00')
+  })
+
+  it('does not double-count when the optimistic pledge and the borrow position both report it', () => {
+    const optimistic = buildMarketPosition({
+      directDepositedAmount: '0',
+      depositedSharesRaw: null,
+      pledgedCollateralAmount: '75',
+      marketId: market.marketId,
+      provider: market.provider,
+    })
+    const [position] = buildEffectiveLendPositions(
+      [market],
+      [optimistic],
+      [pledgedPosition],
+    )
+    expect(position.depositedAmount).toBe('75.00')
+  })
+
   it('synthesizes a lend row when all collateral is pledged', () => {
     const [position] = buildEffectiveLendPositions(
       [market],

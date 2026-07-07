@@ -5,6 +5,7 @@
  */
 
 import { useRef, useState } from 'react'
+import { ActionsError } from '@eth-optimism/actions-sdk'
 import type { Asset, BorrowMarket } from '@eth-optimism/actions-sdk'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { displaySymbol } from '@/utils/tokenDisplay'
@@ -116,7 +117,11 @@ export function useBorrowTransaction() {
         description: `${amountNum} ${symbol}`,
       })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Transaction failed'
+      console.error(`[borrow] ${mode} failed:`, e)
+      const msg =
+        e instanceof ActionsError && e.shortMessage
+          ? e.shortMessage
+          : 'Transaction failed. Please try again.'
       activity?.error()
       setTxStatus('error')
       setTxError(msg)
