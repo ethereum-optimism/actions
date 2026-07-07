@@ -62,6 +62,7 @@ describe('buildFrontendWalletOperations', () => {
       slippage: 0.005,
       deadline: 1_700_000_000,
       recipient: '0x515f8fC39dD14AD674AdB305C51559b3d4fFc85a' as Address,
+      walletAddress: '0x515f8fC39dD14AD674AdB305C51559b3d4fFc85a' as Address,
       provider: 'uniswap',
       quotedAt: 1_700_000_000,
       expiration: 1_700_000_060,
@@ -75,7 +76,7 @@ describe('buildFrontendWalletOperations', () => {
     const walletGetQuote = vi.fn().mockResolvedValue(walletQuote)
     const actionsGetQuote = vi.fn()
     const wallet = {
-      address: walletQuote.recipient,
+      address: walletQuote.walletAddress,
       getBalance: vi.fn(),
       sendBatch: vi.fn<() => Promise<TransactionReturnType>>(),
       lend: {

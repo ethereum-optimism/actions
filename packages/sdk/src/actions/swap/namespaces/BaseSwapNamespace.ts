@@ -79,7 +79,7 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
   }
 
   /**
-   * Fetch quotes from all providers with the wallet address as recipient.
+   * Fetch quotes from all providers for the requested swap parameters.
    * Unlike getQuote(), returns all successful quotes instead of just the best.
    * If an explicit provider is specified, returns a single-element array from that provider.
    * @param params - Quote parameters (assets, amounts, chain, optional provider)

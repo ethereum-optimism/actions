@@ -14,9 +14,11 @@ import {
   EXTSLOAD_ABI,
   POOL_KEY_ABI_TYPE,
   QUOTER_ABI,
+  TAKE_PARAMS,
   UNIVERSAL_ROUTER_ABI,
 } from '@/actions/swap/providers/uniswap/abis.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
@@ -191,12 +193,9 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   }
 }
 
-export interface EncodeSwapParams {
-  amountInRaw?: bigint
-  amountOutRaw?: bigint
+interface EncodeSwapBaseParams {
   assetIn: Asset
   assetOut: Asset
-  slippage: number
   deadline: number
   recipient: Address
   chainId: SupportedChainId
@@ -208,6 +207,28 @@ export interface EncodeSwapParams {
   tickSpacing: number
 }
 
+export type EncodeSwapParams =
+  | (EncodeSwapBaseParams & {
+      amountInRaw: bigint
+      amountOutRaw?: undefined
+      /**
+       * Provider-derived minimum output floor for exact-input swaps. Passed in
+       * so displayed and enforced bounds are the same number.
+       */
+      amountOutMinRaw: bigint
+      amountInMaxRaw?: undefined
+    })
+  | (EncodeSwapBaseParams & {
+      amountInRaw?: undefined
+      amountOutRaw: bigint
+      amountOutMinRaw?: undefined
+      /**
+       * Provider-derived maximum input ceiling for exact-output swaps. Passed
+       * in so approvals, native value, and calldata use the same number.
+       */
+      amountInMaxRaw: bigint
+    })
+
 // V4 Universal Router command
 const V4_SWAP = 0x10
 
@@ -215,7 +236,10 @@ const V4_SWAP = 0x10
 const SWAP_EXACT_IN_SINGLE = 0x06
 const SWAP_EXACT_OUT_SINGLE = 0x08
 const SETTLE_ALL = 0x0c
-const TAKE_ALL = 0x0f
+const TAKE = 0x0e
+// Mirrors Uniswap V4 ActionConstants.OPEN_DELTA. For TAKE, 0 resolves to
+// the full positive currency delta, the output credit owed by PoolManager.
+const OPEN_DELTA = 0n
 
 /**
  * Encode Universal Router V4 swap calldata
@@ -226,8 +250,10 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     amountInRaw,
     assetIn,
     assetOut,
-    slippage,
+    amountOutMinRaw,
+    amountInMaxRaw,
     deadline,
+    recipient,
     chainId,
     quote,
     fee,
@@ -248,11 +274,16 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
   let actionParams: Hex[]
 
   if (isExactInput) {
-    const minAmountOut =
-      (quote.amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+    if (amountOutMinRaw === undefined) {
+      throw new InvalidParamsError({
+        param: 'amountOutMinRaw',
+        expected: 'a provider-derived min-out floor for an exact-input swap',
+      })
+    }
+    const minAmountOut = amountOutMinRaw
 
     actions =
-      `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
+      `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
 
     actionParams = [
       encodeAbiParameters(EXACT_INPUT_SINGLE_PARAMS, [
@@ -265,15 +296,19 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
         },
       ]),
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInRaw]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
+      encodeAbiParameters(TAKE_PARAMS, [tokenOut, recipient, OPEN_DELTA]),
     ]
   } else {
-    const maxAmountIn =
-      quote.amountInRaw +
-      (quote.amountInRaw * BigInt(Math.round(slippage * 10000))) / 10000n
+    if (amountInMaxRaw === undefined) {
+      throw new InvalidParamsError({
+        param: 'amountInMaxRaw',
+        expected: 'a provider-derived max-in ceiling for an exact-output swap',
+      })
+    }
+    const maxAmountIn = amountInMaxRaw
 
     actions =
-      `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
+      `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
 
     actionParams = [
       encodeAbiParameters(EXACT_OUTPUT_SINGLE_PARAMS, [
@@ -286,10 +321,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
         },
       ]),
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
-        tokenOut,
-        quote.amountOutRaw,
-      ]),
+      encodeAbiParameters(TAKE_PARAMS, [tokenOut, recipient, OPEN_DELTA]),
     ]
   }
 

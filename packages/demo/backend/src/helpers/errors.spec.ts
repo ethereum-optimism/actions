@@ -19,6 +19,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -176,6 +177,13 @@ describe('mapSdkError', () => {
     expect(mapSdkError(new QuoteRecipientMissingError())).toEqual({
       status: 400,
       message: 'Quote recipient is required.',
+    })
+  })
+
+  it('maps QuoteWalletAddressMissingError to 400', () => {
+    expect(mapSdkError(new QuoteWalletAddressMissingError())).toEqual({
+      status: 400,
+      message: 'Quote wallet address is required.',
     })
   })
 

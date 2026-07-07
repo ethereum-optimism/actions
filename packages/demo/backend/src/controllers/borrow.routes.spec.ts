@@ -5,6 +5,8 @@ import { createApp } from '@/app.js'
 import * as borrowService from '@/services/borrow.js'
 import * as walletService from '@/services/wallet.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@/services/borrow.js', () => ({
   getMarkets: vi.fn(),
   getQuote: vi.fn(),
@@ -64,21 +66,9 @@ const MARKET_ID = {
 }
 const WALLET = '0xaabbccddeeff00112233445566778899aabbccdd'
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 beforeEach(async () => {
   vi.resetAllMocks()
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
-    }),
-  } as never)
+  await mockVerifiedUser('user-a')
 })
 
 describe('borrow routes', () => {
@@ -174,6 +164,31 @@ describe('borrow routes', () => {
         body: JSON.stringify({ nothing: 'here' }),
       })
       expect(res.status).toBe(400)
+    })
+  })
+
+  describe('POST /borrow/position/open rate behavior', () => {
+    it('does not rate-limit authenticated borrow mutation retries', async () => {
+      vi.mocked(borrowService.openPosition).mockResolvedValue({
+        blockExplorerUrls: [],
+      } as never)
+
+      const app = createApp()
+      const statuses: number[] = []
+      for (let i = 0; i < 11; i++) {
+        const res = await app.request('/borrow/position/open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            marketId: MARKET_ID,
+            borrowAmount: { amountRaw: '1' },
+          }),
+        })
+        statuses.push(res.status)
+      }
+
+      expect(statuses).toEqual(Array(11).fill(200))
+      expect(borrowService.openPosition).toHaveBeenCalledTimes(11)
     })
   })
 

@@ -19,6 +19,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   SameAssetError,
   SlippageOutOfRangeError,
   TransactionConfirmedButRevertedError,
@@ -140,6 +141,10 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
     [
       QuoteRecipientMissingError,
       { status: 400, message: 'Quote recipient is required.' },
+    ],
+    [
+      QuoteWalletAddressMissingError,
+      { status: 400, message: 'Quote wallet address is required.' },
     ],
     [
       AssetNotSupportedOnChainError,

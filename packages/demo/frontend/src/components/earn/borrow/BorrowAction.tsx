@@ -114,7 +114,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const outstandingDebt =
     rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
-  const debtBalance = assetBalanceAmount(tokenBalances, repayBalanceAsset)
+  // Repay uses market-chain spendable balance.
+  const debtBalance = assetBalanceAmount(
+    tokenBalances,
+    repayBalanceAsset,
+    activeMarket?.marketId.chainId,
+  )
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'
   const canRepayFull = debtBalance >= outstandingDebt * REPAY_FULL_TOLERANCE
@@ -160,12 +165,16 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     getQuote,
   })
 
+  // Avoid optimistic double-count.
+  const projectionAmountNum = isExecuting ? 0 : amountNum
+  const projectionAmountUsd = isExecuting ? 0 : amountUsd
+
   const { currentLtv, projectedLtv, wouldLiquidate, projectedHealthFactor } =
     useBorrowProjection({
       activeMarket,
       activeAsset,
-      amountNum,
-      amountUsd,
+      amountNum: projectionAmountNum,
+      amountUsd: projectionAmountUsd,
       mode,
       maxLtv,
       currentBorrUsd,
