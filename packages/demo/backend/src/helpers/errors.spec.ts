@@ -18,6 +18,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import { describe, expect, it } from 'vitest'
@@ -173,6 +174,13 @@ describe('mapSdkError', () => {
     expect(mapSdkError(new QuoteRecipientMissingError())).toEqual({
       status: 400,
       message: 'Quote recipient is required.',
+    })
+  })
+
+  it('maps QuoteWalletAddressMissingError to 400', () => {
+    expect(mapSdkError(new QuoteWalletAddressMissingError())).toEqual({
+      status: 400,
+      message: 'Quote wallet address is required.',
     })
   })
 
