@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MockSwapProvider } from '@/actions/swap/__mocks__/MockSwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { SlippageOutOfRangeError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarketConfig } from '@/types/swap/index.js'
 
@@ -249,7 +250,7 @@ describe('SwapProvider', () => {
       )
     })
 
-    it('defaults quote.recipient to UNIVERSAL_ROUTER_MSG_SENDER when no recipient is provided', async () => {
+    it('leaves recipient defaults to the concrete provider', async () => {
       const provider = new MockSwapProvider()
       const quote = await provider.getQuote({
         assetIn: MockUSDC,
@@ -257,7 +258,23 @@ describe('SwapProvider', () => {
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
-      expect(quote.recipient).toBe('0x0000000000000000000000000000000000000001')
+      expect(quote.recipient).toBe('0x9999999999999999999999999999999999999999')
+      expect(quote.walletAddress).toBeUndefined()
+    })
+
+    it('defaults quote.recipient to walletAddress when provided', async () => {
+      const provider = new MockSwapProvider()
+      const walletAddress =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        walletAddress,
+      })
+      expect(quote.recipient).toBe(walletAddress)
+      expect(quote.walletAddress).toBe(walletAddress)
     })
 
     it('throws if quote.recipient is missing (chokepoint guard)', async () => {
@@ -303,6 +320,131 @@ describe('SwapProvider', () => {
       expect(quote.amountIn).toBeDefined()
       expect(quote.amountOut).toBeDefined()
       expect(quote.route).toBeDefined()
+    })
+
+    // Invalid quote slippage must be rejected before calldata bounds are built.
+    it.each([1.5, NaN])(
+      'rejects slippage %p instead of returning a negative-floor quote',
+      async (slippage) => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.getQuote({
+            assetIn: MockUSDC,
+            assetOut: MockWETH,
+            amountIn: 100,
+            chainId: 84532 as SupportedChainId,
+            slippage,
+          }),
+        ).rejects.toThrow('out of range')
+        expect(provider.mockGetQuote).not.toHaveBeenCalled()
+      },
+    )
+
+    it.each([
+      { amountIn: NaN, amountOut: undefined },
+      { amountIn: undefined, amountOut: NaN },
+      { amountIn: undefined, amountOut: 0 },
+      { amountIn: undefined, amountOut: -1 },
+    ])(
+      'rejects invalid quote amount shape %p before quoting',
+      async ({ amountIn, amountOut }) => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.getQuote({
+            assetIn: MockUSDC,
+            assetOut: MockWETH,
+            amountIn,
+            amountOut,
+            chainId: 84532 as SupportedChainId,
+          }),
+        ).rejects.toThrow('Amount must be a positive finite number')
+        expect(provider.mockGetQuote).not.toHaveBeenCalled()
+      },
+    )
+
+    it('rejects conflicting quote amounts before quoting', async () => {
+      const provider = new MockSwapProvider()
+      await expect(
+        provider.getQuote({
+          assetIn: MockUSDC,
+          assetOut: MockWETH,
+          amountIn: 100,
+          amountOut: 1,
+          chainId: 84532 as SupportedChainId,
+        }),
+      ).rejects.toThrow('Provide either amountIn or amountOut, not both')
+      expect(provider.mockGetQuote).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('computeSlippageBounds()', () => {
+    it.each([0, 0.005, 0.5])(
+      'keeps amountOutMinRaw within [0, amountOutRaw] for slippage %p',
+      (slippage) => {
+        const provider = new MockSwapProvider()
+        const amountOutRaw = 1_000_000_000_000_000_000n
+        const { amountOutMinRaw } = provider.testComputeSlippageBounds(
+          amountOutRaw,
+          slippage,
+          MockWETH,
+        )
+        expect(amountOutMinRaw).toBeGreaterThanOrEqual(0n)
+        expect(amountOutMinRaw).toBeLessThanOrEqual(amountOutRaw)
+      },
+    )
+
+    it.each([1.0, 1.5])(
+      'throws instead of returning a disabled floor for slippage %p',
+      (slippage) => {
+        const provider = new MockSwapProvider()
+        expect(() =>
+          provider.testComputeSlippageBounds(
+            1_000_000_000_000_000_000n,
+            slippage,
+            MockWETH,
+          ),
+        ).toThrow(SlippageOutOfRangeError)
+      },
+    )
+
+    it('throws instead of returning an impossible floor for negative slippage', () => {
+      const provider = new MockSwapProvider()
+      expect(() =>
+        provider.testComputeSlippageBounds(
+          1_000_000_000_000_000_000n,
+          -0.1,
+          MockWETH,
+        ),
+      ).toThrow(SlippageOutOfRangeError)
+    })
+
+    it('throws for a non-finite slippage', () => {
+      const provider = new MockSwapProvider()
+      expect(() =>
+        provider.testComputeSlippageBounds(
+          1_000_000_000_000_000_000n,
+          NaN,
+          MockWETH,
+        ),
+      ).toThrow(SlippageOutOfRangeError)
+    })
+
+    it('does not round near-one slippage to a zero floor', () => {
+      const provider = new MockSwapProvider({ maxSlippage: 1 })
+      const { amountOutMinRaw } = provider.testComputeSlippageBounds(
+        1_000_000_000_000_000_000n,
+        0.99996,
+        MockWETH,
+      )
+      expect(amountOutMinRaw).toBeGreaterThan(0n)
+    })
+  })
+
+  describe('computeAmountInMaxRaw()', () => {
+    it('rounds up non-divisible exact-output slippage math', () => {
+      const provider = new MockSwapProvider()
+
+      expect(provider.testComputeAmountInMaxRaw(1n, 0.005)).toBe(2n)
     })
   })
 
