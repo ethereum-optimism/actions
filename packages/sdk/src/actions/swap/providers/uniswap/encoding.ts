@@ -237,6 +237,8 @@ const SWAP_EXACT_IN_SINGLE = 0x06
 const SWAP_EXACT_OUT_SINGLE = 0x08
 const SETTLE_ALL = 0x0c
 const TAKE = 0x0e
+// Mirrors Uniswap V4 ActionConstants.OPEN_DELTA. For TAKE, 0 resolves to
+// the full positive currency delta, the output credit owed by PoolManager.
 const OPEN_DELTA = 0n
 
 /**
