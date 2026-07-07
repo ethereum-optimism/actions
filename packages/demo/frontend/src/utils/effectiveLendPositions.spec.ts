@@ -78,8 +78,7 @@ describe('buildEffectiveLendPositions', () => {
   })
 
   it('uses an optimistic pledge on the lend position before the borrow position lands', () => {
-    // The reconcile has moved the shares to collateral (direct -> 0, pledged
-    // recorded on the lend position) but the borrow position has not refetched.
+    // The reconcile has moved the shares to collateral, but the borrow position has not refetched.
     const optimistic = buildMarketPosition({
       directDepositedAmount: '0',
       depositedSharesRaw: null,

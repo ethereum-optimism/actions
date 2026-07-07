@@ -50,10 +50,7 @@ export function buildEffectiveLendPositions(
         directPosition?.directDepositedAmount ?? null
       // Aave: lend deposit and borrow collateral are the same aToken, so don't add them twice.
       // Morpho: vault shares leave the vault when pledged, so they are distinct and do sum.
-      // Prefer the live borrow position's collateral; fall back to an optimistic
-      // pledge recorded on the lend position (set the instant the auto-reconcile
-      // fires, before the borrow position refetches) so the displayed total stays
-      // stable instead of briefly double-counting the moved shares.
+      // Prefer live borrow collateral; fall back to the optimistic pledge so the total stays stable during refetch.
       const pledgedCollateralAmount =
         market.provider !== 'aave'
           ? (pledgedPosition?.collateralAmountFormatted ??

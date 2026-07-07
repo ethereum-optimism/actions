@@ -220,8 +220,7 @@ describe('Action', () => {
       { wrapper: withBorrowCtx([healthyPledge]) },
     )
     fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }))
-    // The amount is locked to the illiquid cap; opening the review must reflect
-    // that capped amount, not an empty "0".
+    // The amount is locked to the illiquid cap; opening the review must reflect that capped amount, not an empty "0".
     fireEvent.click(screen.getByRole('button', { name: /Withdraw USDC/i }))
     expect(screen.getByText('You withdraw')).toBeInTheDocument()
     // Rendered as a label: "0.00" full size + "01" dimmed (i.e. 0.0001, not 0).

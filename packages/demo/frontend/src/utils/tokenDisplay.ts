@@ -103,12 +103,7 @@ export function formatAmountParts(
   }
 }
 
-/**
- * Format a token amount string for a review label: the integer part and first
- * two decimals at full size (`main`), the next few decimals smaller and dimmed
- * (`secondary`). Keeps a long, full-precision value (e.g. a max-repay debt of
- * `100.000044233754392392`) from rendering as one oversized number.
- */
+/** Format a token amount string for a review label with full-size leading digits and dimmed trailing precision. */
 export function formatReviewAmount(value: string): {
   main: string
   secondary: string

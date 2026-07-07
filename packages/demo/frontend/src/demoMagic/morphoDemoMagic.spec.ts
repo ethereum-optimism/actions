@@ -46,7 +46,7 @@ describe('useReconcileMorphoCollateral', () => {
       prev: MarketPosition[],
     ) => MarketPosition[]
     const [updated] = updater([lentPosition])
-    // Same shares now show as pledged, not direct — no double-count window.
+    // Same shares now show as pledged, not direct; no double-count window.
     expect(updated.directDepositedAmount).toBe('0')
     expect(updated.depositedSharesRaw).toBeNull()
     expect(updated.pledgedCollateralAmount).toBe('70')
@@ -78,8 +78,7 @@ describe('useReconcileMorphoCollateral', () => {
       borrowAmount: 10n,
     })
 
-    // Baseline (the bug): a stale $70 direct deposit plus the landed $70 pledge
-    // double-counts the same shares to $140.
+    // Baseline (the bug): a stale $70 direct deposit plus the landed $70 pledge double-counts the same shares to $140.
     expect(
       buildEffectiveLendPositions([lendMarket], [lentPosition], [pledged70])[0]
         .depositedAmount,
@@ -101,8 +100,7 @@ describe('useReconcileMorphoCollateral', () => {
       ),
     )
 
-    // After the optimistic direct->pledged move, the same shares are counted
-    // once: $70, not $140.
+    // After the optimistic direct->pledged move, the same shares are counted once: $70, not $140.
     expect(
       buildEffectiveLendPositions([lendMarket], positions, [pledged70])[0]
         .depositedAmount,

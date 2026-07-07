@@ -33,10 +33,7 @@ export function useReconcileMorphoCollateral(
       if (reconciledRef.current.has(key)) return
       reconciledRef.current.add(key)
 
-      // Optimistically move the shares from the vault (direct) to collateral
-      // (pledged) in one update. Without this the borrow position's pledged
-      // collateral lands before the lend vault refetches to zero, so the
-      // displayed balance briefly double-counts the same shares.
+      // Optimistically move the shares from the vault to collateral in one update so the displayed balance does not double-count during refetch.
       const pledgedSnapshot = position.directDepositedAmount
       setMarketPositions((prev) =>
         prev.map((p) =>

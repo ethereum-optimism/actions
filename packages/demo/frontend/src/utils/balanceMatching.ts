@@ -3,12 +3,7 @@ import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { isEthSymbol } from './assetUtils'
 
-/**
- * Wallet balance for an asset matched by symbol; returns the human-readable
- * amount or 0 when absent. Pass `chainId` to scope the balance to a single
- * chain (the spendable balance for a tx on that chain); omit it for the
- * cross-chain total.
- */
+/** Wallet balance for an asset matched by symbol; pass `chainId` to scope spendable balance to one chain. */
 export function assetBalanceAmount(
   tokenBalances: readonly TokenBalance[] | undefined,
   asset: Asset | null,
