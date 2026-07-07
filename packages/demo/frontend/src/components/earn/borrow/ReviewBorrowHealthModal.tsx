@@ -89,8 +89,6 @@ export function ReviewBorrowHealthModal({
 }: ReviewBorrowHealthModalProps) {
   const symbol = displaySymbol(asset.metadata.symbol)
   const assetLogo = getAssetLogo(asset.metadata.symbol)
-  // Format the (possibly full-precision) amount as a label: first two decimals
-  // full size, the rest dimmed and smaller.
   const displayAmount = formatReviewAmount(amount.main)
 
   const isDanger =
