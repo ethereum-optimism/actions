@@ -16,7 +16,6 @@ import type { BorrowPosition, MarketPosition } from '@/types/market'
 import type { UseBorrowProviderReturn } from '@/hooks/useBorrowProvider'
 import { BorrowAction } from './BorrowAction'
 
-// Mutable execution state + a projection spy so a test can assert the borrow amount is zeroed in the projection while a tx is executing.
 const { txState, projectionSpy } = vi.hoisted(() => ({
   txState: { isExecuting: false },
   projectionSpy: vi.fn(),
@@ -182,7 +181,6 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
   }
 
   it('blocks repay when the USDC balance lives only on the non-borrow chain', () => {
-    // Total balance is 50, but it is all on the swap chain (84532); the borrow chain (OPS) holds nothing, so the repay cannot be funded here.
     const raw = 50_000000n
     const crossChainOnly = {
       asset: USDC_DEMO,

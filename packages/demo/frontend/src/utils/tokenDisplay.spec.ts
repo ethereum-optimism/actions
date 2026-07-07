@@ -4,7 +4,6 @@ import { formatReviewAmount } from './tokenDisplay'
 
 describe('formatReviewAmount', () => {
   it('keeps two decimals at full size and dims a bounded tail', () => {
-    // Full-precision max-repay debt: the dust should not render as one long number.
     expect(formatReviewAmount('100.000044233754392392')).toEqual({
       main: '100.00',
       secondary: '004423',

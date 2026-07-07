@@ -3,7 +3,6 @@ import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { isEthSymbol } from './assetUtils'
 
-/** Wallet balance for an asset matched by symbol; pass `chainId` to scope spendable balance to one chain. */
 export function assetBalanceAmount(
   tokenBalances: readonly TokenBalance[] | undefined,
   asset: Asset | null,

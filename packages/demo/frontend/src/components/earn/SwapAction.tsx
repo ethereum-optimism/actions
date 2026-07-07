@@ -446,7 +446,6 @@ export function SwapAction({
     } catch (err) {
       console.error('[swap] execution failed:', err)
       activity?.error()
-      // Surface the SDK's short reason instead of a bare "tx failed"; a raw Error here would carry the full revert calldata.
       setTxModalError(
         err instanceof ActionsError && err.shortMessage
           ? err.shortMessage

@@ -103,7 +103,6 @@ export function formatAmountParts(
   }
 }
 
-/** Format a token amount string for a review label with full-size leading digits and dimmed trailing precision. */
 export function formatReviewAmount(value: string): {
   main: string
   secondary: string
@@ -111,7 +110,6 @@ export function formatReviewAmount(value: string): {
   const [wholeRaw, decimals = ''] = value.split('.')
   const whole = wholeRaw || '0'
   const main = `${whole}.${decimals.slice(0, 2).padEnd(2, '0')}`
-  // Up to six more decimals, trailing zeros trimmed, so the dim tail stays short.
   const secondary = decimals.slice(2, 8).replace(/0+$/, '')
   return { main, secondary }
 }

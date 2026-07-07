@@ -114,7 +114,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const outstandingDebt =
     rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
-  // Scope to the market's chain: the repay spends USDC_DEMO on the borrow chain, but the same asset can also hold a balance on the swap chain. Using the cross-chain total would let Max prefill more than the wallet can spend here and revert with "transfer amount exceeds balance".
+  // Repay uses market-chain spendable balance.
   const debtBalance = assetBalanceAmount(
     tokenBalances,
     repayBalanceAsset,
@@ -165,7 +165,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     getQuote,
   })
 
-  // While the tx is executing, the optimistic position update lands before the form amount clears. Zeroing the projected delta stops the health bar from briefly double-counting the borrow and overshooting to 100%.
+  // Avoid optimistic double-count.
   const projectionAmountNum = isExecuting ? 0 : amountNum
   const projectionAmountUsd = isExecuting ? 0 : amountUsd
 

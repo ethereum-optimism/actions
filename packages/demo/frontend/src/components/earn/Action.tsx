@@ -144,7 +144,6 @@ export function Action({
   } = useWithdrawCollateral({
     asset,
     mode,
-    // Use the effective (possibly locked) amount so the projected-health card agrees with the amount shown in the review modal.
     amount: effectiveAmount,
     amountValue,
     maxAmount,
@@ -209,11 +208,9 @@ export function Action({
       setAmount('')
       trackEvent('transaction_success', eventData)
     } catch (e) {
-      // Log the full error (revert reason, calldata) for diagnosis; the modal only gets the short reason below.
       console.error(`[lend] ${mode} failed:`, e)
       const shortMessage =
         e instanceof ActionsError ? e.shortMessage : undefined
-      // Aave's testnet ETH market is thinly funded, so withdrawals can revert on insufficient liquidity. Tell the user this is a testnet limitation rather than surfacing a bare "Transaction failed".
       const displayMessage =
         illiquidMarket && mode === 'withdraw'
           ? 'This market has limited liquidity on testnet. This is a testnet-specific issue, please try again later.'

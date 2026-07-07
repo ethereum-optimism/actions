@@ -33,7 +33,7 @@ export function useReconcileMorphoCollateral(
       if (reconciledRef.current.has(key)) return
       reconciledRef.current.add(key)
 
-      // Optimistically move the shares from the vault to collateral in one update so the displayed balance does not double-count during refetch.
+      // Prevent refetch double-count.
       const pledgedSnapshot = position.directDepositedAmount
       setMarketPositions((prev) =>
         prev.map((p) =>
@@ -59,7 +59,6 @@ export function useReconcileMorphoCollateral(
         amount: { max: true },
       }).catch((error) => {
         reconciledRef.current.delete(key)
-        // Roll back the optimistic pledge so the shares show as direct again.
         setMarketPositions((prev) =>
           prev.map((p) =>
             sameVault(p, position)

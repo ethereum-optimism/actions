@@ -8,7 +8,7 @@ const usdc = {
   metadata: { symbol: 'USDC_DEMO', decimals: 6 },
 } as unknown as Asset
 
-// USDC_DEMO held on two chains: the cross-chain total double-counts what is actually spendable on a single chain.
+// Cross-chain total is not spendable.
 const balances = [
   {
     asset: usdc,

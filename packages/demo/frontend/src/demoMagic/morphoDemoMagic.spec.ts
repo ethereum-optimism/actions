@@ -9,7 +9,6 @@ import {
 import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 import { useReconcileMorphoCollateral } from './morphoDemoMagic'
 
-// The vault has a configured borrow market so the reconcile proceeds.
 vi.mock('@/constants/markets', () => ({
   morphoBorrowMarketForVault: () => ({
     kind: 'morpho-blue',
@@ -40,13 +39,11 @@ describe('useReconcileMorphoCollateral', () => {
       ),
     )
 
-    // Optimistic update runs synchronously when the reconcile fires.
     expect(setMarketPositions).toHaveBeenCalledTimes(1)
     const updater = setMarketPositions.mock.calls[0][0] as (
       prev: MarketPosition[],
     ) => MarketPosition[]
     const [updated] = updater([lentPosition])
-    // Same shares now show as pledged, not direct; no double-count window.
     expect(updated.directDepositedAmount).toBe('0')
     expect(updated.depositedSharesRaw).toBeNull()
     expect(updated.pledgedCollateralAmount).toBe('70')
@@ -78,13 +75,12 @@ describe('useReconcileMorphoCollateral', () => {
       borrowAmount: 10n,
     })
 
-    // Baseline (the bug): a stale $70 direct deposit plus the landed $70 pledge double-counts the same shares to $140.
+    // Baseline double-count.
     expect(
       buildEffectiveLendPositions([lendMarket], [lentPosition], [pledged70])[0]
         .depositedAmount,
     ).toBe('140.00')
 
-    // Drive the real reconcile, then simulate the borrow pledge landing.
     let positions: MarketPosition[] = [lentPosition]
     const setMarketPositions = vi.fn(
       (u: (p: MarketPosition[]) => MarketPosition[]) => {
@@ -100,7 +96,6 @@ describe('useReconcileMorphoCollateral', () => {
       ),
     )
 
-    // After the optimistic direct->pledged move, the same shares are counted once: $70, not $140.
     expect(
       buildEffectiveLendPositions([lendMarket], positions, [pledged70])[0]
         .depositedAmount,
