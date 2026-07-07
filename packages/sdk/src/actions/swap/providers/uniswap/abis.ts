@@ -118,6 +118,13 @@ export const CURRENCY_AMOUNT_PARAMS = [
   { type: 'uint256' },
 ] as const
 
+/** ABI type for TAKE params */
+export const TAKE_PARAMS = [
+  { type: 'address' },
+  { type: 'address' },
+  { type: 'uint256' },
+] as const
+
 /**
  * PoolManager extsload ABI — reads arbitrary storage slots via SLOAD
  * @see https://docs.uniswap.org/contracts/v4/guides/read-pool-state
