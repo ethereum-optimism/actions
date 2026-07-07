@@ -6,6 +6,7 @@ import type {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
+import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import type { PositionParams } from '@/types/index.js'
 import { resolveAsset } from '@/utils/assets.js'
@@ -31,43 +32,29 @@ async function executePosition(
 ): Promise<LendTransactionReceiptWithUrls> {
   const { idToken, amount, tokenAddress, marketId } = params
 
-  try {
-    const wallet = await getWallet(idToken)
-    if (!wallet) {
-      const error = `Wallet not found`
-      console.error('[executePositionV1] ERROR:', error)
-      throw new Error(error)
-    }
-
-    const asset = resolveAsset(
-      tokenAddress,
-      marketId.chainId as SupportedChainId,
-    )
-
-    const positionParams = { amount, asset, marketId }
-
-    const result =
-      operation === 'open'
-        ? await wallet.lend!.openPosition(positionParams)
-        : await wallet.lend!.closePosition(positionParams)
-
-    const blockExplorerUrls = getBlockExplorerUrls({
-      chainId: marketId.chainId,
-      ...result,
-    })
-
-    return {
-      ...result,
-      blockExplorerUrls,
-    } as LendTransactionReceiptWithUrls
-  } catch (error) {
-    console.error('[executePosition] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    throw error
+  const wallet = await getWallet(idToken)
+  if (!wallet) {
+    throw new WalletNotFoundError()
   }
+
+  const asset = resolveAsset(tokenAddress, marketId.chainId as SupportedChainId)
+
+  const positionParams = { amount, asset, marketId }
+
+  const result =
+    operation === 'open'
+      ? await wallet.lend!.openPosition(positionParams)
+      : await wallet.lend!.closePosition(positionParams)
+
+  const blockExplorerUrls = getBlockExplorerUrls({
+    chainId: marketId.chainId,
+    ...result,
+  })
+
+  return {
+    ...result,
+    blockExplorerUrls,
+  } as LendTransactionReceiptWithUrls
 }
 
 export async function openPosition(
