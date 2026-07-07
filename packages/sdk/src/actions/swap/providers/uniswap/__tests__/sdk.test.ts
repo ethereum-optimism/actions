@@ -20,6 +20,7 @@ import {
   decodeMaxAmountIn,
   decodeMinAmountOut,
   decodeRouterInput,
+  decodeTakeParams,
   expectHex,
   isReadonlyArray,
   isRecord,
@@ -48,6 +49,8 @@ const POOL_MANAGER = '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address
 const CHAIN_ID = 84532 as SupportedChainId
 const FEE = 100
 const TICK_SPACING = 2
+const CUSTOM_RECIPIENT = '0x3333333333333333333333333333333333333333' as Address
+const UNIVERSAL_ROUTER = '0x4444444444444444444444444444444444444444' as Address
 
 // Mock sqrtPriceX96 for a ~2000 USDC/WETH pool
 // sqrtPriceX96 = sqrt(price) * 2^96, where price = WETH/USDC adjusted for decimals
@@ -309,6 +312,14 @@ describe('encodeUniversalRouterSwap', () => {
   const AMOUNT_OUT_MIN = 497500000000000000n
   const AMOUNT_IN_MAX = 100500000n
 
+  const decodeActions = (calldata: Hex): Hex => {
+    const [actions] = decodeAbiParameters(
+      [{ type: 'bytes' }, { type: 'bytes[]' }],
+      decodeRouterInput(calldata),
+    )
+    return expectHex(actions, 'actions')
+  }
+
   it('encodes exact-in swap calldata', () => {
     const calldata = encodeUniversalRouterSwap({
       amountInRaw: 100000000n,
@@ -316,10 +327,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -335,10 +346,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -354,10 +365,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -369,10 +380,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -387,10 +398,10 @@ describe('encodeUniversalRouterSwap', () => {
         assetIn: USDC,
         assetOut: WETH,
         deadline: 1700000000,
-        recipient: '0xrecipient' as Address,
+        recipient: CUSTOM_RECIPIENT,
         chainId: CHAIN_ID,
         quote: baseQuote,
-        universalRouterAddress: '0xrouter' as Address,
+        universalRouterAddress: UNIVERSAL_ROUTER,
         fee: FEE,
         tickSpacing: TICK_SPACING,
       }),
@@ -405,10 +416,10 @@ describe('encodeUniversalRouterSwap', () => {
         assetIn: USDC,
         assetOut: WETH,
         deadline: 1700000000,
-        recipient: '0xrecipient' as Address,
+        recipient: CUSTOM_RECIPIENT,
         chainId: CHAIN_ID,
         quote: baseQuote,
-        universalRouterAddress: '0xrouter' as Address,
+        universalRouterAddress: UNIVERSAL_ROUTER,
         fee: FEE,
         tickSpacing: TICK_SPACING,
       }),
@@ -422,28 +433,20 @@ describe('encodeUniversalRouterSwap', () => {
     // bare-reverted on pool lookup. Correct codes:
     //   0x06 SWAP_EXACT_IN_SINGLE
     //   0x08 SWAP_EXACT_OUT_SINGLE
-    const decodeActions = (calldata: Hex): Hex => {
-      const [actions] = decodeAbiParameters(
-        [{ type: 'bytes' }, { type: 'bytes[]' }],
-        decodeRouterInput(calldata),
-      )
-      return expectHex(actions, 'actions')
-    }
-
     const exactIn = encodeUniversalRouterSwap({
       amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
       amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
-    expect(decodeActions(exactIn)).toBe('0x060c0f')
+    expect(decodeActions(exactIn)).toBe('0x060c0e')
 
     const exactOut = encodeUniversalRouterSwap({
       amountOutRaw: 500000000000000000n,
@@ -451,14 +454,57 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
-    expect(decodeActions(exactOut)).toBe('0x080c0f')
+    expect(decodeActions(exactOut)).toBe('0x080c0e')
+  })
+
+  it.each([
+    [
+      'exact-in',
+      () =>
+        encodeUniversalRouterSwap({
+          amountInRaw: 100000000n,
+          assetIn: USDC,
+          assetOut: WETH,
+          amountOutMinRaw: AMOUNT_OUT_MIN,
+          deadline: 1700000000,
+          recipient: CUSTOM_RECIPIENT,
+          chainId: CHAIN_ID,
+          quote: baseQuote,
+          universalRouterAddress: UNIVERSAL_ROUTER,
+          fee: FEE,
+          tickSpacing: TICK_SPACING,
+        }),
+    ],
+    [
+      'exact-out',
+      () =>
+        encodeUniversalRouterSwap({
+          amountOutRaw: 500000000000000000n,
+          assetIn: USDC,
+          assetOut: WETH,
+          amountInMaxRaw: AMOUNT_IN_MAX,
+          deadline: 1700000000,
+          recipient: CUSTOM_RECIPIENT,
+          chainId: CHAIN_ID,
+          quote: baseQuote,
+          universalRouterAddress: UNIVERSAL_ROUTER,
+          fee: FEE,
+          tickSpacing: TICK_SPACING,
+        }),
+    ],
+  ])('encodes custom recipient in %s take action', (_label, buildCalldata) => {
+    const take = decodeTakeParams(buildCalldata())
+
+    expect(take.currency).toBe(WETH.address[CHAIN_ID])
+    expect(take.recipient).toBe(CUSTOM_RECIPIENT)
+    expect(take.amount).toBe(0n)
   })
 
   it('produces different calldata for exact-in vs exact-out', () => {
@@ -468,10 +514,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountOutMinRaw: AMOUNT_OUT_MIN,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -482,10 +528,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountInMaxRaw: AMOUNT_IN_MAX,
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -500,10 +546,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountOutMinRaw: 500000000000000000n, // 0% slippage → full quoted out
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -514,10 +560,10 @@ describe('encodeUniversalRouterSwap', () => {
       assetOut: WETH,
       amountOutMinRaw: 475000000000000000n, // 5% slippage
       deadline: 1700000000,
-      recipient: '0xrecipient' as Address,
+      recipient: CUSTOM_RECIPIENT,
       chainId: CHAIN_ID,
       quote: baseQuote,
-      universalRouterAddress: '0xrouter' as Address,
+      universalRouterAddress: UNIVERSAL_ROUTER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
