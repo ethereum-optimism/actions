@@ -32,8 +32,8 @@ actions --json wallet balance --chain base-sepolia
   providers, optionally filtered (no wallet).
 - `actions borrow market --market <name>` - inspect one borrow market
   by name (no wallet).
-- `actions borrow position --market <name> --wallet <address>` - read any
-  wallet's borrow position (no `PRIVATE_KEY` required).
+- `actions borrow position --market <name> --wallet <address|ens>` - read
+  any wallet's borrow position (no `PRIVATE_KEY` required).
 - `actions swap markets [--chain <name>]` - all swap markets across
   configured providers (no wallet).
 - `actions swap market --pool <id> --chain <name>` - inspect one swap
@@ -255,10 +255,9 @@ way as lend / swap.
 A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
 error envelope on stderr (exit 5).
 
-`actions borrow position --market <name> --wallet <address>` reads any
-wallet's position without needing `PRIVATE_KEY`; the CLI checksums the
-address (viem `getAddress`) before forwarding. `wallet borrow position`
-uses the connected wallet instead.
+`actions borrow position --market <name> --wallet <address|ens>` reads any
+wallet's position without needing `PRIVATE_KEY`; ENS names are resolved
+before the SDK call. `wallet borrow position` uses the connected wallet.
 
 `borrow markets` / `borrow market` / both `position` commands return the
 SDK shapes verbatim with bigints stringified. Position fields `ltv` and
@@ -277,6 +276,8 @@ NL -> command examples:
   `actions --json wallet borrow withdraw-collateral --market demo-dusdc-op --max`
 - "top up 5 USDC of collateral on demo dUSDC/OP" ->
   `actions --json wallet borrow deposit-collateral --market demo-dusdc-op --amount 5`
+- "what's the health factor of vitalik.eth on demo dUSDC/OP" ->
+  `actions --json borrow position --market demo-dusdc-op --wallet vitalik.eth`
 - "what's the health factor of 0x... on demo dUSDC/OP" ->
   `actions --json borrow position --market demo-dusdc-op --wallet 0x...`
 - "how am I doing in demo dUSDC/OP" ->

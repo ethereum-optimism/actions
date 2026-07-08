@@ -45,12 +45,15 @@ export function requireEnsName(input: string): EnsName {
  * @returns The input as a checksummed `Address` or an `EnsName`.
  * @throws `CliError` with code `validation` when the input is neither.
  */
-export function requireEnsNameOrAddress(input: string): Address | EnsName {
+export function requireEnsNameOrAddress(
+  input: string,
+  label = 'input',
+): Address | EnsName {
   if (isAddress(input)) return requireAddress(input)
   if (isEnsName(input)) return input
   throw new CliError(
     'validation',
-    `Invalid input: "${input}" (expected an ENS name or a 0x-prefixed address)`,
-    { input },
+    `Invalid ${label}: "${input}" (expected an ENS name or a 0x-prefixed address)`,
+    { [label]: input },
   )
 }

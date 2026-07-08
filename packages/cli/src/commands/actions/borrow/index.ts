@@ -63,8 +63,8 @@ export function borrowCommand(): Command {
       'market name from the config allowlist (e.g. "Demo dUSDC / OP", "demo-dusdc-op")',
     )
     .requiredOption(
-      '--wallet <address>',
-      '0x-prefixed 20-byte address to inspect; checksummed by the CLI before dispatch',
+      '--wallet <address|ens>',
+      '0x-prefixed address or ENS name to inspect',
     )
     .addHelpText(
       'after',

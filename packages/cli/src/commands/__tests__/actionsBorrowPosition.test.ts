@@ -12,9 +12,11 @@ afterEach(() => setJsonMode(false))
 
 describe('runBorrowPosition (read-only, with --wallet)', () => {
   let writeSpy: MockInstance
+  let stderrSpy: MockInstance
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   })
 
   afterEach(() => {
@@ -23,12 +25,19 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
 
   const mockActions = (
     getPosition: (params: unknown) => Promise<unknown>,
+    getAddress: (input: string) => Promise<string> = async () => VITALIK,
   ): void => {
+    const config = getDemoConfig()
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
-      config: getDemoConfig(),
-      actions: { borrow: { getPosition } } as never,
+      config: {
+        ...config,
+        chains: config.chains.filter((chain) => chain.chainId !== 1),
+      },
+      actions: { borrow: { getPosition }, ens: { getAddress } } as never,
     })
   }
+
+  const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
   const samplePosition = () => ({
     marketId: {
@@ -58,8 +67,10 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
       return samplePosition()
     })
     // Lowercase address that needs checksum normalisation.
-    const lower = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
-    await runBorrowPosition({ market: 'demo-dusdc-op', wallet: lower })
+    await runBorrowPosition({
+      market: 'demo-dusdc-op',
+      wallet: VITALIK.toLowerCase(),
+    })
     const call = captured[0] as {
       marketId: { kind: string; marketId: string; chainId: number }
       walletAddress: string
@@ -67,12 +78,30 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     expect(call.marketId.kind).toBe('morpho-blue')
     expect(call.marketId.chainId).toBe(84532)
     // viem's getAddress() returns the EIP-55 checksum form.
-    expect(call.walletAddress).toBe(
-      '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-    )
+    expect(call.walletAddress).toBe(VITALIK)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.healthFactor).toBeNull()
     expect(body.ltv).toBeNull()
+  })
+
+  it('resolves ENS --wallet before forwarding it to getPosition', async () => {
+    const captured: unknown[] = []
+    const ensInputs: string[] = []
+    mockActions(
+      async (params) => {
+        captured.push(params)
+        return samplePosition()
+      },
+      async (input) => {
+        ensInputs.push(input)
+        return VITALIK
+      },
+    )
+    await runBorrowPosition({ market: 'demo-dusdc-op', wallet: 'vitalik.eth' })
+    const call = captured[0] as { walletAddress: string }
+    expect(ensInputs).toEqual(['vitalik.eth'])
+    expect(call.walletAddress).toBe(VITALIK)
+    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
   })
 
   it('rejects a malformed --wallet address with CliError(validation)', async () => {
