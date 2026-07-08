@@ -9,7 +9,7 @@ import {
 import { requireBorrowCapability } from './requireBorrowCapability.js'
 
 /**
- * @description Handler for `actions wallet borrow position --market <name>`. Resolves the market through the config allowlist and reads the connected wallet's position. Unlike `actions borrow position`, no `--address` or `--ens` flag is required: the wallet's address comes from the loaded `PRIVATE_KEY`. The SDK's `getPosition` lives on the base namespace and takes both `marketId` and `walletAddress`, so the handler still has to forward them both.
+ * @description Handler for `actions wallet borrow position --market <name>`. Resolves the market through the config allowlist and reads the connected wallet's position. Unlike `actions borrow position`, no `--wallet` flag is required: the wallet's address comes from the loaded `PRIVATE_KEY`. The SDK's `getPosition` lives on the base namespace and takes both `marketId` and `walletAddress`, so the handler still has to forward them both.
  * @param flags - Commander-parsed required options.
  */
 export async function runWalletBorrowPosition(flags: {

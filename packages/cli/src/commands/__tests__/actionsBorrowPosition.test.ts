@@ -1,7 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MOCK_ADDRESS, MOCK_ENS_NAME } from '@/__tests__/helpers/ens.js'
+import { MOCK_ADDRESS } from '@/__tests__/helpers/ens.js'
 import { runBorrowPosition } from '@/commands/actions/borrow/position.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { getDemoConfig } from '@/demo/config.js'
@@ -11,30 +11,25 @@ import { setJsonMode } from '@/output/mode.js'
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
 
-describe('runBorrowPosition (read-only, with --address or --ens)', () => {
+describe('runBorrowPosition (read-only, with --wallet)', () => {
   let writeSpy: MockInstance
-  let stderrSpy: MockInstance
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  const mockActions = (
-    getPosition: (params: unknown) => Promise<unknown>,
-    getAddress: (input: string) => Promise<string> = async () => MOCK_ADDRESS,
-  ): void => {
+  const mockActions = (getPosition: (params: unknown) => Promise<unknown>) => {
     const config = getDemoConfig()
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
       config: {
         ...config,
         chains: config.chains.filter((chain) => chain.chainId !== 1),
       },
-      actions: { borrow: { getPosition }, ens: { getAddress } } as never,
+      actions: { borrow: { getPosition } } as never,
     })
   }
 
@@ -59,16 +54,16 @@ describe('runBorrowPosition (read-only, with --address or --ens)', () => {
     maxLtv: 0.86,
   })
 
-  it('checksums --address and forwards it to actions.borrow.getPosition', async () => {
+  it('checksums --wallet and forwards it to actions.borrow.getPosition', async () => {
     const captured: unknown[] = []
     mockActions(async (params) => {
       captured.push(params)
       return samplePosition()
     })
-    // Lowercase address that needs checksum normalisation.
+    // Lowercase wallet address that needs checksum normalisation.
     await runBorrowPosition({
       market: 'demo-dusdc-op',
-      address: MOCK_ADDRESS.toLowerCase(),
+      wallet: MOCK_ADDRESS.toLowerCase(),
     })
     const call = captured[0] as {
       marketId: { kind: string; marketId: string; chainId: number }
@@ -83,61 +78,22 @@ describe('runBorrowPosition (read-only, with --address or --ens)', () => {
     expect(body.ltv).toBeNull()
   })
 
-  it('resolves --ens before forwarding it to getPosition', async () => {
-    const captured: unknown[] = []
-    const ensInputs: string[] = []
-    mockActions(
-      async (params) => {
-        captured.push(params)
-        return samplePosition()
-      },
-      async (input) => {
-        ensInputs.push(input)
-        return MOCK_ADDRESS
-      },
-    )
-    await runBorrowPosition({
-      market: 'demo-dusdc-op',
-      ens: MOCK_ENS_NAME,
-    })
-    const call = captured[0] as { walletAddress: string }
-    expect(ensInputs).toEqual([MOCK_ENS_NAME])
-    expect(call.walletAddress).toBe(MOCK_ADDRESS)
-    expect(stderrSpy).not.toHaveBeenCalled()
-  })
-
-  it('rejects a malformed --address with CliError(validation)', async () => {
+  it('rejects a malformed --wallet with CliError(validation)', async () => {
     mockActions(async () => samplePosition())
     try {
       await runBorrowPosition({
         market: 'demo-dusdc-op',
-        address: 'not-an-address',
+        wallet: 'not-an-address',
       })
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
-      expect((err as CliError).message).toMatch(/Invalid --address/)
+      expect((err as CliError).message).toMatch(/Invalid --wallet/)
     }
   })
 
-  it('rejects both --address and --ens with CliError(validation)', async () => {
-    mockActions(async () => samplePosition())
-    try {
-      await runBorrowPosition({
-        market: 'demo-dusdc-op',
-        address: MOCK_ADDRESS,
-        ens: MOCK_ENS_NAME,
-      })
-      throw new Error('did not throw')
-    } catch (err) {
-      expect(err).toBeInstanceOf(CliError)
-      expect((err as CliError).code).toBe('validation')
-      expect((err as CliError).message).toMatch(/either --address or --ens/)
-    }
-  })
-
-  it('rejects missing --address and --ens with CliError(validation)', async () => {
+  it('rejects missing --wallet with CliError(validation)', async () => {
     mockActions(async () => samplePosition())
     try {
       await runBorrowPosition({ market: 'demo-dusdc-op' })
@@ -145,7 +101,7 @@ describe('runBorrowPosition (read-only, with --address or --ens)', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
-      expect((err as CliError).message).toMatch(/--address or --ens/)
+      expect((err as CliError).message).toMatch(/Invalid --wallet/)
     }
   })
 
@@ -154,7 +110,7 @@ describe('runBorrowPosition (read-only, with --address or --ens)', () => {
     try {
       await runBorrowPosition({
         market: 'no-such-market',
-        address: MOCK_ADDRESS.toLowerCase(),
+        wallet: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -170,7 +126,7 @@ describe('runBorrowPosition (read-only, with --address or --ens)', () => {
     try {
       await runBorrowPosition({
         market: 'demo-dusdc-op',
-        address: MOCK_ADDRESS.toLowerCase(),
+        wallet: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {

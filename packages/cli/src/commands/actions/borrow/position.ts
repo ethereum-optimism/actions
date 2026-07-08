@@ -5,17 +5,15 @@ import {
   configuredBorrowMarkets,
   resolveBorrowMarket,
 } from '@/resolvers/borrowMarkets.js'
-import {
-  resolveWalletAddress,
-  type WalletAddressFlags,
-} from '@/resolvers/ens.js'
+import { requireAddress } from '@/utils/addresses.js'
 
-export interface BorrowPositionFlags extends WalletAddressFlags {
+export interface BorrowPositionFlags {
   market: string
+  wallet?: string
 }
 
 /**
- * @description Handler for `actions borrow position --market <name> (--address <address> | --ens <name>)`.
+ * @description Handler for `actions borrow position --market <name> --wallet <address>`.
  * @param flags - Commander-parsed options.
  * @returns Promise that resolves once stdout has been written.
  * @throws `CliError` with code `validation` or `network`.
@@ -29,7 +27,7 @@ export async function runBorrowPosition(
     configuredBorrowMarkets(config),
   )
   try {
-    const walletAddress = await resolveWalletAddress(actions.ens, flags)
+    const walletAddress = requireAddress(flags.wallet ?? '', '--wallet')
     const position = await actions.borrow.getPosition({
       marketId: market,
       walletAddress,
