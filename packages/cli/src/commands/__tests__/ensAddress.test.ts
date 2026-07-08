@@ -2,7 +2,7 @@ import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runEnsReverse } from '@/commands/actions/ens/reverse.js'
+import { runEnsAddress } from '@/commands/actions/ens/address.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'
@@ -12,11 +12,13 @@ afterEach(() => setJsonMode(false))
 
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
-describe('runEnsReverse', () => {
+describe('runEnsAddress', () => {
   let writeSpy: MockInstance
+  let stderrSpy: MockInstance
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   })
 
   afterEach(() => {
@@ -24,63 +26,55 @@ describe('runEnsReverse', () => {
   })
 
   const mockEns = (
-    getName: (address: string) => Promise<string | null>,
+    getAddress: (input: string) => Promise<string>,
     chains: Array<{ chainId: number }> = [{ chainId: mainnet.id }],
   ) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
       config: { chains } as never,
-      actions: { ens: { getName } } as never,
+      actions: { ens: { getAddress } } as never,
     })
   }
 
-  it('reverse-resolves an address and emits { address, name }', async () => {
+  it('resolves a name and emits { name, address }', async () => {
     const captured: string[] = []
-    mockEns(async (address) => {
-      captured.push(address)
-      return 'vitalik.eth'
+    mockEns(async (input) => {
+      captured.push(input)
+      return VITALIK
     })
-    await runEnsReverse(VITALIK)
+    await runEnsAddress('vitalik.eth')
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ address: VITALIK, name: 'vitalik.eth' })
-    expect(captured).toEqual([VITALIK])
+    expect(body).toEqual({ name: 'vitalik.eth', address: VITALIK })
+    expect(captured).toEqual(['vitalik.eth'])
   })
 
-  it('emits name: null when no primary record is set', async () => {
-    mockEns(async () => null)
-    await runEnsReverse(VITALIK)
+  it('warns and continues when mainnet is not configured', async () => {
+    mockEns(async () => VITALIK, [{ chainId: optimismSepolia.id }])
+    await runEnsAddress('vitalik.eth')
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ address: VITALIK, name: null })
+    expect(body).toEqual({ name: 'vitalik.eth', address: VITALIK })
+    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
   })
 
-  it('checksums a lowercased address before forwarding', async () => {
-    const captured: string[] = []
-    mockEns(async (address) => {
-      captured.push(address)
-      return null
-    })
-    await runEnsReverse(VITALIK.toLowerCase())
-    expect(captured).toEqual([VITALIK])
-  })
-
-  it('rejects with CliError(config) when mainnet is not configured', async () => {
-    mockEns(async () => null, [{ chainId: optimismSepolia.id }])
+  it('rejects a non-name input with CliError(validation)', async () => {
+    mockEns(async () => VITALIK)
     try {
-      await runEnsReverse(VITALIK)
-      throw new Error('did not throw')
-    } catch (err) {
-      expect(err).toBeInstanceOf(CliError)
-      expect((err as CliError).code).toBe('config')
-    }
-  })
-
-  it('rejects a non-address input with CliError(validation)', async () => {
-    mockEns(async () => null)
-    try {
-      await runEnsReverse('vitalik.eth')
+      await runEnsAddress(VITALIK)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('validates input before warning about mainnet fallback', async () => {
+    mockEns(async () => VITALIK, [{ chainId: optimismSepolia.id }])
+    try {
+      await runEnsAddress('notaname')
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect(stderrSpy).not.toHaveBeenCalled()
     }
   })
 
@@ -89,7 +83,7 @@ describe('runEnsReverse', () => {
       throw new Error('fetch failed')
     })
     try {
-      await runEnsReverse(VITALIK)
+      await runEnsAddress('vitalik.eth')
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

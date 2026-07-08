@@ -38,21 +38,21 @@ const capture = () => {
 }
 
 describe('ENS text formatters', () => {
-  it('renders resolve as "name -> address"', () => {
+  it('renders address as "name -> address"', () => {
     const lines = capture()
-    printOutput('ensResolve', { name: 'vitalik.eth', address: VITALIK })
+    printOutput('ensAddress', { name: 'vitalik.eth', address: VITALIK })
     expect(lines.join('')).toBe(`vitalik.eth -> ${VITALIK}\n`)
   })
 
-  it('renders reverse with a name', () => {
+  it('renders name lookup with a name', () => {
     const lines = capture()
-    printOutput('ensReverse', { address: VITALIK, name: 'vitalik.eth' })
+    printOutput('ensName', { address: VITALIK, name: 'vitalik.eth' })
     expect(lines.join('')).toBe(`${VITALIK} -> vitalik.eth\n`)
   })
 
-  it('renders the null-name branch of reverse explicitly', () => {
+  it('renders the null-name branch of name lookup explicitly', () => {
     const lines = capture()
-    printOutput('ensReverse', { address: VITALIK, name: null })
+    printOutput('ensName', { address: VITALIK, name: null })
     expect(lines.join('')).toBe(`${VITALIK} -> (no primary ENS name)\n`)
   })
 
@@ -73,8 +73,7 @@ describe('ENS text formatters', () => {
 
   it('strips terminal control bytes from on-chain ENS text records', () => {
     const lines = capture()
-    // A malicious profile record carrying an ANSI clear-screen escape and an
-    // OSC title-rewrite sequence wrapped around innocuous-looking text.
+    // ANSI clear-screen plus OSC title-rewrite around harmless text.
     const malicious = `${ESC}[2J${ESC}]0;pwned${BEL}evilplain`
     printOutput('ensInfo', { ...NULL_INFO, description: malicious })
     const out = lines.join('')
@@ -85,7 +84,7 @@ describe('ENS text formatters', () => {
 
   it('strips control bytes from a reverse-resolved name', () => {
     const lines = capture()
-    printOutput('ensReverse', {
+    printOutput('ensName', {
       address: VITALIK,
       name: `evil${ESC}[31m.eth` as `${string}.${string}`,
     })
@@ -93,11 +92,9 @@ describe('ENS text formatters', () => {
   })
 
   it('strips control bytes from a forward-resolved name', () => {
-    // resolve echoes the name the caller passed (or the SDK normalized); it is
-    // still rendered through sanitizeEnsText so a control-byte-bearing name
-    // cannot inject escapes into the `name -> address` line.
+    // Forward output echoes the caller name, so sanitize it too.
     const lines = capture()
-    printOutput('ensResolve', {
+    printOutput('ensAddress', {
       name: `evil${ESC}[2J.eth` as `${string}.${string}`,
       address: VITALIK,
     })

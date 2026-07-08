@@ -86,7 +86,7 @@ const URL_PATTERN = /https?:\/\/[^\s'"<>]+/g
 const REDACTED_URL = '[redacted-url]'
 
 // Own-property keys set by viem's `BaseError` constructor that we must NOT
-// surface as part of an SDK error's `details` payload — they are framework
+// surface as part of an SDK error's `details` payload, they are framework
 // metadata, not caller-relevant context.
 const VIEM_BASE_ERROR_KEYS = new Set([
   'name',
@@ -110,8 +110,8 @@ function sdkErrorDetails(err: ActionsError): Record<string, unknown> {
  * @description Maps any thrown value into a `CliError` with the right code:
  * - `CliError` instances pass through unchanged.
  * - `ProviderNotConfiguredError` → `config`.
- * - `EnsResolutionError` → `validation` (a well-formed name that is unregistered, normalizes to nothing, or resolves to the zero address is a permanent, non-retryable failure - it must not surface as a retryable `network` error).
- * - `EnsRpcError` → `network` (a transient mainnet RPC failure during ENS resolution; retryable). The explicit branch pins this mapping so it survives a future refactor that makes `EnsRpcError` extend `ActionsError` (which would otherwise silently reclassify it as non-retryable `validation`).
+ * - `EnsResolutionError` → `validation`.
+ * - `EnsRpcError` → retryable `network`.
  * - Other `ActionsError` subclasses → `validation` (carries the SDK error's own properties as `details`).
  * - viem `ContractFunctionRevertedError` → `onchain`.
  * - Anything else → retryable `network`.
@@ -291,12 +291,7 @@ export function isEpipeError(err: unknown): boolean {
   )
 }
 
-// SDK error messages can embed attacker-controlled on-chain ENS text (e.g.
-// `EnsResolutionError`/`EnsRpcError` quote the offending name, which originates
-// from a reverse record an attacker controls). Rendered verbatim to a terminal
-// those bytes can carry ANSI/OSC escapes that rewrite the screen or window
-// title. Strip C0/C1 control bytes from the human-readable `error` line. The
-// JSON path is unaffected: `JSON.stringify` already escapes control characters.
+// C0/C1 include ANSI/OSC terminal controls; strip them from text errors.
 const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
 
 /**

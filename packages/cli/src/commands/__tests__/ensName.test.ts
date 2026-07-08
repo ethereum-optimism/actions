@@ -1,9 +1,8 @@
-import type { EnsInfo } from '@eth-optimism/actions-sdk'
 import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runEnsInfo } from '@/commands/actions/ens/info.js'
+import { runEnsName } from '@/commands/actions/ens/name.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'
@@ -13,20 +12,7 @@ afterEach(() => setJsonMode(false))
 
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
-const NULL_INFO: EnsInfo = {
-  avatar: null,
-  display: null,
-  description: null,
-  url: null,
-  email: null,
-  keywords: null,
-  twitter: null,
-  github: null,
-  discord: null,
-  reddit: null,
-}
-
-describe('runEnsInfo', () => {
+describe('runEnsName', () => {
   let writeSpy: MockInstance
   let stderrSpy: MockInstance
 
@@ -40,70 +26,60 @@ describe('runEnsInfo', () => {
   })
 
   const mockEns = (
-    getInfo: (input: string) => Promise<typeof NULL_INFO>,
+    getName: (address: string) => Promise<string | null>,
     chains: Array<{ chainId: number }> = [{ chainId: mainnet.id }],
   ) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
       config: { chains } as never,
-      actions: { ens: { getInfo } } as never,
+      actions: { ens: { getName } } as never,
     })
   }
 
-  it('emits the SDK EnsInfo shape verbatim for a name', async () => {
+  it('reverse-resolves an address and emits { address, name }', async () => {
     const captured: string[] = []
-    const profile = {
-      ...NULL_INFO,
-      display: 'vitalik.eth',
-      twitter: 'VitalikButerin',
-    }
-    mockEns(async (input) => {
-      captured.push(input)
-      return profile
+    mockEns(async (address) => {
+      captured.push(address)
+      return 'vitalik.eth'
     })
-    await runEnsInfo('vitalik.eth')
+    await runEnsName(VITALIK)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual(profile)
-    expect(captured).toEqual(['vitalik.eth'])
+    expect(body).toEqual({ address: VITALIK, name: 'vitalik.eth' })
+    expect(captured).toEqual([VITALIK])
   })
 
-  it('accepts a checksummed address input', async () => {
+  it('emits name: null when no primary record is set', async () => {
+    mockEns(async () => null)
+    await runEnsName(VITALIK)
+    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
+    expect(body).toEqual({ address: VITALIK, name: null })
+  })
+
+  it('checksums a lowercased address before forwarding', async () => {
     const captured: string[] = []
-    mockEns(async (input) => {
-      captured.push(input)
-      return NULL_INFO
+    mockEns(async (address) => {
+      captured.push(address)
+      return null
     })
-    await runEnsInfo(VITALIK.toLowerCase())
+    await runEnsName(VITALIK.toLowerCase())
     expect(captured).toEqual([VITALIK])
   })
 
   it('warns and continues when mainnet is not configured', async () => {
-    mockEns(async () => NULL_INFO, [{ chainId: optimismSepolia.id }])
-    await runEnsInfo('vitalik.eth')
+    mockEns(async () => null, [{ chainId: optimismSepolia.id }])
+    await runEnsName(VITALIK)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual(NULL_INFO)
+    expect(body).toEqual({ address: VITALIK, name: null })
     expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
   })
 
-  it('rejects an input that is neither name nor address with CliError(validation)', async () => {
-    mockEns(async () => NULL_INFO)
+  it('rejects a non-address input with CliError(validation)', async () => {
+    mockEns(async () => null)
     try {
-      await runEnsInfo('notaname')
+      await runEnsName('vitalik.eth')
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
-    }
-  })
-
-  it('validates input before warning about mainnet fallback', async () => {
-    mockEns(async () => NULL_INFO, [{ chainId: optimismSepolia.id }])
-    try {
-      await runEnsInfo('notaname')
-      throw new Error('did not throw')
-    } catch (err) {
-      expect(err).toBeInstanceOf(CliError)
-      expect((err as CliError).code).toBe('validation')
-      expect(stderrSpy).not.toHaveBeenCalled()
     }
   })
 
@@ -112,7 +88,7 @@ describe('runEnsInfo', () => {
       throw new Error('fetch failed')
     })
     try {
-      await runEnsInfo('vitalik.eth')
+      await runEnsName(VITALIK)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

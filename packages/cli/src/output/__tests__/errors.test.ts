@@ -63,8 +63,7 @@ describe('retryableDefaultFor', () => {
 
 describe('toCliError', () => {
   it('maps an unresolvable ENS name to non-retryable validation, not network', () => {
-    // An unregistered name is a permanent failure: an agent honouring
-    // retryable=true on a network error would loop forever on it.
+    // Unregistered names are permanent, not retryable network failures.
     const err = toCliError(
       new EnsResolutionError('"nope.eth" could not be resolved', 'nope.eth'),
     )
@@ -74,11 +73,7 @@ describe('toCliError', () => {
   })
 
   it('maps a transient ENS RPC failure to retryable network, not validation', () => {
-    // EnsRpcError is the transient counterpart to EnsResolutionError: a timeout
-    // or 5xx from the mainnet RPC must stay retryable so an agent retries
-    // rather than giving up as if the name were permanently bad. This pins the
-    // classification against a future refactor making EnsRpcError an
-    // ActionsError (which would otherwise reclassify it to non-retryable).
+    // ENS RPC failures are transient and should remain retryable.
     const err = toCliError(
       new EnsRpcError('ENS text record lookup failed', 'vitalik.eth'),
     )

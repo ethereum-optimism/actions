@@ -44,13 +44,12 @@ actions --json wallet balance --chain base-sepolia
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
   quote sorted best price first.
-- `actions ens resolve <name>` - forward-resolve an ENS name to its
-  address on Ethereum mainnet (no wallet; requires `MAINNET_RPC_URL`).
-- `actions ens reverse <address>` - reverse-resolve an address to its
-  primary ENS name, or `name: null` when none is set (no wallet;
-  requires `MAINNET_RPC_URL`).
+- `actions ens address <name>` - forward-resolve an ENS name to its
+  address on Ethereum mainnet (no wallet).
+- `actions ens name <address>` - reverse-resolve an address to its
+  primary ENS name, or `name: null` when none is set (no wallet).
 - `actions ens info <input>` - fetch the standard ENS profile text
-  records for a name or address (no wallet; requires `MAINNET_RPC_URL`).
+  records for a name or address (no wallet).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
@@ -310,10 +309,16 @@ token-approval + Permit2-approval + swap (up to 3 receipts); smart
 wallets collapse to a single UserOp receipt. A receipt with
 `status: "reverted"` is normalised to `code: "onchain"` exit 5.
 
+`wallet swap execute --recipient <addr|ens>` accepts either a 0x address
+or an ENS name. Pass ENS names through this field when the user wants the
+swap output sent somewhere other than the connected wallet.
+
 NL -> command examples:
 
 - "swap 5 USDC for OP on Unichain" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 5 --chain unichain`
 - "buy 1 OP with USDC" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-out 1 --chain unichain`
+- "swap 1 USDC for OP and send it to vitalik.eth" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 1 --chain unichain --recipient vitalik.eth`
+- "send swap output to 0xd8dA...96045" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 1 --chain unichain --recipient 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
 - "what's the best price for 100 USDC -> OP" -> `actions --json swap quote --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
 - "compare provider quotes" -> `actions --json swap quotes --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
 - "execute on Velodrome with 1% slippage" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain --provider velodrome --slippage 1`
@@ -321,16 +326,14 @@ NL -> command examples:
 ## ENS semantics
 
 Read-only name resolution on Ethereum mainnet (chain ID 1). No
-`PRIVATE_KEY` is required, but mainnet must be configured via
-`MAINNET_RPC_URL` - the CLI insists on an operator-trusted endpoint
-rather than the SDK's public-RPC fallback, because a malicious RPC can
-return a fake address for a name. When `MAINNET_RPC_URL` is unset, every
-`ens` command exits `config` (3).
+`PRIVATE_KEY` is required. Setting `MAINNET_RPC_URL` uses an
+operator-configured mainnet RPC; when it is unset, the SDK's public RPC
+fallback is used and the CLI prints a warning to stderr.
 
-- `resolve` takes an ENS name (must be dot-separated, e.g. `vitalik.eth`)
+- `address` takes an ENS name (must be dot-separated, e.g. `vitalik.eth`)
   and emits `{ name, address }`. A non-name input (raw address, bare
   label) exits `validation` (2).
-- `reverse` takes a `0x` address and emits `{ address, name }`, where
+- `name` takes a `0x` address and emits `{ address, name }`, where
   `name` is `null` when the address has no primary ENS record. A
   non-address input exits `validation` (2).
 - `info` takes either a name or an address and emits the SDK `EnsInfo`
@@ -347,9 +350,9 @@ markets are testnet-only, so this affects reads (balances), not write targets.
 
 NL -> command examples:
 
-- "what address is vitalik.eth" -> `actions --json ens resolve vitalik.eth`
-- "resolve vitalik.eth" -> `actions --json ens resolve vitalik.eth`
-- "what's the ENS name for 0xd8dA...96045" -> `actions --json ens reverse 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+- "what address is vitalik.eth" -> `actions --json ens address vitalik.eth`
+- "resolve vitalik.eth" -> `actions --json ens address vitalik.eth`
+- "what's the ENS name for 0xd8dA...96045" -> `actions --json ens name 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
 - "show vitalik.eth's profile" -> `actions --json ens info vitalik.eth`
 - "get the ENS records for 0xd8dA...96045" -> `actions --json ens info 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
 
@@ -357,10 +360,9 @@ NL -> command examples:
 
 `*_RPC_URL` env vars must point to operator-trusted endpoints. A
 malicious RPC can return fake balance data, which will confuse the
-caller. The same trust requirement applies to `MAINNET_RPC_URL` for ENS
-reads: a fake RPC can return a wrong address for a name, so the CLI
-requires an operator-configured mainnet endpoint rather than falling
-back to a public RPC.
+caller. The same trust concern applies to `MAINNET_RPC_URL` for ENS
+reads: a fake RPC can return a wrong address for a name. If it is unset,
+the SDK public mainnet fallback is used and the CLI warns on stderr.
 
 ## Exit codes
 

@@ -33,28 +33,17 @@ function pollingIntervalForChain(chainId: SupportedChainId): number {
     : L2_POLLING_INTERVAL_MS
 }
 
-/**
- * viem chain definitions for SDK-supported chains that the Superchain-only
- * `@eth-optimism/viem/chains` registry (`chainById`) does not include: the
- * Ethereum L1 chains. Used as a fallback so settlement-layer reads (notably
- * ENS resolution, which runs on Ethereum mainnet) can be configured with an
- * operator-trusted RPC instead of relying on a public fallback.
- */
+/** viem L1 definitions missing from the Superchain-only `chainById` registry. */
 const L1_VIEM_CHAINS: Partial<Record<SupportedChainId, Chain>> = {
   [mainnet.id]: mainnet,
   [sepolia.id]: sepolia,
 }
 
 /**
- * @description Resolves the viem {@link Chain} for a supported chain id,
- * preferring the Superchain registry (`chainById`) and falling back to the
- * Ethereum L1 definitions in {@link L1_VIEM_CHAINS}.
+ * @description Resolves Superchain chains first, then configured Ethereum L1s.
  * @param chainId - A {@link SupportedChainId} to resolve.
- * @returns The viem {@link Chain}, or `undefined` when the id is unknown to
- * both registries.
- * @internal Not part of the public SDK surface; exported only so
- * `MockChainManager` can mirror `ChainManager`'s resolution logic. No stability
- * guarantee.
+ * @returns The viem {@link Chain}, or `undefined` when no registry knows it.
+ * @internal Exported only so `MockChainManager` can mirror this lookup.
  */
 export function viemChainFor(chainId: SupportedChainId): Chain | undefined {
   return chainById[chainId] ?? L1_VIEM_CHAINS[chainId]
@@ -185,8 +174,7 @@ export class ChainManager {
    * Get chain information for a specific chain ID
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
-   * @throws {ChainNotSupportedError} When `chainId` is resolvable by neither
-   * the Superchain registry nor the Ethereum L1 fallback.
+   * @throws {ChainNotSupportedError} When no chain registry knows `chainId`.
    */
   getChain(chainId: SupportedChainId): Chain {
     const chain = viemChainFor(chainId)

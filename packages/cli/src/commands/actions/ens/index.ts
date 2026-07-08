@@ -1,29 +1,27 @@
 import { Command } from 'commander'
 
+import { runEnsAddress } from '@/commands/actions/ens/address.js'
 import { runEnsInfo } from '@/commands/actions/ens/info.js'
-import { runEnsResolve } from '@/commands/actions/ens/resolve.js'
-import { runEnsReverse } from '@/commands/actions/ens/reverse.js'
+import { runEnsName } from '@/commands/actions/ens/name.js'
 
 /**
- * @description Builds the root `ens` subcommand tree. All children are
- * read-only ENS reads on Ethereum mainnet and need no signer. Mainnet must be
- * configured via `MAINNET_RPC_URL`; otherwise each command exits `config` (3).
- * @returns Commander `Command` configured with `resolve`, `reverse`, `info`.
+ * @description Builds the read-only `ens` subcommand tree.
+ * @returns Commander `Command` configured with `address`, `name`, `info`.
  */
 export function ensCommand(): Command {
   const command = new Command('ens').description(
-    'Read-only ENS commands on Ethereum mainnet (no PRIVATE_KEY required; requires MAINNET_RPC_URL).',
+    'Read-only ENS commands on Ethereum mainnet (no PRIVATE_KEY required).',
   )
   command
-    .command('resolve')
+    .command('address')
     .description('Resolve an ENS name to its address.')
-    .argument('<name>', 'ENS name to resolve (e.g. vitalik.eth)')
-    .action(runEnsResolve)
+    .argument('<name>', 'ENS name to resolve to an address (e.g. vitalik.eth)')
+    .action(runEnsAddress)
   command
-    .command('reverse')
-    .description('Reverse-resolve an address to its primary ENS name.')
-    .argument('<address>', '0x-prefixed address to reverse-resolve')
-    .action(runEnsReverse)
+    .command('name')
+    .description('Look up the primary ENS name for an address.')
+    .argument('<address>', '0x-prefixed address to look up')
+    .action(runEnsName)
   command
     .command('info')
     .description(

@@ -1,12 +1,11 @@
-import { getAddress, isAddress } from 'viem'
-
 import { baseContext } from '@/context/baseContext.js'
-import { CliError, rethrowAsCliError } from '@/output/errors.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import {
   configuredBorrowMarkets,
   resolveBorrowMarket,
 } from '@/resolvers/borrowMarkets.js'
+import { requireAddress } from '@/utils/addresses.js'
 
 export interface BorrowPositionFlags {
   market: string
@@ -14,8 +13,10 @@ export interface BorrowPositionFlags {
 }
 
 /**
- * @description Handler for `actions borrow position --market <name> --wallet <address>`. Lets an operator inspect any wallet's borrow position without needing `PRIVATE_KEY`. Validates the address with viem's `isAddress` and forwards the checksummed form to the SDK so case-only typos surface as `validation` rather than a downstream RPC mismatch. Unlike lend, the SDK exposes `getPosition` on the base namespace and requires an explicit `walletAddress`.
+ * @description Handler for `actions borrow position --market <name> --wallet <address>`.
  * @param flags - Commander-parsed options.
+ * @returns Promise that resolves once stdout has been written.
+ * @throws `CliError` with code `validation` or `network`.
  */
 export async function runBorrowPosition(
   flags: BorrowPositionFlags,
@@ -25,14 +26,7 @@ export async function runBorrowPosition(
     flags.market,
     configuredBorrowMarkets(config),
   )
-  if (!isAddress(flags.wallet)) {
-    throw new CliError(
-      'validation',
-      `Invalid --wallet: ${flags.wallet} (expected a 0x-prefixed 20-byte address)`,
-      { wallet: flags.wallet },
-    )
-  }
-  const walletAddress = getAddress(flags.wallet)
+  const walletAddress = requireAddress(flags.wallet, '--wallet')
   try {
     const position = await actions.borrow.getPosition({
       marketId: market,

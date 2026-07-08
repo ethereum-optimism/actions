@@ -36,12 +36,12 @@ export interface AddressDoc {
   address: string
 }
 
-export interface EnsResolveDoc {
+export interface EnsAddressDoc {
   name: EnsName
   address: Address
 }
 
-export interface EnsReverseDoc {
+export interface EnsNameLookupDoc {
   address: Address
   name: EnsName | null
 }
@@ -114,8 +114,8 @@ interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
-  ensResolve: EnsResolveDoc
-  ensReverse: EnsReverseDoc
+  ensAddress: EnsAddressDoc
+  ensName: EnsNameLookupDoc
   ensInfo: EnsInfo
   balance: readonly TokenBalance[]
   lendAction: LendActionDoc
@@ -159,23 +159,18 @@ function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
 }
 
-// ENS names and profile text records are arbitrary on-chain strings set by
-// whoever owns the name. Rendered verbatim in a terminal they can carry ANSI /
-// OSC escape sequences that rewrite the screen, the window title, or inject
-// clickable phishing hyperlinks. Strip C0/C1 control bytes (keeping ordinary
-// printable text) before writing the human-readable output. The `--json` path
-// is unaffected: JSON.stringify already escapes control characters.
+// C0/C1 include ANSI/OSC terminal controls; strip them from text ENS output.
 const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
 
 function sanitizeEnsText(value: string): string {
   return value.replace(CONTROL_CHARS, '')
 }
 
-function formatEnsResolve(doc: Printers['ensResolve']): void {
+function formatEnsAddress(doc: Printers['ensAddress']): void {
   writeLine(`${sanitizeEnsText(doc.name)} -> ${doc.address}`)
 }
 
-function formatEnsReverse(doc: Printers['ensReverse']): void {
+function formatEnsName(doc: Printers['ensName']): void {
   writeLine(
     doc.name
       ? `${doc.address} -> ${sanitizeEnsText(doc.name)}`
@@ -390,8 +385,8 @@ const TEXT_FORMATTERS: {
   assets: formatAssets,
   chains: formatChains,
   address: formatAddress,
-  ensResolve: formatEnsResolve,
-  ensReverse: formatEnsReverse,
+  ensAddress: formatEnsAddress,
+  ensName: formatEnsName,
   ensInfo: formatEnsInfo,
   balance: formatBalance,
   lendAction: formatLendAction,
