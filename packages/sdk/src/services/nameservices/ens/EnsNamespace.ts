@@ -13,7 +13,7 @@ import {
   type NameServiceProvider,
 } from './types.js'
 
-/** Default TTL for cached ENS lookups — 5 minutes */
+/** Default TTL for cached ENS lookups: 5 minutes */
 const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000
 
 /** Public mainnet RPC used as fallback when mainnet is not in chain config */
@@ -37,7 +37,7 @@ const ENS_TEXT_KEYS = {
  * Namespace for human-readable name resolution on Ethereum.
  * Currently backed by ENS (Ethereum Name Service) on mainnet.
  *
- * Implements {@link NameServiceProvider} — designed to be extensible: future
+ * Implements {@link NameServiceProvider}; designed to be extensible: future
  * versions could support alternative name services alongside ENS (e.g. Basename,
  * Unstoppable Domains, Lens handles). The natural evolution is additional
  * NameServiceProvider implementations registered under their own namespace

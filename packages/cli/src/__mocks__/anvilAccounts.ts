@@ -1,5 +1,5 @@
 /**
- * @description Anvil's deterministic dev account 0 — funded by default and
+ * @description Anvil's deterministic dev account 0, funded by default and
  * used as a stand-in for `PRIVATE_KEY` across tests that exercise the wallet
  * context. Kept in one place so tests don't reproduce the literal.
  */

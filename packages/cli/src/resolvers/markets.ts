@@ -19,7 +19,7 @@ export function configuredMarkets(
 }
 
 /**
- * @description Resolves a `--market <name>` flag value to the matching `LendMarketConfig` entry from a caller-supplied allowlist. Match is case-insensitive and ignores whitespace / hyphens, so all of `Gauntlet USDC`, `gauntlet-usdc`, `GauntletUSDC`, and `gauntletusdc` resolve to the same market. Throws `CliError('validation')` on miss with an `allowed` list cribbed from the canonical `.name` fields. Mirrors `resolveChain` / `resolveAsset` — pass a pre-collected allowlist (typically `configuredMarkets(config)`).
+ * @description Resolves a `--market <name>` flag value to the matching `LendMarketConfig` entry from a caller-supplied allowlist. Match is case-insensitive and ignores whitespace / hyphens, so all of `Gauntlet USDC`, `gauntlet-usdc`, `GauntletUSDC`, and `gauntletusdc` resolve to the same market. Throws `CliError('validation')` on miss with an `allowed` list cribbed from the canonical `.name` fields. Mirrors `resolveChain` / `resolveAsset`; pass a pre-collected allowlist (typically `configuredMarkets(config)`).
  * @param name - User-provided market name from CLI argv.
  * @param allow - Market allowlist to search.
  * @returns The matching market entry (carries `address`, `chainId`, `asset`, `lendProvider`).
@@ -42,8 +42,8 @@ export function resolveMarket(
     })
   }
   if (matches.length > 1) {
-    // Two providers list a market that normalises to the same key — the agent
-    // would otherwise silently pick whichever appears first in iteration order.
+    // Two providers list a market that normalises to the same key; otherwise the
+    // agent would silently pick whichever appears first in iteration order.
     // Surface the ambiguity so the operator fixes the config.
     throw new CliError('validation', `Ambiguous market: ${name}`, {
       market: name,

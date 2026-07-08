@@ -18,7 +18,7 @@ export class EnsNotConfiguredError extends Error {
 }
 
 /**
- * Thrown when an ENS name cannot be resolved to an address — e.g. the name
+ * Thrown when an ENS name cannot be resolved to an address, e.g. the name
  * is unregistered, resolves to the zero address, or fails normalization.
  */
 export class EnsResolutionError extends Error {
