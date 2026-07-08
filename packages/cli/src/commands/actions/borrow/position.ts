@@ -8,7 +8,7 @@ import {
 import {
   resolveWalletAddress,
   type WalletAddressFlags,
-} from '@/resolvers/walletAddress.js'
+} from '@/resolvers/ens.js'
 
 export interface BorrowPositionFlags extends WalletAddressFlags {
   market: string

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { MOCK_ADDRESS, MOCK_ENS_NAME } from '@/__tests__/helpers/ens.js'
 import { CliError } from '@/output/errors.js'
-import { resolveWalletAddress } from '@/resolvers/walletAddress.js'
+import { resolveWalletAddress } from '@/resolvers/ens.js'
 
 describe('resolveWalletAddress', () => {
   it('checksums --address input', async () => {
