@@ -8,6 +8,7 @@ import {
 import { BaseError, ContractFunctionRevertedError } from 'viem'
 
 import { isJsonMode } from '@/output/mode.js'
+import { stripControlChars } from '@/output/sanitize.js'
 
 /**
  * @description Error categories consumed by the caller. The code determines
@@ -291,9 +292,6 @@ export function isEpipeError(err: unknown): boolean {
   )
 }
 
-// C0/C1 include ANSI/OSC terminal controls; strip them from text errors.
-const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
-
 /**
  * @description Writes an error envelope to stderr and exits with the
  * taxonomy's mapped exit code. The body matches the contract
@@ -324,7 +322,7 @@ export function writeError(err: unknown): never {
         null,
         2,
       ) + '\n'
-    : `Error (${code}): ${message.replace(CONTROL_CHARS, '')}\n`
+    : `Error (${code}): ${stripControlChars(message)}\n`
   try {
     process.stderr.write(body)
   } catch (writeErr) {

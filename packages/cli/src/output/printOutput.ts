@@ -20,6 +20,7 @@ import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import { stripControlChars } from '@/output/sanitize.js'
 import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
@@ -159,21 +160,14 @@ function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
 }
 
-// C0/C1 include ANSI/OSC terminal controls; strip them from text ENS output.
-const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g
-
-function sanitizeEnsText(value: string): string {
-  return value.replace(CONTROL_CHARS, '')
-}
-
 function formatEnsAddress(doc: Printers['ensAddress']): void {
-  writeLine(`${sanitizeEnsText(doc.name)} -> ${doc.address}`)
+  writeLine(`${stripControlChars(doc.name)} -> ${doc.address}`)
 }
 
 function formatEnsName(doc: Printers['ensName']): void {
   writeLine(
     doc.name
-      ? `${doc.address} -> ${sanitizeEnsText(doc.name)}`
+      ? `${doc.address} -> ${stripControlChars(doc.name)}`
       : `${doc.address} -> (no primary ENS name)`,
   )
 }
@@ -185,7 +179,7 @@ function formatEnsInfo(info: Printers['ensInfo']): void {
     return
   }
   for (const [key, value] of set) {
-    writeLine(`${key.padEnd(12)} ${sanitizeEnsText(String(value))}`)
+    writeLine(`${key.padEnd(12)} ${stripControlChars(String(value))}`)
   }
 }
 
