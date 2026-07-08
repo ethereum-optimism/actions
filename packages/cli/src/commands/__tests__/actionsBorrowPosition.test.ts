@@ -11,7 +11,7 @@ import { setJsonMode } from '@/output/mode.js'
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
 
-describe('runBorrowPosition (read-only, with --wallet)', () => {
+describe('runBorrowPosition (read-only, with --address or --ens)', () => {
   let writeSpy: MockInstance
   let stderrSpy: MockInstance
 
@@ -59,7 +59,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     maxLtv: 0.86,
   })
 
-  it('checksums --wallet and forwards it to actions.borrow.getPosition', async () => {
+  it('checksums --address and forwards it to actions.borrow.getPosition', async () => {
     const captured: unknown[] = []
     mockActions(async (params) => {
       captured.push(params)
@@ -68,7 +68,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     // Lowercase address that needs checksum normalisation.
     await runBorrowPosition({
       market: 'demo-dusdc-op',
-      wallet: MOCK_ADDRESS.toLowerCase(),
+      address: MOCK_ADDRESS.toLowerCase(),
     })
     const call = captured[0] as {
       marketId: { kind: string; marketId: string; chainId: number }
@@ -83,7 +83,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     expect(body.ltv).toBeNull()
   })
 
-  it('resolves ENS --wallet before forwarding it to getPosition', async () => {
+  it('resolves --ens before forwarding it to getPosition', async () => {
     const captured: unknown[] = []
     const ensInputs: string[] = []
     mockActions(
@@ -98,7 +98,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     )
     await runBorrowPosition({
       market: 'demo-dusdc-op',
-      wallet: MOCK_ENS_NAME,
+      ens: MOCK_ENS_NAME,
     })
     const call = captured[0] as { walletAddress: string }
     expect(ensInputs).toEqual([MOCK_ENS_NAME])
@@ -106,18 +106,46 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     expect(stderrSpy).not.toHaveBeenCalled()
   })
 
-  it('rejects a malformed --wallet address with CliError(validation)', async () => {
+  it('rejects a malformed --address with CliError(validation)', async () => {
     mockActions(async () => samplePosition())
     try {
       await runBorrowPosition({
         market: 'demo-dusdc-op',
-        wallet: 'not-an-address',
+        address: 'not-an-address',
       })
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
-      expect((err as CliError).message).toMatch(/Invalid --wallet/)
+      expect((err as CliError).message).toMatch(/Invalid --address/)
+    }
+  })
+
+  it('rejects both --address and --ens with CliError(validation)', async () => {
+    mockActions(async () => samplePosition())
+    try {
+      await runBorrowPosition({
+        market: 'demo-dusdc-op',
+        address: MOCK_ADDRESS,
+        ens: MOCK_ENS_NAME,
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/either --address or --ens/)
+    }
+  })
+
+  it('rejects missing --address and --ens with CliError(validation)', async () => {
+    mockActions(async () => samplePosition())
+    try {
+      await runBorrowPosition({ market: 'demo-dusdc-op' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/--address or --ens/)
     }
   })
 
@@ -126,7 +154,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     try {
       await runBorrowPosition({
         market: 'no-such-market',
-        wallet: MOCK_ADDRESS.toLowerCase(),
+        address: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -142,7 +170,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     try {
       await runBorrowPosition({
         market: 'demo-dusdc-op',
-        wallet: MOCK_ADDRESS.toLowerCase(),
+        address: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {

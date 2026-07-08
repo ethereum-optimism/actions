@@ -56,19 +56,17 @@ export function borrowCommand(): Command {
   command
     .command('position')
     .description(
-      "Inspect any wallet's borrow position on a configured market (read-only, requires --wallet).",
+      "Inspect any wallet's borrow position on a configured market (read-only, requires --address or --ens).",
     )
     .requiredOption(
       '--market <name>',
       'market name from the config allowlist (e.g. "Demo dUSDC / OP", "demo-dusdc-op")',
     )
-    .requiredOption(
-      '--wallet <address|ens>',
-      '0x-prefixed address or ENS name to inspect',
-    )
+    .option('--address <address>', '0x-prefixed wallet address to inspect')
+    .option('--ens <name>', 'ENS name to inspect')
     .addHelpText(
       'after',
-      '\nExample:\n  actions borrow position --market demo-dusdc-op --wallet 0xabc...',
+      '\nExamples:\n  actions borrow position --market demo-dusdc-op --address 0xabc...\n  actions borrow position --market demo-dusdc-op --ens vitalik.eth',
     )
     .action(runBorrowPosition)
   return command

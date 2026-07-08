@@ -28,19 +28,19 @@ actions --json wallet balance --chain base-sepolia
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
 - `actions borrow markets [--collateral <symbol>] [--borrow-asset <symbol>]
-  [--chain <name> | --chain-id <id>]` - borrow markets across configured
+[--chain <name> | --chain-id <id>]` - borrow markets across configured
   providers, optionally filtered (no wallet).
 - `actions borrow market --market <name>` - inspect one borrow market
   by name (no wallet).
-- `actions borrow position --market <name> --wallet <address|ens>` - read
-  any wallet's borrow position (no `PRIVATE_KEY` required).
+- `actions borrow position --market <name> (--address <address> | --ens <name>)` -
+  read any wallet's borrow position (no `PRIVATE_KEY` required).
 - `actions swap markets [--chain <name>]` - all swap markets across
   configured providers (no wallet).
 - `actions swap market --pool <id> --chain <name>` - inspect one swap
   market by pool id (no wallet).
 - `actions swap quote --in <symbol> --out <symbol>
-  (--amount-in <n> | --amount-out <n>) --chain <name>
-  [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
+(--amount-in <n> | --amount-out <n>) --chain <name>
+[--provider uniswap|velodrome] [--slippage <pct>]` - best quote
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
   quote sorted best price first.
@@ -65,24 +65,24 @@ actions --json wallet balance --chain base-sepolia
 - `actions wallet borrow position --market <name>` - the wallet's current
   collateral, debt, LTV, and health factor in a borrow market.
 - `actions wallet borrow open --market <name> --borrow-amount <n>
-  [--collateral-amount <n>] [--approval-mode <exact|max>]` - borrow
+[--collateral-amount <n>] [--approval-mode <exact|max>]` - borrow
   against existing or newly-deposited collateral. No `--max` (open path
   only accepts strict amounts).
 - `actions wallet borrow close --market <name> [--borrow-amount <n> |
-  --borrow-max] [--collateral-amount <n> | --collateral-max]` - unwind a
+--borrow-max] [--collateral-amount <n> | --collateral-max]` - unwind a
   position. Each leg is independently xor'd; the borrow leg is required.
   `--*-max` resolves on-chain at dispatch time so interest-accrual dust
   doesn't strand the position.
 - `actions wallet borrow deposit-collateral --market <name> --amount <n>
-  [--approval-mode <exact|max>]` - top up collateral without changing
+[--approval-mode <exact|max>]` - top up collateral without changing
   debt.
 - `actions wallet borrow withdraw-collateral --market <name>
-  (--amount <n> | --max)` - pull collateral back without touching debt.
+(--amount <n> | --max)` - pull collateral back without touching debt.
 - `actions wallet borrow repay --market <name> (--amount <n> | --max)
-  [--approval-mode <exact|max>]` - repay debt without touching collateral.
+[--approval-mode <exact|max>]` - repay debt without touching collateral.
 - `actions wallet swap execute --in <symbol> --out <symbol>
-  (--amount-in <n> | --amount-out <n>) --chain <name>
-  [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
+(--amount-in <n> | --amount-out <n>) --chain <name>
+[--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
   on the resolved chain.
 
 ## Wallet model
@@ -255,9 +255,10 @@ way as lend / swap.
 A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
 error envelope on stderr (exit 5).
 
-`actions borrow position --market <name> --wallet <address|ens>` reads any
-wallet's position without needing `PRIVATE_KEY`; ENS names are resolved
-before the SDK call. `wallet borrow position` uses the connected wallet.
+`actions borrow position --market <name> (--address <address> | --ens <name>)`
+reads any wallet's position without needing `PRIVATE_KEY`; `--ens` names are
+resolved to a wallet address before the SDK call. `wallet borrow position`
+uses the connected wallet.
 
 `borrow markets` / `borrow market` / both `position` commands return the
 SDK shapes verbatim with bigints stringified. Position fields `ltv` and
@@ -277,9 +278,9 @@ NL -> command examples:
 - "top up 5 USDC of collateral on demo dUSDC/OP" ->
   `actions --json wallet borrow deposit-collateral --market demo-dusdc-op --amount 5`
 - "what's the health factor of vitalik.eth on demo dUSDC/OP" ->
-  `actions --json borrow position --market demo-dusdc-op --wallet vitalik.eth`
+  `actions --json borrow position --market demo-dusdc-op --ens vitalik.eth`
 - "what's the health factor of 0x... on demo dUSDC/OP" ->
-  `actions --json borrow position --market demo-dusdc-op --wallet 0x...`
+  `actions --json borrow position --market demo-dusdc-op --address 0x...`
 - "how am I doing in demo dUSDC/OP" ->
   `actions --json wallet borrow position --market demo-dusdc-op`
 
