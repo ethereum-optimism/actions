@@ -12,7 +12,7 @@ import { CliError } from '@/output/errors.js'
  */
 export function parseDecimal(raw: string, flag: string, hint: string): number {
   // Empty string and bare punctuation slip through viem's regex (matches all-empty
-  // groups) but parse to 0 / NaN downstream; reject up front to keep the error
+  // groups) but parse to 0 / NaN downstream — reject up front to keep the error
   // message consistent.
   if (!/[0-9]/.test(raw)) throw rejectDecimal(raw, flag, hint)
   try {

@@ -5,7 +5,7 @@ import type { SwapExecuteParams, SwapQuoteParams } from '@/types/swap/base.js'
 /**
  * A dot-separated ENS name (e.g. `vitalik.eth`, `sub.vitalik.eth`, `example.com`).
  *
- * ENS is not limited to `.eth`; it supports any DNSSEC-enabled DNS TLD as well
+ * ENS is not limited to `.eth` — it supports any DNSSEC-enabled DNS TLD as well
  * as ENS-native TLDs (`.eth`, `.test`). Subdomains of arbitrary depth are valid.
  *
  * This type is a structural constraint (at least one dot) mirroring viem's Address type.
@@ -17,7 +17,7 @@ export type EnsName = `${string}.${string}`
 /**
  * Type guard for EnsName. Mirrors the pattern of viem's isAddress.
  * Rejects obviously invalid forms (leading/trailing dots, consecutive dots)
- * but does not run full ENSIP-15 normalization; use normalize() for that.
+ * but does not run full ENSIP-15 normalization — use normalize() for that.
  * @param value - String to check
  * @returns True if the value satisfies the EnsName structural constraint
  */

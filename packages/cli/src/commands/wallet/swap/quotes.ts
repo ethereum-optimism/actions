@@ -8,7 +8,7 @@ import { printOutput } from '@/output/printOutput.js'
 import { configuredAssets } from '@/resolvers/assets.js'
 
 /**
- * @description Handler for `actions wallet swap quotes ...`. Same flag set as the read-only `actions swap quotes`, but the SDK defaults each quote's `recipient` to the wallet address, which is the safe path for routers that encode recipient into calldata (Velodrome v2/leaf), so any of the returned quotes can be fed straight to `wallet swap execute`.
+ * @description Handler for `actions wallet swap quotes ...`. Same flag set as the read-only `actions swap quotes`, but the SDK defaults each quote's `recipient` to the wallet address — the safe path for routers that encode recipient into calldata (Velodrome v2/leaf), so any of the returned quotes can be fed straight to `wallet swap execute`.
  * @param flags - Commander-parsed required + optional options.
  * @returns Promise that resolves once stdout has been written.
  */

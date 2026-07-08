@@ -6,7 +6,7 @@ import { runWalletSwapQuote } from '@/commands/wallet/swap/quote.js'
 import { runWalletSwapQuotes } from '@/commands/wallet/swap/quotes.js'
 
 /**
- * @description Builds the `wallet swap` subcommand tree. Read-only `markets` and `market` live on the root `actions swap` tree (no `PRIVATE_KEY` needed). Wallet-scoped `quote` / `quotes` exist here too so the SDK defaults each quote's `recipient` to the wallet address, which is the safe path for routers that encode recipient into calldata (Velodrome v2/leaf). `execute` is the write path.
+ * @description Builds the `wallet swap` subcommand tree. Read-only `markets` and `market` live on the root `actions swap` tree (no `PRIVATE_KEY` needed). Wallet-scoped `quote` / `quotes` exist here too so the SDK defaults each quote's `recipient` to the wallet address — the safe path for routers that encode recipient into calldata (Velodrome v2/leaf). `execute` is the write path.
  * @returns Commander `Command` configured with `quote`, `quotes`, and `execute`.
  */
 export function walletSwapCommand(): Command {
