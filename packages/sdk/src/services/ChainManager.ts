@@ -1,4 +1,3 @@
-import { chainById } from '@eth-optimism/viem/chains'
 import type { SmartAccountClient } from 'permissionless/clients'
 import { createSmartAccountClient } from 'permissionless/clients'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
@@ -13,7 +12,10 @@ import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
 import { mainnet, sepolia } from 'viem/chains'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  getSupportedChain,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
 
@@ -31,22 +33,6 @@ function pollingIntervalForChain(chainId: SupportedChainId): number {
   return L1_CHAIN_IDS.has(chainId)
     ? L1_POLLING_INTERVAL_MS
     : L2_POLLING_INTERVAL_MS
-}
-
-/** viem L1 definitions missing from the Superchain-only `chainById` registry. */
-const L1_VIEM_CHAINS: Partial<Record<SupportedChainId, Chain>> = {
-  [mainnet.id]: mainnet,
-  [sepolia.id]: sepolia,
-}
-
-/**
- * @description Resolves Superchain chains first, then configured Ethereum L1s.
- * @param chainId - A {@link SupportedChainId} to resolve.
- * @returns The viem {@link Chain}, or `undefined` when no registry knows it.
- * @internal Exported only so `MockChainManager` can mirror this lookup.
- */
-export function viemChainFor(chainId: SupportedChainId): Chain | undefined {
-  return chainById[chainId] ?? L1_VIEM_CHAINS[chainId]
 }
 
 /**
@@ -177,7 +163,7 @@ export class ChainManager {
    * @throws {ChainNotSupportedError} When no chain registry knows `chainId`.
    */
   getChain(chainId: SupportedChainId): Chain {
-    const chain = viemChainFor(chainId)
+    const chain = getSupportedChain(chainId)
     if (!chain) {
       throw new ChainNotSupportedError({ chainId })
     }
@@ -217,7 +203,7 @@ export class ChainManager {
     const clients = new Map<SupportedChainId, PublicClient>()
 
     for (const chainConfig of chains) {
-      const chain = viemChainFor(chainConfig.chainId)
+      const chain = getSupportedChain(chainConfig.chainId)
       if (!chain) {
         throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }

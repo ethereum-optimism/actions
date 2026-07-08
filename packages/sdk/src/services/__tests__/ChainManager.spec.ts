@@ -1,4 +1,3 @@
-import { chainById } from '@eth-optimism/viem/chains'
 import { createSmartAccountClient } from 'permissionless/clients'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import type {
@@ -12,7 +11,10 @@ import { createBundlerClient } from 'viem/account-abstraction'
 import { mainnet, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  getSupportedChain,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig, PimlicoBundlerConfig } from '@/types/chain.js'
@@ -105,10 +107,8 @@ describe('ChainManager', () => {
       )
     })
 
-    it('should configure Ethereum mainnet, which the Superchain registry omits', () => {
-      // mainnet (chain 1) is a supported chain for ENS reads but is absent from
-      // @eth-optimism/viem/chains; the L1 fallback must let it be constructed.
-      expect(chainById[mainnet.id]).toBeUndefined()
+    it('should configure Ethereum mainnet from the supported chain registry', () => {
+      expect(getSupportedChain(mainnet.id)?.id).toBe(mainnet.id)
       const mgr = new ChainManager([
         { chainId: mainnet.id, rpcUrls: ['https://mainnet.example'] },
       ])
@@ -119,8 +119,7 @@ describe('ChainManager', () => {
 
   describe('getChain', () => {
     it('throws ChainNotSupportedError for an id unknown to both registries', () => {
-      // getChain previously returned chainById[id] typed as Chain but actually
-      // undefined for unknown ids, silently handing viem an undefined chain.
+      // Unknown ids previously leaked undefined chains into viem callers.
       // It now throws the typed error so callers fail loudly.
       expect(() =>
         chainManager.getChain(99999 as unknown as SupportedChainId),
@@ -239,7 +238,7 @@ describe('ChainManager', () => {
       expect(createPimlicoClient).toHaveBeenCalledTimes(1)
       expect(createPimlicoClient).toHaveBeenCalledWith(
         expect.objectContaining({
-          chain: chainById[unichain.id],
+          chain: getSupportedChain(unichain.id),
           entryPoint: {
             address: mockAccount.entryPoint.address,
             version: mockAccount.entryPoint.version,
@@ -250,7 +249,7 @@ describe('ChainManager', () => {
       expect(createSmartAccountClient).toHaveBeenCalledWith(
         expect.objectContaining({
           account: mockAccount,
-          chain: chainById[unichain.id],
+          chain: getSupportedChain(unichain.id),
           paymasterContext: {
             sponsorshipPolicyId: bundlerConfig.sponsorshipPolicyId!,
           },
@@ -282,7 +281,7 @@ describe('ChainManager', () => {
       expect(createSmartAccountClient).toHaveBeenCalledWith(
         expect.objectContaining({
           account: mockAccount,
-          chain: chainById[unichain.id],
+          chain: getSupportedChain(unichain.id),
           paymasterContext: undefined,
           userOperation: {
             estimateFeesPerGas: expect.any(Function),
@@ -311,7 +310,7 @@ describe('ChainManager', () => {
       expect(createBundlerClient).toHaveBeenCalledWith(
         expect.objectContaining({
           account: mockAccount,
-          chain: chainById[unichain.id],
+          chain: getSupportedChain(unichain.id),
         }),
       )
       expect(createPimlicoClient).not.toHaveBeenCalled()

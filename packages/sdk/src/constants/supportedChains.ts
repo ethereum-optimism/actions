@@ -53,6 +53,12 @@ const SUPPORTED_CHAINS: readonly Chain[] = SUPPORTED_CHAINS_TUPLE
 
 export type SupportedChainId = (typeof SUPPORTED_CHAINS_TUPLE)[number]['id']
 
+export function getSupportedChain(
+  chainId: SupportedChainId,
+): Chain | undefined {
+  return SUPPORTED_CHAINS.find((chain) => chain.id === chainId)
+}
+
 export const SUPPORTED_CHAIN_IDS = SUPPORTED_CHAINS.map(
   (c) => c.id,
 ) as readonly SupportedChainId[]
