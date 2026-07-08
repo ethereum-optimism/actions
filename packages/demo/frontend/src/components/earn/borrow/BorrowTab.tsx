@@ -16,12 +16,17 @@ export function BorrowTab() {
   const {
     markets: lendMarkets,
     marketPositions,
+    setMarketPositions,
     isInitialLoad,
   } = useLendProviderContext()
   const { markets, handleMarketSelect, borrowPositions, handleTransaction } =
     useBorrowProviderContext()
 
-  useReconcileMorphoCollateral(marketPositions, handleTransaction)
+  useReconcileMorphoCollateral(
+    marketPositions,
+    handleTransaction,
+    setMarketPositions,
+  )
 
   const effectiveLendPositions = useMemo(
     () =>

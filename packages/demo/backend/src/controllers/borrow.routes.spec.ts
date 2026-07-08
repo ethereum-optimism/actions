@@ -218,11 +218,11 @@ describe('borrow routes', () => {
       expect(json.error).not.toContain('unmapped')
     })
 
-    it('leaves non-borrow paths to their per-route try/catch (no mapping)', async () => {
-      // Lend's controller has its own try/catch that turns errors into a
-      // per-verb generic 500 with a domain-specific message. The borrow-scoped
-      // onError must not intercept it; mapSdkError would otherwise turn this
-      // into a 403 and silently change lend's contract.
+    it('maps non-borrow paths (lend) through the same global onError', async () => {
+      // Lend no longer wraps its controller in a per-route try/catch; thrown
+      // SDK errors propagate to the global onError and are mapped identically
+      // to borrow's. A MarketNotAllowedError surfaces as a 403, not an opaque
+      // 500.
       const { getMarkets: lendGetMarkets } = await import('@/services/lend.js')
       vi.mocked(lendGetMarkets).mockRejectedValue(
         new MarketNotAllowedError({
@@ -232,9 +232,9 @@ describe('borrow routes', () => {
         }),
       )
       const res = await createApp().request('/lend/markets')
-      expect(res.status).toBe(500)
+      expect(res.status).toBe(403)
       const json = (await res.json()) as { error: string }
-      expect(json.error).not.toBe('Market is not in the allowlist.')
+      expect(json.error).toBe('Market is not in the allowlist.')
     })
   })
 })
