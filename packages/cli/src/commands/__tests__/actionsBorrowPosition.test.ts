@@ -101,7 +101,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     const call = captured[0] as { walletAddress: string }
     expect(ensInputs).toEqual(['vitalik.eth'])
     expect(call.walletAddress).toBe(VITALIK)
-    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
+    expect(stderrSpy).not.toHaveBeenCalled()
   })
 
   it('rejects a malformed --wallet address with CliError(validation)', async () => {

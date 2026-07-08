@@ -1,4 +1,3 @@
-import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -25,12 +24,9 @@ describe('runEnsAddress', () => {
     vi.restoreAllMocks()
   })
 
-  const mockEns = (
-    getAddress: (input: string) => Promise<string>,
-    chains: Array<{ chainId: number }> = [{ chainId: mainnet.id }],
-  ) => {
+  const mockEns = (getAddress: (input: string) => Promise<string>) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
-      config: { chains } as never,
+      config: { chains: [] } as never,
       actions: { ens: { getAddress } } as never,
     })
   }
@@ -47,14 +43,6 @@ describe('runEnsAddress', () => {
     expect(captured).toEqual(['vitalik.eth'])
   })
 
-  it('warns and continues when mainnet is not configured', async () => {
-    mockEns(async () => VITALIK, [{ chainId: optimismSepolia.id }])
-    await runEnsAddress('vitalik.eth')
-    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ name: 'vitalik.eth', address: VITALIK })
-    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
-  })
-
   it('rejects a non-name input with CliError(validation)', async () => {
     mockEns(async () => VITALIK)
     try {
@@ -66,8 +54,9 @@ describe('runEnsAddress', () => {
     }
   })
 
-  it('validates input before warning about mainnet fallback', async () => {
-    mockEns(async () => VITALIK, [{ chainId: optimismSepolia.id }])
+  it('validates input before calling ENS', async () => {
+    const getAddress = vi.fn(async () => VITALIK)
+    mockEns(getAddress)
     try {
       await runEnsAddress('notaname')
       throw new Error('did not throw')
@@ -75,6 +64,7 @@ describe('runEnsAddress', () => {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
       expect(stderrSpy).not.toHaveBeenCalled()
+      expect(getAddress).not.toHaveBeenCalled()
     }
   })
 

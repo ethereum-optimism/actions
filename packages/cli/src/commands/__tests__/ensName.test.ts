@@ -1,4 +1,3 @@
-import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,23 +13,18 @@ const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 describe('runEnsName', () => {
   let writeSpy: MockInstance
-  let stderrSpy: MockInstance
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  const mockEns = (
-    getName: (address: string) => Promise<string | null>,
-    chains: Array<{ chainId: number }> = [{ chainId: mainnet.id }],
-  ) => {
+  const mockEns = (getName: (address: string) => Promise<string | null>) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
-      config: { chains } as never,
+      config: { chains: [] } as never,
       actions: { ens: { getName } } as never,
     })
   }
@@ -62,14 +56,6 @@ describe('runEnsName', () => {
     })
     await runEnsName(VITALIK.toLowerCase())
     expect(captured).toEqual([VITALIK])
-  })
-
-  it('warns and continues when mainnet is not configured', async () => {
-    mockEns(async () => null, [{ chainId: optimismSepolia.id }])
-    await runEnsName(VITALIK)
-    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ address: VITALIK, name: null })
-    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
   })
 
   it('rejects a non-address input with CliError(validation)', async () => {

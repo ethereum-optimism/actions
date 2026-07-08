@@ -1,10 +1,7 @@
 import { baseContext } from '@/context/baseContext.js'
 import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
-import {
-  requireEnsNameOrAddress,
-  warnIfMainnetFallback,
-} from '@/resolvers/ens.js'
+import { requireEnsNameOrAddress } from '@/resolvers/ens.js'
 
 /**
  * @description Handler for `actions ens info <input>`.
@@ -13,9 +10,8 @@ import {
  * @throws `CliError` with code `config`, `validation`, or `network`.
  */
 export async function runEnsInfo(input: string): Promise<void> {
-  const { actions, config } = baseContext()
+  const { actions } = baseContext()
   const resolved = requireEnsNameOrAddress(input)
-  warnIfMainnetFallback(config)
   try {
     const info = await actions.ens.getInfo(resolved)
     printOutput('ensInfo', info)

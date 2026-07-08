@@ -8,10 +8,7 @@ import {
   configuredBorrowMarkets,
   resolveBorrowMarket,
 } from '@/resolvers/borrowMarkets.js'
-import {
-  requireEnsNameOrAddress,
-  warnIfMainnetFallback,
-} from '@/resolvers/ens.js'
+import { requireEnsNameOrAddress } from '@/resolvers/ens.js'
 
 type BaseContext = ReturnType<typeof baseContext>
 
@@ -36,11 +33,7 @@ export async function runBorrowPosition(
   )
   const walletInput = requireEnsNameOrAddress(flags.wallet, '--wallet')
   try {
-    const walletAddress = await resolveWalletAddress(
-      actions,
-      config,
-      walletInput,
-    )
+    const walletAddress = await resolveWalletAddress(actions, walletInput)
     const position = await actions.borrow.getPosition({
       marketId: market,
       walletAddress,
@@ -53,10 +46,8 @@ export async function runBorrowPosition(
 
 async function resolveWalletAddress(
   actions: BaseContext['actions'],
-  config: BaseContext['config'],
   input: Address | EnsName,
 ): Promise<Address> {
   if (!isEnsName(input)) return input
-  warnIfMainnetFallback(config)
   return actions.ens.getAddress(input)
 }

@@ -1,5 +1,4 @@
 import type { EnsInfo } from '@eth-optimism/actions-sdk'
-import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -39,12 +38,9 @@ describe('runEnsInfo', () => {
     vi.restoreAllMocks()
   })
 
-  const mockEns = (
-    getInfo: (input: string) => Promise<typeof NULL_INFO>,
-    chains: Array<{ chainId: number }> = [{ chainId: mainnet.id }],
-  ) => {
+  const mockEns = (getInfo: (input: string) => Promise<typeof NULL_INFO>) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
-      config: { chains } as never,
+      config: { chains: [] } as never,
       actions: { ens: { getInfo } } as never,
     })
   }
@@ -76,14 +72,6 @@ describe('runEnsInfo', () => {
     expect(captured).toEqual([VITALIK])
   })
 
-  it('warns and continues when mainnet is not configured', async () => {
-    mockEns(async () => NULL_INFO, [{ chainId: optimismSepolia.id }])
-    await runEnsInfo('vitalik.eth')
-    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual(NULL_INFO)
-    expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
-  })
-
   it('rejects an input that is neither name nor address with CliError(validation)', async () => {
     mockEns(async () => NULL_INFO)
     try {
@@ -95,8 +83,9 @@ describe('runEnsInfo', () => {
     }
   })
 
-  it('validates input before warning about mainnet fallback', async () => {
-    mockEns(async () => NULL_INFO, [{ chainId: optimismSepolia.id }])
+  it('validates input before calling ENS', async () => {
+    const getInfo = vi.fn(async () => NULL_INFO)
+    mockEns(getInfo)
     try {
       await runEnsInfo('notaname')
       throw new Error('did not throw')
@@ -104,6 +93,7 @@ describe('runEnsInfo', () => {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
       expect(stderrSpy).not.toHaveBeenCalled()
+      expect(getInfo).not.toHaveBeenCalled()
     }
   })
 
