@@ -1,6 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MOCK_ADDRESS, MOCK_ENS_NAME } from '@/__tests__/helpers/ens.js'
 import { runBorrowPosition } from '@/commands/actions/borrow/position.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { getDemoConfig } from '@/demo/config.js'
@@ -25,7 +26,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
 
   const mockActions = (
     getPosition: (params: unknown) => Promise<unknown>,
-    getAddress: (input: string) => Promise<string> = async () => VITALIK,
+    getAddress: (input: string) => Promise<string> = async () => MOCK_ADDRESS,
   ): void => {
     const config = getDemoConfig()
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
@@ -36,8 +37,6 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
       actions: { borrow: { getPosition }, ens: { getAddress } } as never,
     })
   }
-
-  const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
   const samplePosition = () => ({
     marketId: {
@@ -69,7 +68,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     // Lowercase address that needs checksum normalisation.
     await runBorrowPosition({
       market: 'demo-dusdc-op',
-      wallet: VITALIK.toLowerCase(),
+      wallet: MOCK_ADDRESS.toLowerCase(),
     })
     const call = captured[0] as {
       marketId: { kind: string; marketId: string; chainId: number }
@@ -78,7 +77,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     expect(call.marketId.kind).toBe('morpho-blue')
     expect(call.marketId.chainId).toBe(84532)
     // viem's getAddress() returns the EIP-55 checksum form.
-    expect(call.walletAddress).toBe(VITALIK)
+    expect(call.walletAddress).toBe(MOCK_ADDRESS)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.healthFactor).toBeNull()
     expect(body.ltv).toBeNull()
@@ -94,13 +93,16 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
       },
       async (input) => {
         ensInputs.push(input)
-        return VITALIK
+        return MOCK_ADDRESS
       },
     )
-    await runBorrowPosition({ market: 'demo-dusdc-op', wallet: 'vitalik.eth' })
+    await runBorrowPosition({
+      market: 'demo-dusdc-op',
+      wallet: MOCK_ENS_NAME,
+    })
     const call = captured[0] as { walletAddress: string }
-    expect(ensInputs).toEqual(['vitalik.eth'])
-    expect(call.walletAddress).toBe(VITALIK)
+    expect(ensInputs).toEqual([MOCK_ENS_NAME])
+    expect(call.walletAddress).toBe(MOCK_ADDRESS)
     expect(stderrSpy).not.toHaveBeenCalled()
   })
 
@@ -124,7 +126,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     try {
       await runBorrowPosition({
         market: 'no-such-market',
-        wallet: '0xd8da6bf26964af9d7eed9e03e53415d37aa96045',
+        wallet: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -140,7 +142,7 @@ describe('runBorrowPosition (read-only, with --wallet)', () => {
     try {
       await runBorrowPosition({
         market: 'demo-dusdc-op',
-        wallet: '0xd8da6bf26964af9d7eed9e03e53415d37aa96045',
+        wallet: MOCK_ADDRESS.toLowerCase(),
       })
       throw new Error('did not throw')
     } catch (err) {

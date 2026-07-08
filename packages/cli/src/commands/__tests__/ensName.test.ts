@@ -1,6 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MOCK_ADDRESS, MOCK_ENS_NAME } from '@/__tests__/helpers/ens.js'
 import { runEnsName } from '@/commands/actions/ens/name.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
@@ -8,8 +9,6 @@ import { setJsonMode } from '@/output/mode.js'
 
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
-
-const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 describe('runEnsName', () => {
   let writeSpy: MockInstance
@@ -33,19 +32,19 @@ describe('runEnsName', () => {
     const captured: string[] = []
     mockEns(async (address) => {
       captured.push(address)
-      return 'vitalik.eth'
+      return MOCK_ENS_NAME
     })
-    await runEnsName(VITALIK)
+    await runEnsName(MOCK_ADDRESS)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ address: VITALIK, name: 'vitalik.eth' })
-    expect(captured).toEqual([VITALIK])
+    expect(body).toEqual({ address: MOCK_ADDRESS, name: MOCK_ENS_NAME })
+    expect(captured).toEqual([MOCK_ADDRESS])
   })
 
   it('emits name: null when no primary record is set', async () => {
     mockEns(async () => null)
-    await runEnsName(VITALIK)
+    await runEnsName(MOCK_ADDRESS)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ address: VITALIK, name: null })
+    expect(body).toEqual({ address: MOCK_ADDRESS, name: null })
   })
 
   it('checksums a lowercased address before forwarding', async () => {
@@ -54,14 +53,14 @@ describe('runEnsName', () => {
       captured.push(address)
       return null
     })
-    await runEnsName(VITALIK.toLowerCase())
-    expect(captured).toEqual([VITALIK])
+    await runEnsName(MOCK_ADDRESS.toLowerCase())
+    expect(captured).toEqual([MOCK_ADDRESS])
   })
 
   it('rejects a non-address input with CliError(validation)', async () => {
     mockEns(async () => null)
     try {
-      await runEnsName('vitalik.eth')
+      await runEnsName(MOCK_ENS_NAME)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -74,7 +73,7 @@ describe('runEnsName', () => {
       throw new Error('fetch failed')
     })
     try {
-      await runEnsName(VITALIK)
+      await runEnsName(MOCK_ADDRESS)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

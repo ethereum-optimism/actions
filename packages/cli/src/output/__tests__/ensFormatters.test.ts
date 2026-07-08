@@ -1,6 +1,10 @@
-import type { EnsInfo } from '@eth-optimism/actions-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  MOCK_ADDRESS,
+  MOCK_ENS_INFO,
+  MOCK_ENS_NAME,
+} from '@/__tests__/helpers/ens.js'
 import { setJsonMode } from '@/output/mode.js'
 import { printOutput } from '@/output/printOutput.js'
 
@@ -11,22 +15,8 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 const ESC = String.fromCharCode(0x1b)
 const BEL = String.fromCharCode(0x07)
-
-const NULL_INFO: EnsInfo = {
-  avatar: null,
-  display: null,
-  description: null,
-  url: null,
-  email: null,
-  keywords: null,
-  twitter: null,
-  github: null,
-  discord: null,
-  reddit: null,
-}
 
 const capture = () => {
   const lines: string[] = []
@@ -40,31 +30,37 @@ const capture = () => {
 describe('ENS text formatters', () => {
   it('renders address as "name -> address"', () => {
     const lines = capture()
-    printOutput('ensAddress', { name: 'vitalik.eth', address: VITALIK })
-    expect(lines.join('')).toBe(`vitalik.eth -> ${VITALIK}\n`)
+    printOutput('ensAddress', {
+      name: MOCK_ENS_NAME,
+      address: MOCK_ADDRESS,
+    })
+    expect(lines.join('')).toBe(`${MOCK_ENS_NAME} -> ${MOCK_ADDRESS}\n`)
   })
 
   it('renders name lookup with a name', () => {
     const lines = capture()
-    printOutput('ensName', { address: VITALIK, name: 'vitalik.eth' })
-    expect(lines.join('')).toBe(`${VITALIK} -> vitalik.eth\n`)
+    printOutput('ensName', {
+      address: MOCK_ADDRESS,
+      name: MOCK_ENS_NAME,
+    })
+    expect(lines.join('')).toBe(`${MOCK_ADDRESS} -> ${MOCK_ENS_NAME}\n`)
   })
 
   it('renders the null-name branch of name lookup explicitly', () => {
     const lines = capture()
-    printOutput('ensName', { address: VITALIK, name: null })
-    expect(lines.join('')).toBe(`${VITALIK} -> (no primary ENS name)\n`)
+    printOutput('ensName', { address: MOCK_ADDRESS, name: null })
+    expect(lines.join('')).toBe(`${MOCK_ADDRESS} -> (no primary ENS name)\n`)
   })
 
   it('renders the all-null profile branch of info', () => {
     const lines = capture()
-    printOutput('ensInfo', NULL_INFO)
+    printOutput('ensInfo', MOCK_ENS_INFO)
     expect(lines.join('')).toBe('(no ENS profile records set)\n')
   })
 
   it('renders only the set records of a profile', () => {
     const lines = capture()
-    printOutput('ensInfo', { ...NULL_INFO, twitter: 'VitalikButerin' })
+    printOutput('ensInfo', { ...MOCK_ENS_INFO, twitter: 'VitalikButerin' })
     const out = lines.join('')
     expect(out).toContain('twitter')
     expect(out).toContain('VitalikButerin')
@@ -75,7 +71,7 @@ describe('ENS text formatters', () => {
     const lines = capture()
     // ANSI clear-screen plus OSC title-rewrite around harmless text.
     const malicious = `${ESC}[2J${ESC}]0;pwned${BEL}evilplain`
-    printOutput('ensInfo', { ...NULL_INFO, description: malicious })
+    printOutput('ensInfo', { ...MOCK_ENS_INFO, description: malicious })
     const out = lines.join('')
     expect(out).not.toContain(ESC)
     expect(out).not.toContain(BEL)
@@ -85,7 +81,7 @@ describe('ENS text formatters', () => {
   it('strips control bytes from a reverse-resolved name', () => {
     const lines = capture()
     printOutput('ensName', {
-      address: VITALIK,
+      address: MOCK_ADDRESS,
       name: `evil${ESC}[31m.eth` as `${string}.${string}`,
     })
     expect(lines.join('')).not.toContain(ESC)
@@ -96,11 +92,11 @@ describe('ENS text formatters', () => {
     const lines = capture()
     printOutput('ensAddress', {
       name: `evil${ESC}[2J.eth` as `${string}.${string}`,
-      address: VITALIK,
+      address: MOCK_ADDRESS,
     })
     const out = lines.join('')
     expect(out).not.toContain(ESC)
     expect(out).toContain('evil')
-    expect(out).toContain(VITALIK)
+    expect(out).toContain(MOCK_ADDRESS)
   })
 })

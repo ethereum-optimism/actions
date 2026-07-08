@@ -1,6 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MOCK_ADDRESS, MOCK_ENS_NAME } from '@/__tests__/helpers/ens.js'
 import { runEnsAddress } from '@/commands/actions/ens/address.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
@@ -8,8 +9,6 @@ import { setJsonMode } from '@/output/mode.js'
 
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
-
-const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 
 describe('runEnsAddress', () => {
   let writeSpy: MockInstance
@@ -35,18 +34,21 @@ describe('runEnsAddress', () => {
     const captured: string[] = []
     mockEns(async (input) => {
       captured.push(input)
-      return VITALIK
+      return MOCK_ADDRESS
     })
-    await runEnsAddress('vitalik.eth')
+    await runEnsAddress(MOCK_ENS_NAME)
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
-    expect(body).toEqual({ name: 'vitalik.eth', address: VITALIK })
-    expect(captured).toEqual(['vitalik.eth'])
+    expect(body).toEqual({
+      name: MOCK_ENS_NAME,
+      address: MOCK_ADDRESS,
+    })
+    expect(captured).toEqual([MOCK_ENS_NAME])
   })
 
   it('rejects a non-name input with CliError(validation)', async () => {
-    mockEns(async () => VITALIK)
+    mockEns(async () => MOCK_ADDRESS)
     try {
-      await runEnsAddress(VITALIK)
+      await runEnsAddress(MOCK_ADDRESS)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -55,7 +57,7 @@ describe('runEnsAddress', () => {
   })
 
   it('validates input before calling ENS', async () => {
-    const getAddress = vi.fn(async () => VITALIK)
+    const getAddress = vi.fn(async () => MOCK_ADDRESS)
     mockEns(getAddress)
     try {
       await runEnsAddress('notaname')
@@ -73,7 +75,7 @@ describe('runEnsAddress', () => {
       throw new Error('fetch failed')
     })
     try {
-      await runEnsAddress('vitalik.eth')
+      await runEnsAddress(MOCK_ENS_NAME)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

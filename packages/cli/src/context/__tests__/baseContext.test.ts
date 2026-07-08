@@ -1,28 +1,18 @@
-import type { EnsInfo, NodeActionsConfig } from '@eth-optimism/actions-sdk'
+import type { NodeActionsConfig } from '@eth-optimism/actions-sdk'
 import { mainnet, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  MOCK_ADDRESS,
+  MOCK_ENS_INFO,
+  MOCK_ENS_NAME,
+} from '@/__tests__/helpers/ens.js'
+import {
   baseContext,
   type CliActions,
   installEnsFallbackWarning,
 } from '@/context/baseContext.js'
-
-const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
-
-const NULL_INFO: EnsInfo = {
-  avatar: null,
-  display: null,
-  description: null,
-  url: null,
-  email: null,
-  keywords: null,
-  twitter: null,
-  github: null,
-  discord: null,
-  reddit: null,
-}
 
 describe('baseContext', () => {
   let stderrSpy: MockInstance
@@ -65,7 +55,7 @@ describe('baseContext', () => {
     installEnsFallbackWarning(actions, configWithChains([optimismSepolia.id]))
 
     expect(stderrSpy).not.toHaveBeenCalled()
-    await actions.ens.getAddress('vitalik.eth')
+    await actions.ens.getAddress(MOCK_ENS_NAME)
     expect(String(stderrSpy.mock.calls[0]?.[0])).toContain('Warning:')
   })
 
@@ -74,21 +64,21 @@ describe('baseContext', () => {
 
     installEnsFallbackWarning(actions, configWithChains([optimismSepolia.id]))
 
-    await actions.ens.getAddress('vitalik.eth')
-    await actions.ens.getName(VITALIK)
-    await actions.ens.getInfo('vitalik.eth')
+    await actions.ens.getAddress(MOCK_ENS_NAME)
+    await actions.ens.getName(MOCK_ADDRESS)
+    await actions.ens.getInfo(MOCK_ENS_NAME)
 
     expect(stderrSpy).toHaveBeenCalledTimes(1)
-    expect(getAddress).toHaveBeenCalledWith('vitalik.eth')
-    expect(getName).toHaveBeenCalledWith(VITALIK)
-    expect(getInfo).toHaveBeenCalledWith('vitalik.eth')
+    expect(getAddress).toHaveBeenCalledWith(MOCK_ENS_NAME)
+    expect(getName).toHaveBeenCalledWith(MOCK_ADDRESS)
+    expect(getInfo).toHaveBeenCalledWith(MOCK_ENS_NAME)
   })
 
   it('does not warn when mainnet is configured', async () => {
     const { actions } = fakeActions()
 
     installEnsFallbackWarning(actions, configWithChains([mainnet.id]))
-    await actions.ens.getName(VITALIK)
+    await actions.ens.getName(MOCK_ADDRESS)
 
     expect(stderrSpy).not.toHaveBeenCalled()
   })
@@ -103,9 +93,9 @@ function configWithChains(
 }
 
 function fakeActions() {
-  const getAddress = vi.fn(async () => VITALIK)
-  const getName = vi.fn(async () => 'vitalik.eth')
-  const getInfo = vi.fn(async () => NULL_INFO)
+  const getAddress = vi.fn(async () => MOCK_ADDRESS)
+  const getName = vi.fn(async () => MOCK_ENS_NAME)
+  const getInfo = vi.fn(async () => MOCK_ENS_INFO)
   const actions = {
     ens: {
       getAddress,
