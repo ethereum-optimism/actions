@@ -59,24 +59,36 @@
     "@aave/contract-helpers": "^1.30.0",
     "@aave/math-utils": "^1.30.0",
     "@eth-optimism/viem": "^0.4.13",
-    "@morpho-org/blue-sdk": "^4.5.1",
-    "@morpho-org/blue-sdk-viem": "^3.1.1",
-    "@morpho-org/morpho-ts": "^2.4.1",
+    "@morpho-org/blue-sdk": ">=4.13.1 <4.14.0",
+    "@morpho-org/blue-sdk-viem": ">=3.2.0 <3.3.0",
+    "@morpho-org/morpho-ts": ">=2.4.6 <2.5.0",
     "ethers": "^5.7.2",
-    "permissionless": "^0.2.54",
-    "viem": "^2.24.1"
+    "permissionless": ">=0.2.57 <0.3.0"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum": ">=4.31.4",
-    "@dynamic-labs/waas-evm": ">=4.31.4",
-    "@dynamic-labs/wallet-connector-core": ">=4.31.4",
-    "@privy-io/react-auth": ">=2.24.0",
-    "@privy-io/node": ">=0.3.0",
-    "@turnkey/core": ">=1.1.1",
-    "@turnkey/http": ">=3.12.1",
-    "@turnkey/sdk-server": ">=4.9.1",
-    "@turnkey/react-wallet-kit": ">=1.1.1",
-    "@turnkey/viem": ">=0.14.1"
+    "@dynamic-labs/ethereum": ">=4.31.4 <5.0.0",
+    "@dynamic-labs/waas-evm": ">=4.31.4 <5.0.0",
+    "@dynamic-labs/wallet-connector-core": ">=4.31.4 <5.0.0",
+    "@privy-io/react-auth": ">=2.24.0 <3.0.0",
+    "@privy-io/node": ">=0.3.0 <0.4.0",
+    "@turnkey/core": ">=1.1.1 <2.0.0",
+    "@turnkey/http": ">=3.12.1 <4.0.0",
+    "@turnkey/sdk-server": ">=4.9.1 <5.0.0",
+    "@turnkey/react-wallet-kit": ">=1.1.1 <2.0.0",
+    "@turnkey/viem": ">=0.14.1 <0.15.0",
+    "viem": ">=2.33.0 <2.34.0"
+  },
+  "peerDependenciesMeta": {
+    "@dynamic-labs/ethereum": { "optional": true },
+    "@dynamic-labs/waas-evm": { "optional": true },
+    "@dynamic-labs/wallet-connector-core": { "optional": true },
+    "@privy-io/react-auth": { "optional": true },
+    "@privy-io/node": { "optional": true },
+    "@turnkey/core": { "optional": true },
+    "@turnkey/http": { "optional": true },
+    "@turnkey/sdk-server": { "optional": true },
+    "@turnkey/react-wallet-kit": { "optional": true },
+    "@turnkey/viem": { "optional": true }
   },
   "devDependencies": {
     "@types/node": "22.14.0",
@@ -85,6 +97,7 @@
     "prettier": "^3.0.0",
     "tsx": "^4.7.1",
     "typescript": "^5.2.2",
+    "viem": "2.33.0",
     "vitest": "^1.6.1"
   }
 }

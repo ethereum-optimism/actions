@@ -24,6 +24,14 @@ import {
   RECIPIENT,
 } from './encoding.helpers.js'
 
+const CUSTOM_RECIPIENT = '0x000000000000000000000000000000000000bEEF' as Address
+
+function decodeUniversalV2Input(data: Hex) {
+  const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
+  const [, inputs] = args
+  return decodeAbiParameters(V2_SWAP_EXACT_IN_INPUT_PARAMS, inputs[0])
+}
+
 describe('encodeSwap', () => {
   describe('v2 router', () => {
     it('encodes swapExactTokensForTokens with 4-field Route', () => {
@@ -200,6 +208,30 @@ describe('encodeSwap', () => {
       expect(deadline).toBe(BigInt(DEADLINE))
     })
 
+    it.each([
+      ['wallet recipient', RECIPIENT],
+      ['custom recipient', CUSTOM_RECIPIENT],
+    ])('encodes V2_SWAP_EXACT_IN recipient for %s', (_label, recipient) => {
+      const data = encodeSwap({
+        assetIn: MockUSDCAsset,
+        assetOut: MockWETHAsset,
+        amountInRaw: 1000000n,
+        amountOutMin: 400000000000000000n,
+        routerType: 'universal',
+        stable: false,
+        factoryAddress: FACTORY,
+        recipient,
+        deadline: DEADLINE,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      const decoded = decodeUniversalV2Input(data)
+      const recipientIdx = V2_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+        (p) => p.name === 'recipient',
+      )
+      expect(decoded[recipientIdx]).toBe(recipient)
+    })
+
     // Regression for #438: payerIsUser must be true so the router pulls tokens via
     // transferFrom against an ERC20 allowance. payerIsUser=false requires tokens to
     // be pre-deposited to the router, which only works when caller batches atomically.
@@ -217,12 +249,7 @@ describe('encodeSwap', () => {
         chainId: BASE_CHAIN_ID,
       })
 
-      const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
-      const [, inputs] = args
-      const decoded = decodeAbiParameters(
-        V2_SWAP_EXACT_IN_INPUT_PARAMS,
-        inputs[0],
-      )
+      const decoded = decodeUniversalV2Input(data)
       const payerIsUserIdx = V2_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
         (p) => p.name === 'payerIsUser',
       )
