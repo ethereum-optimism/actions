@@ -355,19 +355,18 @@ export type GetPositionsParams = {
    * every market for parity with `getMarkets`).
    */
   nonZeroOnly?: boolean
-} &
-  (
-    | {
-        /** Filter to one configured chain. */
-        chainId?: SupportedChainId
-        chainIds?: never
-      }
-    | {
-        chainId?: never
-        /** Filter to one or more configured chains. */
-        chainIds: readonly SupportedChainId[]
-      }
-  )
+} & (
+  | {
+      /** Filter to one configured chain. */
+      chainId?: SupportedChainId
+      chainIds?: never
+    }
+  | {
+      chainId?: never
+      /** Filter to one or more configured chains. */
+      chainIds: readonly SupportedChainId[]
+    }
+)
 
 /**
  * Parameters for getting market balance
