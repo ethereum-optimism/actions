@@ -212,7 +212,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * and ERC-4337 UserOperation creation automatically.
    * @param transactionData - The transaction data to execute
    * @param chainId - Target blockchain chain ID
-   * @returns Promise resolving to the transaction hash
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
@@ -239,8 +240,18 @@ export class DefaultSmartWallet extends SmartWallet {
           hash,
         })
 
+      if (!userOperationReceipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          userOperationReceipt.receipt,
+        )
+      }
+
       return userOperationReceipt
     } catch (error) {
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -255,8 +266,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * The transaction is sent as a UserOperation through the bundler service.
    * @param transactionData - Transaction details (to, value, data)
    * @param chainId - Target blockchain network ID
-   * @returns Promise resolving to UserOperation hash
-   * @throws Error if transaction fails or validation errors occur
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async send(
     transactionData: TransactionData,
@@ -283,8 +294,18 @@ export class DefaultSmartWallet extends SmartWallet {
         hash,
       })
 
+      if (!receipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          receipt.receipt,
+        )
+      }
+
       return receipt
     } catch (error) {
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -469,6 +490,9 @@ export class DefaultSmartWallet extends SmartWallet {
       // Call createAccount on the factory to trigger deployment
       // The factory's createAccount is idempotent and will return the existing address if already deployed
       // Using the factory address allows paymasters to configure it in their allowlist once
+      // `sendBatch` now fails closed on a reverted UserOp (throws
+      // TransactionConfirmedButRevertedError), so a returned receipt is always
+      // a successful deployment.
       const receipt = await this.sendBatch(
         [
           {
@@ -483,15 +507,16 @@ export class DefaultSmartWallet extends SmartWallet {
         ],
         chainId,
       )
-      if (!receipt.success) {
+      return { chainId, success: true, receipt }
+    } catch (error) {
+      // Preserve the deployment-specific error type and message for a reverted
+      // deploy now that the revert surfaces as TransactionConfirmedButRevertedError.
+      if (error instanceof TransactionConfirmedButRevertedError) {
         throw new SmartWalletDeploymentError(
           'deployment transaction reverted',
           chainId,
-          receipt,
         )
       }
-      return { chainId, success: true, receipt }
-    } catch (error) {
       throw new SmartWalletDeploymentError(
         `Failed to deploy smart wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
         chainId,

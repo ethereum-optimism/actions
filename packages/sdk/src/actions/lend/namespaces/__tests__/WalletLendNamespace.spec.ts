@@ -7,6 +7,7 @@ import type { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider
 import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 import type { TransactionData } from '@/types/lend/index.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import { createMock as createSmartWalletMock } from '@/wallet/core/wallets/smart/abstract/__mocks__/SmartWallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
@@ -215,6 +216,42 @@ describe('WalletLendNamespace', () => {
       expect(positions[0].marketId.address).toBe(mockMarketId.address)
       expect(spy).toHaveBeenCalledWith(mockWalletAddress, {})
     })
+  })
+
+  it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
+    // Reverted receipts must propagate instead of producing quote-derived success data.
+    vi.mocked(mockWallet.send).mockRejectedValue(
+      new TransactionConfirmedButRevertedError(
+        'transaction confirmed but reverted',
+        { transactionHash: '0xreverted' } as never,
+      ),
+    )
+    const namespace = new WalletLendNamespace(
+      { morpho: mockProvider },
+      mockWallet,
+    )
+    const mockAsset = {
+      address: { 130: getRandomAddress() },
+      metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      type: 'erc20' as const,
+    }
+    vi.mocked(mockProvider.openPosition).mockResolvedValue({
+      amount: 1000000000n,
+      assetAddress: mockAsset.address[130] as Address,
+      marketId: mockMarketId.address,
+      apy: 0.05,
+      transactionData: {
+        position: { to: mockMarketId.address, value: 0n, data: '0x' as const },
+      },
+    })
+
+    await expect(
+      namespace.openPosition({
+        amount: 1000,
+        asset: mockAsset,
+        marketId: mockMarketId,
+      }),
+    ).rejects.toBeInstanceOf(TransactionConfirmedButRevertedError)
   })
 
   it('should store the wallet reference', () => {

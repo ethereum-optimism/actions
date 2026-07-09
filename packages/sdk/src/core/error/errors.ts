@@ -132,7 +132,7 @@ export class InvalidAmountError extends ActionsError {
   amount: number
 
   constructor(amount: number) {
-    super('Amount must be positive', {
+    super('Amount must be a positive finite number', {
       metaMessages: [`Received: ${amount}`],
     })
     this.amount = amount
@@ -249,8 +249,10 @@ export class SlippageOutOfRangeError extends ActionsError {
   maxSlippage: number
 
   constructor(slippage: number, maxSlippage: number) {
+    const effectiveRange =
+      maxSlippage >= 1 ? '[0, 100%)' : `[0, ${maxSlippage * 100}%]`
     super(`Slippage ${slippage} is out of range`, {
-      metaMessages: [`Allowed range: [0, ${maxSlippage * 100}%]`],
+      metaMessages: [`Allowed range: finite ${effectiveRange}`],
     })
     this.slippage = slippage
     this.maxSlippage = maxSlippage
@@ -328,12 +330,10 @@ export class InvalidParamsError extends ActionsError {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Thrown when a pre-built quote (swap, borrow, …) is dispatched against a
- * wallet whose address differs from the quote's `recipient`. Some routers
- * (Velodrome v2/leaf) and protocols (Morpho `supplyCollateral` / `borrow` /
- * `repay` / `withdrawCollateral`) encode the recipient or `onBehalf` address
- * directly into calldata, so silently swapping recipients would route assets
- * or position changes to the wrong account.
+ * Thrown when a pre-built quote is dispatched against a wallet whose address
+ * differs from the quote's bound wallet address. Swap quotes may encode an
+ * output recipient that differs from the executing wallet, but allowances
+ * must still be checked against the wallet that signs the transaction.
  */
 export class QuoteRecipientMismatchError extends ActionsError {
   override name = 'QuoteRecipientMismatchError' as const
@@ -342,7 +342,7 @@ export class QuoteRecipientMismatchError extends ActionsError {
 
   constructor(params: { quoteRecipient: string; walletAddress: string }) {
     super(
-      `Quote was generated for a different recipient (${params.quoteRecipient}); re-quote so calldata is bound to this wallet (${params.walletAddress})`,
+      `Quote was generated for a different wallet (${params.quoteRecipient}); re-quote so approvals are bound to this wallet (${params.walletAddress})`,
     )
     this.quoteRecipient = params.quoteRecipient
     this.walletAddress = params.walletAddress
@@ -350,9 +350,21 @@ export class QuoteRecipientMismatchError extends ActionsError {
 }
 
 /**
+ * Thrown when wallet-bound execution receives a quote without the wallet that
+ * owns input tokens. Re-quote through the wallet namespace to bind allowances.
+ */
+export class QuoteWalletAddressMissingError extends ActionsError {
+  override name = 'QuoteWalletAddressMissingError' as const
+
+  constructor() {
+    super('Quote.walletAddress missing. Re-quote with wallet.swap.getQuote')
+  }
+}
+
+/**
  * Thrown when a provider's `_getQuote` returns a quote without a `recipient`.
- * The base namespace requires every quote to be wallet-bound before approvals
- * or calldata are built.
+ * Providers must populate the output recipient before approvals or calldata
+ * are built.
  */
 export class QuoteRecipientMissingError extends ActionsError {
   override name = 'QuoteRecipientMissingError' as const

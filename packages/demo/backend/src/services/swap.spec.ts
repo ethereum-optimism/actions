@@ -1,6 +1,9 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
+import { ProviderNotConfiguredError } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { WalletNotFoundError } from '@/helpers/errors.js'
 
 import * as swapService from './swap.js'
 
@@ -126,7 +129,7 @@ describe('Swap Service', () => {
   })
 
   describe('executeSwap', () => {
-    it('throws when wallet not found', async () => {
+    it('throws WalletNotFoundError when wallet not found', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null as any)
 
@@ -138,10 +141,10 @@ describe('Swap Service', () => {
           tokenOutAddress: TOKEN_OUT,
           chainId: CHAIN_ID,
         }),
-      ).rejects.toThrow('Wallet not found')
+      ).rejects.toBeInstanceOf(WalletNotFoundError)
     })
 
-    it('throws when swap not configured', async () => {
+    it('throws ProviderNotConfiguredError when swap not configured', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue({ swap: undefined } as any)
 
@@ -153,7 +156,7 @@ describe('Swap Service', () => {
           tokenOutAddress: TOKEN_OUT,
           chainId: CHAIN_ID,
         }),
-      ).rejects.toThrow('Swap not configured')
+      ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
     it('executes swap and returns receipt with explorer urls', async () => {

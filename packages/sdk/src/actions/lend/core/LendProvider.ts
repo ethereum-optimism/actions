@@ -201,13 +201,8 @@ export abstract class LendProvider<
     walletAddress: Address,
     params: GetPositionsParams = {},
   ): Promise<LendMarketPosition[]> {
-    if (!walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
-
-    if (params.chainId !== undefined) {
-      validateChainSupported(params.chainId, this.supportedChainIds())
-    }
+    validateWalletAddress(walletAddress)
+    if (params.chainId !== undefined) this.assertChainSupported(params.chainId)
 
     const markets = this.filterMarketConfigs(params.chainId)
 

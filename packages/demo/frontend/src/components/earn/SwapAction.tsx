@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { ActionsError } from '@eth-optimism/actions-sdk'
 import type {
   SupportedChainId,
   SwapMarket,
@@ -246,6 +247,7 @@ export function SwapAction({
   const [txModalStatus, setTxModalStatus] = useState<'loading' | 'error'>(
     'loading',
   )
+  const [txModalError, setTxModalError] = useState<string | undefined>()
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -418,6 +420,7 @@ export function SwapAction({
     setReviewOpen(false)
     setTxModalOpen(true)
     setTxModalStatus('loading')
+    setTxModalError(undefined)
 
     try {
       const result = await onSwap(quote)
@@ -443,6 +446,11 @@ export function SwapAction({
     } catch (err) {
       console.error('[swap] execution failed:', err)
       activity?.error()
+      setTxModalError(
+        err instanceof ActionsError && err.shortMessage
+          ? err.shortMessage
+          : 'Swap failed. Please try again.',
+      )
       setTxModalStatus('error')
       trackEvent('swap_error', {
         assetIn: assetIn.asset.metadata.symbol,
@@ -455,6 +463,7 @@ export function SwapAction({
   const handleTxModalClose = () => {
     setTxModalOpen(false)
     setTxModalStatus('loading')
+    setTxModalError(undefined)
   }
 
   const amountValue = parseFloat(amountIn) || 0
@@ -608,6 +617,7 @@ export function SwapAction({
       <TransactionModal
         isOpen={txModalOpen}
         status={txModalStatus}
+        errorMessage={txModalError}
         onClose={handleTxModalClose}
       />
 

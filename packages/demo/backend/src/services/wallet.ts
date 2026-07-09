@@ -126,6 +126,9 @@ export async function getBorrowPosition({
   return serializeBigInt(position)
 }
 
+/** Server-fixed demo mint: 100 USDC_DEMO at 6 decimals. */
+const DEMO_USDC_MINT_AMOUNT = 100_000_000n
+
 export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
@@ -136,7 +139,7 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 }> {
   const walletAddress = wallet.address
 
-  const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
+  const amountInDecimals = DEMO_USDC_MINT_AMOUNT
 
   const result = await mintUsdcDemo(wallet, walletAddress, amountInDecimals)
 

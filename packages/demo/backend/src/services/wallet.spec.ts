@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as usdcDemo from './usdcDemo.js'
 import * as walletService from './wallet.js'
 
 vi.mock('../config/actions.js', () => ({
   getActions: vi.fn(),
   getPrivyClient: vi.fn(),
+}))
+
+vi.mock('./usdcDemo.js', () => ({
+  mintUsdcDemo: vi.fn(),
+  transferUsdcDemo: vi.fn(),
+}))
+
+vi.mock('../utils/explorers.js', () => ({
+  getBlockExplorerUrls: vi.fn(() => []),
 }))
 
 const mockBorrowProvider = {
@@ -134,6 +144,26 @@ describe('Wallet Service', () => {
           params: {},
         }),
       ).rejects.toThrow('positions failed')
+    })
+  })
+
+  describe('mintDemoUsdcToWallet', () => {
+    it('mints exactly 100 USDC_DEMO (100_000_000n) to the wallet address', async () => {
+      const wallet = { address: walletAddress } as never
+      vi.mocked(usdcDemo.mintUsdcDemo).mockResolvedValue({
+        userOpHash: `0x${'a'.repeat(64)}`,
+      } as never)
+
+      const result = await walletService.mintDemoUsdcToWallet(wallet)
+
+      // Amount is a server-fixed integer constant, not a parseFloat path.
+      expect(usdcDemo.mintUsdcDemo).toHaveBeenCalledWith(
+        wallet,
+        walletAddress,
+        100_000_000n,
+      )
+      expect(result.amount).toBe('100')
+      expect(result.to).toBe(walletAddress)
     })
   })
 })

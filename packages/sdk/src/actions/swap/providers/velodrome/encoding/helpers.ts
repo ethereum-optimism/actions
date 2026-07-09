@@ -1,15 +1,12 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
-import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
-
-export { UNIVERSAL_ROUTER_MSG_SENDER }
 
 /**
  * Resolve an asset pair to on-chain token addresses for a given chain.

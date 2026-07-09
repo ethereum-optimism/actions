@@ -174,7 +174,8 @@ describe('LendProvider', () => {
   })
 
   describe('getPositions', () => {
-    const walletAddress = '0x5678' as Address
+    const walletAddress =
+      '0x0000000000000000000000000000000000005678' as Address
     const marketA: LendMarketConfig = {
       address: '0xaaaa' as Address,
       chainId: 84532,

@@ -12,7 +12,6 @@ import type { VelodromeRouterType } from '@/actions/swap/providers/velodrome/con
 import {
   buildSwapPrice,
   resolveTokens,
-  UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/providers/velodrome/encoding/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
@@ -222,7 +221,7 @@ function encodeUniversalV2Swap(
     [tokenIn, params.stable, tokenOut],
   )
   const input = encodeAbiParameters(V2_SWAP_EXACT_IN_INPUT_PARAMS, [
-    UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
+    params.recipient,
     params.amountInRaw,
     params.amountOutMin,
     routes,
