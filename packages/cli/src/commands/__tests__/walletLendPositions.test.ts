@@ -69,31 +69,30 @@ describe('runWalletLendPositions', () => {
     mockWallet(getPositions)
     await runWalletLendPositions({ chain: 'base-sepolia', nonZeroOnly: true })
     expect(getPositions).toHaveBeenCalledWith({
-      chainId: 84532,
+      chainIds: [84532],
       nonZeroOnly: true,
     })
   })
 
-  it('passes undefined chainId when no chain flag is set', async () => {
+  it('omits chain filters when no chain flag is set', async () => {
     const getPositions = vi.fn(async () => [])
     mockWallet(getPositions)
     await runWalletLendPositions()
     expect(getPositions).toHaveBeenCalledWith({
-      chainId: undefined,
       nonZeroOnly: undefined,
     })
   })
 
-  it('rejects multi-chain --chain values with CliError(validation)', async () => {
-    mockWallet(async () => [])
-    try {
-      await runWalletLendPositions({ chain: 'base-sepolia,op-sepolia' })
-      throw new Error('did not throw')
-    } catch (err) {
-      expect(err).toBeInstanceOf(CliError)
-      expect((err as CliError).code).toBe('validation')
-      expect((err as CliError).message).toMatch(/single chain/)
-    }
+  it('forwards multi-chain --chain values to the SDK', async () => {
+    const getPositions = vi.fn(async () => [])
+    mockWallet(getPositions)
+
+    await runWalletLendPositions({ chain: 'base-sepolia,op-sepolia' })
+
+    expect(getPositions).toHaveBeenCalledWith({
+      chainIds: [84532, 11155420],
+      nonZeroOnly: undefined,
+    })
   })
 
   it('rejects with CliError(config) when wallet.lend is undefined', async () => {

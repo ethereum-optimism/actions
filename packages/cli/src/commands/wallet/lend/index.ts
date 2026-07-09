@@ -61,12 +61,12 @@ export function walletLendCommand(): Command {
       "Aggregate the wallet's positions across every configured market and provider in one call.",
     )
     .option(
-      '--chain <shortname>',
-      `filter to positions on one chain by shortname (e.g. ${CHAIN_EXAMPLES.shortname}); mutually exclusive with --chain-id`,
+      '--chain <shortnames>',
+      `filter to one or more chains by shortname; comma-separated (e.g. ${CHAIN_EXAMPLES.shortname} or ${CHAIN_EXAMPLES.shortnameList}); mutually exclusive with --chain-id`,
     )
     .option(
-      '--chain-id <id>',
-      `filter to positions on one chain by numeric id (e.g. ${CHAIN_EXAMPLES.chainId}); mutually exclusive with --chain`,
+      '--chain-id <ids>',
+      `filter to one or more chains by numeric id; comma-separated (e.g. ${CHAIN_EXAMPLES.chainId} or ${CHAIN_EXAMPLES.chainIdList}); mutually exclusive with --chain`,
     )
     .option(
       '--non-zero-only',
