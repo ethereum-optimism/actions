@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
+import { ChainManager } from '@/services/ChainManager.js'
 import type {
   LendMarketConfig,
   LendMarketId,
@@ -190,6 +192,26 @@ describe('LendProvider', () => {
       asset: MockUSDCAsset,
       lendProvider: 'morpho',
     }
+    const marketC: LendMarketConfig = {
+      address: '0xcccc' as Address,
+      chainId: 130,
+      name: 'Market C',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const marketD: LendMarketConfig = {
+      address: '0xdddd' as Address,
+      chainId: 8453,
+      name: 'Market D',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const createMultiChainProvider = () =>
+      new MockLendProvider(
+        { marketAllowlist: [marketA, marketC, marketD] },
+        undefined,
+        new ChainManager([{ chainId: 84532 }, { chainId: 130 }]),
+      )
 
     it('walks the allowlist and returns one position per market', async () => {
       const provider = new MockLendProvider({
@@ -229,6 +251,48 @@ describe('LendProvider', () => {
           chainId: 999 as unknown as 84532,
         }),
       ).rejects.toThrow('Chain 999 is not supported')
+    })
+
+    it('filters positions by multiple configured chain IDs', async () => {
+      const provider = createMultiChainProvider()
+
+      const positions = await provider.getPositions(walletAddress, {
+        chainIds: [84532, 130],
+      })
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketA.address,
+        marketC.address,
+      ])
+    })
+
+    it('filters positions by one configured chain ID', async () => {
+      const positions = await createMultiChainProvider().getPositions(
+        walletAddress,
+        { chainId: 130 },
+      )
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketC.address,
+      ])
+    })
+
+    it('checks every configured chain when no filter is provided', async () => {
+      const positions =
+        await createMultiChainProvider().getPositions(walletAddress)
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketA.address,
+        marketC.address,
+      ])
+    })
+
+    it('rejects an empty chainIds filter', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(
+        provider.getPositions(walletAddress, { chainIds: [] }),
+      ).rejects.toBeInstanceOf(InvalidParamsError)
     })
 
     it('isolates per-market failures and drops the rejected ones', async () => {

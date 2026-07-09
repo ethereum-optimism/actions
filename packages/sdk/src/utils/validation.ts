@@ -146,24 +146,45 @@ export function resolveSupportedChainIds(
 }
 
 /**
- * Guard for `BalanceFetchOptions`. Verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
+ * Validate an optional chain list against a supported chain set.
+ * @description Accepts an omitted list, rejects an empty list, and verifies
+ * every supplied ID is supported.
+ * @param chainIds - Optional configured chain subset.
+ * @param supportedChainIds - Chain IDs available to the caller.
+ * @returns Nothing.
  * @throws InvalidParamsError when `chainIds` is `[]`.
- * @throws ChainNotSupportedError when any id is not configured on the manager.
+ * @throws ChainNotSupportedError when any ID is unsupported.
  */
-export function validateBalanceFetchOptions(
-  options: BalanceFetchOptions | undefined,
-  chainManager: ChainManager,
+export function validateChainIds(
+  chainIds: readonly SupportedChainId[] | undefined,
+  supportedChainIds: readonly SupportedChainId[],
 ): void {
-  if (options?.chainIds === undefined) return
-  if (options.chainIds.length === 0) {
+  if (chainIds === undefined) return
+  if (chainIds.length === 0) {
     throw new InvalidParamsError({
       param: 'chainIds',
       expected: 'SupportedChainId[] (non-empty)',
       received: '[]',
     })
   }
-  const supported = chainManager.getSupportedChains()
-  for (const id of options.chainIds) validateChainSupported(id, supported)
+  for (const chainId of chainIds) {
+    validateChainSupported(chainId, supportedChainIds)
+  }
+}
+
+/**
+ * Guard for `BalanceFetchOptions` chain filters.
+ * @param options - Optional balance query filters.
+ * @param chainManager - Source of developer-configured chain IDs.
+ * @returns Nothing.
+ * @throws InvalidParamsError when `chainIds` is `[]`.
+ * @throws ChainNotSupportedError when any ID is not configured.
+ */
+export function validateBalanceFetchOptions(
+  options: BalanceFetchOptions | undefined,
+  chainManager: ChainManager,
+): void {
+  validateChainIds(options?.chainIds, chainManager.getSupportedChains())
 }
 
 export function validateAssetOnChain(

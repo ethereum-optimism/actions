@@ -2,8 +2,7 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
-import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
-import type { ChainManager } from '@/services/ChainManager.js'
+import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -81,9 +80,11 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     super(
       config || {},
       chainManager ||
-        (new MockChainManager({
-          supportedChains: [84532],
-        }) as unknown as ChainManager),
+        new ChainManager([
+          { chainId: 130 },
+          { chainId: 8453 },
+          { chainId: 84532 },
+        ]),
     )
 
     this.mockConfig = {

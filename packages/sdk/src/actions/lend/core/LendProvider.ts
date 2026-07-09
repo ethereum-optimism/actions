@@ -12,6 +12,7 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   AssetMetadataRequiredError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
@@ -44,7 +45,7 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import { validateWalletAddress } from '@/utils/validation.js'
+import { validateChainIds, validateWalletAddress } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -186,25 +187,28 @@ export abstract class LendProvider<
 
   /**
    * Get this provider's positions for a wallet across its configured markets
-   * @description Walks the provider's market allowlist (optionally filtered by
-   * `chainId`) and fetches each position concurrently. Per-market failures are
-   * isolated via `Promise.allSettled` and dropped from the result so a single
-   * bad RPC can't poison the batch. Returns every queried market's position
-   * (including zero balances); zero-balance filtering is applied by the
-   * aggregating namespace.
+   * @description Walks the provider's market allowlist on one, several, or all
+   * configured chains and fetches each position concurrently. Per-market
+   * failures are isolated via `Promise.allSettled` and dropped from the result
+   * so a single bad RPC cannot poison the batch. Returns every queried market's
+   * position (including zero balances); zero-balance filtering is applied by
+   * the aggregating namespace.
    * @param walletAddress - User wallet address to check positions for
-   * @param params - Optional chain filter
+   * @param params - Optional single-chain or multi-chain filter
    * @returns Promise resolving to the positions that resolved successfully
    * @throws AddressRequiredError if `walletAddress` is missing
+   * @throws InvalidParamsError if both chain filters are set or `chainIds` is empty
+   * @throws ChainNotSupportedError if a requested chain is not configured
    */
   async getPositions(
     walletAddress: Address,
     params: GetPositionsParams = {},
   ): Promise<LendMarketPosition[]> {
     validateWalletAddress(walletAddress)
-    if (params.chainId !== undefined) this.assertChainSupported(params.chainId)
-
-    const markets = this.filterMarketConfigs(params.chainId)
+    const chainIds = this.resolvePositionChainIds(params)
+    const markets = this.filterMarketConfigs().filter((market) =>
+      chainIds.includes(market.chainId),
+    )
 
     const settled = await Promise.allSettled(
       markets.map((market) =>
@@ -309,6 +313,24 @@ export abstract class LendProvider<
     amount: bigint,
   ): TransactionData {
     return buildErc20ApprovalTx({ assetAddress: tokenAddress, spender, amount })
+  }
+
+  private resolvePositionChainIds(
+    params: GetPositionsParams,
+  ): SupportedChainId[] {
+    if (params.chainId !== undefined && params.chainIds !== undefined) {
+      throw new InvalidParamsError({
+        param: 'chainId/chainIds',
+        expected: 'only one chain filter',
+        received: 'both filters',
+      })
+    }
+    const configuredChainIds = this.chainManager.getSupportedChains()
+    const chainIds =
+      params.chainIds ??
+      (params.chainId === undefined ? configuredChainIds : [params.chainId])
+    validateChainIds(chainIds, configuredChainIds)
+    return [...new Set(chainIds)]
   }
 
   /**
