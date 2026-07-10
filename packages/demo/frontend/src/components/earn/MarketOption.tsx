@@ -1,4 +1,5 @@
 import type { Asset } from '@eth-optimism/actions-sdk'
+import { displaySymbol } from '@/utils/tokenDisplay'
 
 export interface MarketInfo {
   name: string
@@ -15,8 +16,6 @@ export interface MarketInfo {
   }
   provider: 'morpho' | 'aave'
 }
-
-const cleanSymbol = (symbol: string) => symbol.replace('_DEMO', '')
 
 const formatApy = (apy: number | null) => {
   if (apy === null) return '0.00%'
@@ -49,7 +48,7 @@ export function MarketOption({ market }: { market: MarketInfo }) {
         </div>
       </div>
       <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
-        {market.name} {cleanSymbol(market.asset.metadata.symbol)}
+        {market.name} {displaySymbol(market.asset.metadata.symbol)}
       </span>
       <span className="text-sm" style={{ color: '#666666' }}>
         on

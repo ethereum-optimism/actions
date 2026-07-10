@@ -7,6 +7,7 @@ import {
   ChainNotSupportedError,
   ConflictingAmountsError,
   EmptyPositionError,
+  ExactOutputNotSupportedError,
   InvalidAmountError,
   InvalidParamsError,
   MarketIdRequiredError,
@@ -18,6 +19,9 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
+  SameAssetError,
+  SlippageOutOfRangeError,
   TransactionConfirmedButRevertedError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
@@ -27,9 +31,9 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { AuthContext } from '@/middleware/auth.js'
 
 /**
- * Thrown by borrow services when an authenticated request resolves to
- * no Privy wallet. Mapped to 404 by `mapSdkError`. Local to the backend
- * because the SDK doesn't model the wallet-lookup layer.
+ * Thrown by borrow, lend, and swap services when an authenticated request
+ * resolves to no Privy wallet. Mapped to 404 by `mapSdkError`. Local to the
+ * backend because the SDK doesn't model the wallet-lookup layer.
  */
 export class WalletNotFoundError extends Error {
   override name = 'WalletNotFoundError' as const
@@ -139,6 +143,10 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
       { status: 400, message: 'Quote recipient is required.' },
     ],
     [
+      QuoteWalletAddressMissingError,
+      { status: 400, message: 'Quote wallet address is required.' },
+    ],
+    [
       AssetNotSupportedOnChainError,
       { status: 400, message: 'Asset is not supported on this chain.' },
     ],
@@ -164,6 +172,21 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
         status: 503,
         message: 'Protocol contracts are not configured for this chain.',
       },
+    ],
+    [
+      SameAssetError,
+      { status: 400, message: 'Cannot swap an asset for itself.' },
+    ],
+    [
+      ExactOutputNotSupportedError,
+      {
+        status: 400,
+        message: 'Exact-output swaps are not supported by this provider.',
+      },
+    ],
+    [
+      SlippageOutOfRangeError,
+      { status: 400, message: 'Slippage is out of the allowed range.' },
     ],
   ]
 

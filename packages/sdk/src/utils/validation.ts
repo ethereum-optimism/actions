@@ -6,12 +6,14 @@ import {
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 import {
+  AddressRequiredError,
   AmountRequiredError,
   AssetNotSupportedOnChainError,
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
   InvalidParamsError,
+  QuoteExpiredError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -32,7 +34,7 @@ export function validateAmountProvided(
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
-  if (amount !== undefined && amount <= 0) {
+  if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
     throw new InvalidAmountError(amount)
   }
 }
@@ -61,8 +63,59 @@ export function validateNotZeroAddress(address: Address, label: string): void {
   }
 }
 
+/**
+ * Reject a value that is not a syntactically valid EVM address.
+ * @throws InvalidParamsError when `isAddress` rejects the value.
+ */
+export function validateAddress(
+  address: string,
+  label: string,
+): asserts address is Address {
+  if (!isAddress(address)) {
+    throw new InvalidParamsError({
+      param: label,
+      expected: 'a valid EVM address',
+      received: address,
+    })
+  }
+}
+
+/**
+ * Reject a quote whose expiration timestamp (unix seconds) has passed.
+ * @throws QuoteExpiredError when expired.
+ */
+export function validateQuoteNotExpired(expiresAt: number): void {
+  const now = Math.floor(Date.now() / 1000)
+  if (now >= expiresAt) {
+    throw new QuoteExpiredError({ expiresAt, currentTime: now })
+  }
+}
+
+/**
+ * Reject a missing, malformed, or zero-address wallet address in one call.
+ * @throws AddressRequiredError when undefined/empty.
+ * @throws InvalidParamsError when not a syntactically valid EVM address.
+ * @throws ZeroAddressError when the zero address.
+ */
+export function validateWalletAddress(
+  walletAddress: Address | undefined,
+): asserts walletAddress is Address {
+  const label = 'walletAddress'
+  if (!walletAddress) {
+    throw new AddressRequiredError(label)
+  }
+  validateAddress(walletAddress, label)
+  validateNotZeroAddress(walletAddress, label)
+}
+
+/** Reject non-finite slippage and enforce both `[0, 1)` bounds and `maxSlippage`. */
 export function validateSlippage(slippage: number, maxSlippage: number): void {
-  if (slippage < 0 || slippage > maxSlippage) {
+  if (
+    !Number.isFinite(slippage) ||
+    slippage < 0 ||
+    slippage >= 1 ||
+    slippage > maxSlippage
+  ) {
     throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }

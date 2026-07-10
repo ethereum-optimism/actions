@@ -5,6 +5,8 @@ import { createApp } from '@/app.js'
 import * as borrowService from '@/services/borrow.js'
 import * as walletService from '@/services/wallet.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@/services/borrow.js', () => ({
   getMarkets: vi.fn(),
   getQuote: vi.fn(),
@@ -64,21 +66,9 @@ const MARKET_ID = {
 }
 const WALLET = '0xaabbccddeeff00112233445566778899aabbccdd'
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 beforeEach(async () => {
   vi.resetAllMocks()
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
-    }),
-  } as never)
+  await mockVerifiedUser('user-a')
 })
 
 describe('borrow routes', () => {
@@ -177,6 +167,31 @@ describe('borrow routes', () => {
     })
   })
 
+  describe('POST /borrow/position/open rate behavior', () => {
+    it('does not rate-limit authenticated borrow mutation retries', async () => {
+      vi.mocked(borrowService.openPosition).mockResolvedValue({
+        blockExplorerUrls: [],
+      } as never)
+
+      const app = createApp()
+      const statuses: number[] = []
+      for (let i = 0; i < 11; i++) {
+        const res = await app.request('/borrow/position/open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            marketId: MARKET_ID,
+            borrowAmount: { amountRaw: '1' },
+          }),
+        })
+        statuses.push(res.status)
+      }
+
+      expect(statuses).toEqual(Array(11).fill(200))
+      expect(borrowService.openPosition).toHaveBeenCalledTimes(11)
+    })
+  })
+
   describe('borrow-scoped onError', () => {
     it('maps a thrown SDK error to its status via mapSdkError', async () => {
       vi.mocked(borrowService.getMarkets).mockRejectedValue(
@@ -203,11 +218,11 @@ describe('borrow routes', () => {
       expect(json.error).not.toContain('unmapped')
     })
 
-    it('leaves non-borrow paths to their per-route try/catch (no mapping)', async () => {
-      // Lend's controller has its own try/catch that turns errors into a
-      // per-verb generic 500 with a domain-specific message. The borrow-scoped
-      // onError must not intercept it; mapSdkError would otherwise turn this
-      // into a 403 and silently change lend's contract.
+    it('maps non-borrow paths (lend) through the same global onError', async () => {
+      // Lend no longer wraps its controller in a per-route try/catch; thrown
+      // SDK errors propagate to the global onError and are mapped identically
+      // to borrow's. A MarketNotAllowedError surfaces as a 403, not an opaque
+      // 500.
       const { getMarkets: lendGetMarkets } = await import('@/services/lend.js')
       vi.mocked(lendGetMarkets).mockRejectedValue(
         new MarketNotAllowedError({
@@ -217,9 +232,9 @@ describe('borrow routes', () => {
         }),
       )
       const res = await createApp().request('/lend/markets')
-      expect(res.status).toBe(500)
+      expect(res.status).toBe(403)
       const json = (await res.json()) as { error: string }
-      expect(json.error).not.toBe('Market is not in the allowlist.')
+      expect(json.error).toBe('Market is not in the allowlist.')
     })
   })
 })

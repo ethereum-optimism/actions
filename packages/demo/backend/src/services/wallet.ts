@@ -8,18 +8,16 @@ import type {
   Wallet,
 } from '@eth-optimism/actions-sdk'
 import {
-  getAssetAddress,
   ProviderNotConfiguredError,
   serializeBigInt,
-  USDC_DEMO,
 } from '@eth-optimism/actions-sdk'
 import type { User } from '@privy-io/node'
 import type { Address } from 'viem'
-import { encodeFunctionData, formatUnits, getAddress } from 'viem'
+import { formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
-import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
+import { mintUsdcDemo } from '@/services/usdcDemo.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 /**
@@ -116,6 +114,9 @@ export async function getBorrowPosition({
   return serializeBigInt(position)
 }
 
+/** Server-fixed demo mint: 100 USDC_DEMO at 6 decimals. */
+const DEMO_USDC_MINT_AMOUNT = 100_000_000n
+
 export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
@@ -126,21 +127,9 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 }> {
   const walletAddress = wallet.address
 
-  const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
+  const amountInDecimals = DEMO_USDC_MINT_AMOUNT
 
-  const calls = [
-    {
-      to: getAssetAddress(USDC_DEMO, baseSepolia.id),
-      data: encodeFunctionData({
-        abi: mintableErc20Abi,
-        functionName: 'mint',
-        args: [walletAddress, amountInDecimals],
-      }),
-      value: 0n,
-    },
-  ]
-
-  const result = await wallet.sendBatch(calls, baseSepolia.id)
+  const result = await mintUsdcDemo(wallet, walletAddress, amountInDecimals)
 
   let transactionHashes: Address[] | undefined
   let userOpHash: Address | undefined

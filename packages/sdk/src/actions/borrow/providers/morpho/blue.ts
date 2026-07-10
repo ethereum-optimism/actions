@@ -5,7 +5,7 @@ import { type Address, encodeFunctionData, maxUint256 } from 'viem'
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
 import { ProtocolContractsNotConfiguredError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 import {
   buildErc20ApprovalTx,
@@ -30,9 +30,10 @@ export function requireMorphoBlueAddress(chainId: number): Address {
  * as uint128/uint128/uint128/uint128/uint128/uint128.
  */
 export function buildMorphoBlueMarket(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],
   price: bigint,
+  rateAtTarget: bigint,
 ): Market {
   const [
     totalSupplyAssets,
@@ -57,11 +58,12 @@ export function buildMorphoBlueMarket(
     lastUpdate,
     fee,
     price,
+    rateAtTarget,
   })
 }
 
 export function encodeMorphoSupplyCollateral(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   assets: bigint,
   onBehalf: Address,
 ): TransactionData {
@@ -77,7 +79,7 @@ export function encodeMorphoSupplyCollateral(
 }
 
 export function encodeMorphoBorrow(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   assets: bigint,
   shares: bigint,
   onBehalf: Address,
@@ -95,7 +97,7 @@ export function encodeMorphoBorrow(
 }
 
 export function encodeMorphoRepay(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   assets: bigint,
   shares: bigint,
   onBehalf: Address,
@@ -112,7 +114,7 @@ export function encodeMorphoRepay(
 }
 
 export function encodeMorphoWithdrawCollateral(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   assets: bigint,
   onBehalf: Address,
   receiver: Address,
@@ -129,7 +131,7 @@ export function encodeMorphoWithdrawCollateral(
 }
 
 export function buildMorphoCollateralApproval(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   amountWei: bigint | undefined,
   currentAllowance: bigint,
   mode: ApprovalMode,
@@ -145,7 +147,7 @@ export function buildMorphoCollateralApproval(
 }
 
 export function buildMorphoLoanApproval(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   amountWei: bigint,
   currentAllowance: bigint,
   mode: ApprovalMode,
@@ -161,7 +163,7 @@ export function buildMorphoLoanApproval(
 }
 
 export function buildMorphoMaxLoanApproval(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   currentAllowance: bigint,
 ): TransactionData | undefined {
   if (currentAllowance === maxUint256) return undefined

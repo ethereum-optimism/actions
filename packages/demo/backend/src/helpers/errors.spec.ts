@@ -7,6 +7,7 @@ import {
   ChainNotSupportedError,
   ConflictingAmountsError,
   EmptyPositionError,
+  ExactOutputNotSupportedError,
   InvalidAmountError,
   InvalidParamsError,
   MarketIdRequiredError,
@@ -18,6 +19,9 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
+  SameAssetError,
+  SlippageOutOfRangeError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import { describe, expect, it } from 'vitest'
@@ -176,6 +180,13 @@ describe('mapSdkError', () => {
     })
   })
 
+  it('maps QuoteWalletAddressMissingError to 400', () => {
+    expect(mapSdkError(new QuoteWalletAddressMissingError())).toEqual({
+      status: 400,
+      message: 'Quote wallet address is required.',
+    })
+  })
+
   it('maps AssetNotSupportedOnChainError to 400', () => {
     expect(
       mapSdkError(new AssetNotSupportedOnChainError('XYZ', 84532)),
@@ -222,6 +233,27 @@ describe('mapSdkError', () => {
     })
   })
 
+  it('maps SameAssetError to 400', () => {
+    expect(mapSdkError(new SameAssetError('USDC'))).toEqual({
+      status: 400,
+      message: 'Cannot swap an asset for itself.',
+    })
+  })
+
+  it('maps ExactOutputNotSupportedError to 400', () => {
+    expect(mapSdkError(new ExactOutputNotSupportedError('uniswap'))).toEqual({
+      status: 400,
+      message: 'Exact-output swaps are not supported by this provider.',
+    })
+  })
+
+  it('maps SlippageOutOfRangeError to 400', () => {
+    expect(mapSdkError(new SlippageOutOfRangeError(0.9, 0.5))).toEqual({
+      status: 400,
+      message: 'Slippage is out of the allowed range.',
+    })
+  })
+
   it('returns undefined for a generic Error', () => {
     expect(mapSdkError(new Error('something else'))).toBeUndefined()
   })
@@ -263,11 +295,7 @@ describe('mapSdkError', () => {
 // the SDK adds a new error class, this test fails until it's mapped or
 // added to the allowlist with a justification.
 describe('mapSdkError coverage', () => {
-  const INTENTIONALLY_UNMAPPED = new Set([
-    'SameAssetError',
-    'ExactOutputNotSupportedError',
-    'SlippageOutOfRangeError',
-  ])
+  const INTENTIONALLY_UNMAPPED = new Set<string>([])
 
   it('maps every exported ActionsError subclass or allowlists it', async () => {
     const sdk = (await import('@eth-optimism/actions-sdk')) as Record<

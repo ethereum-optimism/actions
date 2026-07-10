@@ -1,5 +1,6 @@
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
+import { AaveBorrowProvider } from '@/actions/borrow/providers/aave/AaveBorrowProvider.js'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import type { ActionModule } from '@/actions/shared/ActionModule.js'
 import type { BorrowProviders } from '@/types/providers.js'
@@ -17,6 +18,13 @@ export const borrowModule: ActionModule<'borrow'> = {
     if (config.morpho) {
       providers.morpho = new MorphoBorrowProvider(
         config.morpho,
+        deps.chainManager,
+        settings,
+      )
+    }
+    if (config.aave) {
+      providers.aave = new AaveBorrowProvider(
+        config.aave,
         deps.chainManager,
         settings,
       )

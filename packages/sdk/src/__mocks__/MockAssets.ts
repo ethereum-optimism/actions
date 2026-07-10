@@ -1,7 +1,24 @@
 import type { Address } from 'viem'
-import { base, baseSepolia, mode, optimism, unichain } from 'viem/chains'
+import {
+  base,
+  baseSepolia,
+  mode,
+  optimism,
+  optimismSepolia,
+  unichain,
+} from 'viem/chains'
 
 import type { Asset } from '@/types/asset.js'
+
+/** Standard OP Stack WETH predeploy address. */
+export const MOCK_WETH_ADDRESS =
+  '0x4200000000000000000000000000000000000006' as Address
+/** OP token predeploy address. */
+export const MOCK_OP_ADDRESS =
+  '0x4200000000000000000000000000000000000042' as Address
+/** Demo USDC address on OP Sepolia (Aave borrow tests). */
+export const MOCK_USDC_ADDRESS =
+  '0x5fd84259d66Cd46123540766Be93DFE6D43130D7' as Address
 
 /**
  * Mock USDC asset for testing.
@@ -12,6 +29,7 @@ export const MockUSDCAsset: Asset = {
     [optimism.id]: '0x1111111111111111111111111111111111111111' as Address,
     [base.id]: '0x2222222222222222222222222222222222222222' as Address,
     [baseSepolia.id]: '0x3333333333333333333333333333333333333333' as Address,
+    [optimismSepolia.id]: MOCK_USDC_ADDRESS,
     [unichain.id]: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
     [mode.id]: '0x5555555555555555555555555555555555555555' as Address,
   },
@@ -29,11 +47,12 @@ export const MockUSDCAsset: Asset = {
  */
 export const MockWETHAsset: Asset = {
   address: {
-    [optimism.id]: '0x4200000000000000000000000000000000000006' as Address,
-    [base.id]: '0x4200000000000000000000000000000000000006' as Address,
-    [baseSepolia.id]: '0x4200000000000000000000000000000000000006' as Address,
+    [optimism.id]: MOCK_WETH_ADDRESS,
+    [base.id]: MOCK_WETH_ADDRESS,
+    [baseSepolia.id]: MOCK_WETH_ADDRESS,
+    [optimismSepolia.id]: MOCK_WETH_ADDRESS,
     [unichain.id]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
-    [mode.id]: '0x4200000000000000000000000000000000000006' as Address,
+    [mode.id]: MOCK_WETH_ADDRESS,
   },
   metadata: {
     decimals: 18,
@@ -48,7 +67,8 @@ export const MockWETHAsset: Asset = {
  */
 export const MockOPAsset: Asset = {
   address: {
-    [optimism.id]: '0x4200000000000000000000000000000000000042' as Address,
+    [optimism.id]: MOCK_OP_ADDRESS,
+    [optimismSepolia.id]: MOCK_OP_ADDRESS,
   },
   metadata: {
     decimals: 18,

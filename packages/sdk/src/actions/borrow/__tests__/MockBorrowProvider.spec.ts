@@ -25,7 +25,7 @@ describe('MockBorrowProvider', () => {
       marketId: market,
       walletAddress,
     })
-    expect(position.collateralAmount).toBe(0n)
+    expect(position.collateralShares).toBe(0n)
     expect(position.healthFactor).toBeNull()
   })
 

@@ -1,7 +1,15 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react'
+import type { Address } from 'viem'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
 import { useLendProvider, type EarnOperations } from '@/hooks/useLendProvider'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 
 interface LendProviderContextValue {
   // Market data
@@ -10,6 +18,7 @@ interface LendProviderContextValue {
   handleMarketSelect: (market: MarketInfo) => void
   isLoadingMarkets: boolean
   marketPositions: MarketPosition[]
+  setMarketPositions: Dispatch<SetStateAction<MarketPosition[]>>
   // Balance data
   assetBalance: string
   isLoadingBalance: boolean
@@ -23,6 +32,16 @@ interface LendProviderContextValue {
   handleTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{ transactionHash?: string; blockExplorerUrl?: string }>
 }
 
@@ -32,6 +51,8 @@ interface LendProviderContextProviderProps {
   children: ReactNode
   operations: EarnOperations
   ready: boolean
+  borrowOperations?: BorrowOperations
+  walletAddress?: Address | null
   logPrefix?: string
 }
 
@@ -39,9 +60,17 @@ export function LendProviderContextProvider({
   children,
   operations,
   ready,
+  borrowOperations,
+  walletAddress,
   logPrefix,
 }: LendProviderContextProviderProps) {
-  const lendData = useLendProvider({ operations, ready, logPrefix })
+  const lendData = useLendProvider({
+    operations,
+    ready,
+    borrowOperations,
+    walletAddress,
+    logPrefix,
+  })
 
   const value: LendProviderContextValue = {
     markets: lendData.markets,
@@ -49,6 +78,7 @@ export function LendProviderContextProvider({
     handleMarketSelect: lendData.handleMarketSelect,
     isLoadingMarkets: lendData.isLoadingMarkets,
     marketPositions: lendData.marketPositions,
+    setMarketPositions: lendData.setMarketPositions,
     assetBalance: lendData.assetBalance,
     isLoadingBalance: lendData.isLoadingBalance,
     isMintingAsset: lendData.isMintingAsset,

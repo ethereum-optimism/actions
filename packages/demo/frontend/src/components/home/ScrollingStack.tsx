@@ -692,7 +692,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <div
                                 style={{
                                   display: 'flex',
-                                  gap: 'clamp(0.25rem, 1vw, 1.5rem)',
+                                  gap: 'clamp(1.5rem, 4vw, 4rem)',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   maxWidth: '100%',
@@ -706,8 +706,10 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         src={image.src}
                                         alt={`Provider ${index + 1}`}
                                         style={{
-                                          width: '100%',
+                                          display: 'block',
+                                          width: '70%',
                                           height: 'auto',
+                                          margin: '0 auto',
                                           transition: 'opacity 0.2s ease',
                                         }}
                                       />
@@ -924,7 +926,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <div
                                 style={{
                                   display: 'flex',
-                                  gap: 'clamp(0.25rem, 1vw, 1.5rem)',
+                                  gap: 'clamp(1.5rem, 4vw, 4rem)',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   maxWidth: '100%',
@@ -938,8 +940,10 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         src={image.src}
                                         alt={`Provider ${index + 1}`}
                                         style={{
-                                          width: '100%',
+                                          display: 'block',
+                                          width: '70%',
                                           height: 'auto',
+                                          margin: '0 auto',
                                           transition: 'opacity 0.2s ease',
                                         }}
                                       />

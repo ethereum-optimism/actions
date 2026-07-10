@@ -16,27 +16,23 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { blueAbi } from '@morpho-org/blue-sdk-viem'
-import {
-  type Address,
-  createPublicClient,
-  decodeFunctionData,
-  erc20Abi,
-  type Hex,
-  http,
-  type PublicClient,
-} from 'viem'
+import { type Address, decodeFunctionData, erc20Abi, type Hex } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowMarketConfig,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
-import { type AnvilFork, startAnvilFork, stopAnvilFork } from '@/utils/test.js'
+import {
+  type AnvilFork,
+  createForkChainManager,
+  startAnvilFork,
+  stopAnvilFork,
+} from '@/utils/test.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
 
@@ -101,22 +97,9 @@ function readDeployedBorrowMarket(): DeployedBorrowMarket | null {
   }
 }
 
-function createForkChainManager(rpcUrl: string): {
-  chainManager: ChainManager
-  client: PublicClient
-} {
-  const client = createPublicClient({
-    chain: baseSepolia,
-    transport: http(rpcUrl),
-  })
-  const chainManager = {
-    getPublicClient: () => client,
-    getSupportedChains: () => [BASE_SEPOLIA_ID],
-  } as unknown as ChainManager
-  return { chainManager, client: client as PublicClient }
-}
-
-function buildMarketConfig(deploy: DeployedBorrowMarket): BorrowMarketConfig {
+function buildMarketConfig(
+  deploy: DeployedBorrowMarket,
+): MorphoBorrowMarketConfig {
   // Asset shape mirrors what consumers pass when constructing a config.
   // Decimals match the demo tokens (USDC_DEMO is an 18-decimal mock; OP is 18).
   const collateralAsset = {
@@ -136,8 +119,6 @@ function buildMarketConfig(deploy: DeployedBorrowMarket): BorrowMarketConfig {
     name: 'Demo dUSDC / OP',
     collateralAsset,
     borrowAsset,
-    borrowProvider: 'morpho',
-    lendProvider: 'morpho',
     marketParams: deploy.marketParams,
   }
 }
@@ -153,12 +134,12 @@ if (!deployed) {
 
 describeOrSkip('MorphoBorrowProvider network fork tests', () => {
   let fork: AnvilFork
-  let market: BorrowMarketConfig
+  let market: MorphoBorrowMarketConfig
 
   beforeAll(async () => {
     if (!deployed) return
     const rpc = process.env.BASE_SEPOLIA_RPC ?? 'https://sepolia.base.org'
-    fork = await startAnvilFork(rpc, 18547)
+    fork = await startAnvilFork(rpc, BASE_SEPOLIA_ID)
     market = buildMarketConfig(deployed)
   }, 60_000)
 
@@ -171,7 +152,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
     expect(market.marketId.toLowerCase()).toBe(deployed.marketId.toLowerCase())
     // Constructor would throw BorrowMarketParamsMismatchError if these
     // disagreed; instantiating below is the assertion.
-    const { chainManager } = createForkChainManager(fork.rpcUrl)
+    const chainManager = createForkChainManager(fork.rpcUrl, BASE_SEPOLIA_ID)
     expect(
       () =>
         new MorphoBorrowProvider({ marketAllowlist: [market] }, chainManager),
@@ -180,7 +161,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
 
   it('getMarket returns coherent values for the deployed market', async () => {
     if (!deployed) return
-    const { chainManager } = createForkChainManager(fork.rpcUrl)
+    const chainManager = createForkChainManager(fork.rpcUrl, BASE_SEPOLIA_ID)
     const provider = new MorphoBorrowProvider(
       { marketAllowlist: [market] },
       chainManager,
@@ -200,7 +181,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
 
   it('getPosition returns an empty position for a fresh wallet', async () => {
     if (!deployed) return
-    const { chainManager } = createForkChainManager(fork.rpcUrl)
+    const chainManager = createForkChainManager(fork.rpcUrl, BASE_SEPOLIA_ID)
     const provider = new MorphoBorrowProvider(
       { marketAllowlist: [market] },
       chainManager,
@@ -213,7 +194,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
       marketId: market,
       walletAddress: freshWallet,
     })
-    expect(position.collateralAmount).toBe(0n)
+    expect(position.collateralShares).toBe(0n)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
     expect(position.ltv).toBeNull()
@@ -221,7 +202,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
 
   it('openPosition emits a [approve, supplyCollateral, borrow] bundle', async () => {
     if (!deployed) return
-    const { chainManager } = createForkChainManager(fork.rpcUrl)
+    const chainManager = createForkChainManager(fork.rpcUrl, BASE_SEPOLIA_ID)
     const provider = new MorphoBorrowProvider(
       { marketAllowlist: [market] },
       chainManager,

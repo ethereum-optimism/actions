@@ -9,7 +9,6 @@ import {
 import {
   buildSwapPrice,
   resolveTokens,
-  UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/providers/velodrome/encoding/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
@@ -149,7 +148,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
   )
 
   const input = encodeAbiParameters(V3_SWAP_EXACT_IN_INPUT_PARAMS, [
-    UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
+    params.recipient,
     amountInRaw,
     amountOutMin,
     path,

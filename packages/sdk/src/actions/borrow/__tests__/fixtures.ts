@@ -5,6 +5,8 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   BorrowMarketConfig,
+  BorrowQuote,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 
@@ -32,15 +34,13 @@ export const marketParams: MorphoMarketParams = {
   lltv: 860000000000000000n,
 }
 
-export const market: BorrowMarketConfig = {
+export const market: MorphoBorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId: computeMorphoMarketId(marketParams),
   chainId: BASE_SEPOLIA_ID,
   name: 'Test market',
   collateralAsset,
   borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
   marketParams,
 }
 
@@ -49,9 +49,53 @@ export const otherMarketParams: MorphoMarketParams = {
   oracle: '0x0000000000000000000000000000000000000bbb',
 }
 
-export const otherMarket: BorrowMarketConfig = {
+export const otherMarket: MorphoBorrowMarketConfig = {
   ...market,
   marketId: computeMorphoMarketId(otherMarketParams),
   name: 'Second test market',
   marketParams: otherMarketParams,
+}
+
+/**
+ * Builds a `BorrowQuote` for the given market (defaults to `market`).
+ * Pass `overrides` to tweak top-level fields (action, execution, timestamps).
+ */
+export function makeBorrowQuote(
+  overrides: Partial<BorrowQuote> = {},
+  marketConfig: BorrowMarketConfig = market,
+): BorrowQuote {
+  const now = Math.floor(Date.now() / 1000)
+  const id = {
+    kind: marketConfig.kind,
+    marketId: marketConfig.marketId,
+    chainId: marketConfig.chainId,
+  }
+  return {
+    marketId: id,
+    recipient: walletAddress,
+    action: 'open',
+    positionBefore: null,
+    positionAfter: {
+      marketId: id,
+      collateralAsset: marketConfig.collateralAsset,
+      collateralShares: 0n,
+      borrowAsset: marketConfig.borrowAsset,
+      borrowAmount: 0n,
+      borrowAmountFormatted: '0',
+      healthFactor: null,
+      liquidationPrice: 0n,
+      liquidationPriceFormatted: '0',
+      borrowApy: 0.05,
+      liquidationBonus: 0.05,
+      ltv: null,
+      maxLtv: 0.86,
+    },
+    fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
+    safeCeilingLtv: 0.86 * 0.95,
+    execution: { transactions: [] },
+    provider: 'morpho',
+    quotedAt: now,
+    expiresAt: now + 30,
+    ...overrides,
+  }
 }

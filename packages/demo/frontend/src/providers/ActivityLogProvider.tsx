@@ -18,7 +18,7 @@ export interface ActivityMetadata {
 
 export type ActivityEntry = {
   id: number
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap' | 'borrow' | 'repay'
   action: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
