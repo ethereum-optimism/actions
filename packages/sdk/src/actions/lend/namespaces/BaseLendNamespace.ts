@@ -19,19 +19,15 @@ import { validateWalletAddress } from '@/utils/validation.js'
 export type { LendProviders } from '@/types/providers.js'
 
 type ConfiguredLendProvider = LendProvider<LendProviderConfig>
-type LendNamespaceScope = 'actions' | 'wallet'
-type GetPositionsArgs<TScope extends LendNamespaceScope> =
-  TScope extends 'wallet'
-    ? [params?: GetPositionsParams]
-    : [walletAddress: Address, params?: GetPositionsParams]
 
 /**
  * Base Lend Namespace
  * @description Shared lending operations for Actions and Wallet namespaces.
  */
-export abstract class BaseLendNamespace<
-  TScope extends LendNamespaceScope = 'actions',
-> extends BaseNamespace<ConfiguredLendProvider, LendProviders> {
+export abstract class BaseLendNamespace extends BaseNamespace<
+  ConfiguredLendProvider,
+  LendProviders
+> {
   constructor(
     providers: LendProviders,
     private readonly getBoundWalletAddress?: () => Address,
@@ -63,23 +59,24 @@ export abstract class BaseLendNamespace<
 
   /**
    * @description Gets positions for an explicit or namespace-bound wallet.
-   * @param args - Wallet address and filters, or wallet-scoped filters
+   * @param params - Wallet address and optional position filters
    * @returns Promise resolving to the wallet's positions across providers
-   * @throws AddressRequiredError, InvalidParamsError, or ChainNotSupportedError
+   * @throws AddressRequiredError, ProviderNotConfiguredError, InvalidParamsError, or ChainNotSupportedError
+   * @example `actions.lend.getPositions({ walletAddress, chainId: 8453 })`
+   * @example `wallet.lend.getPositions({ options: { nonZeroOnly: true } })`
    */
   async getPositions(
-    ...args: GetPositionsArgs<TScope>
+    params: GetPositionsParams = {},
   ): Promise<LendMarketPosition[]> {
-    const { walletAddress, params } = this.resolveGetPositionsArgs(args)
+    const walletAddress = this.getBoundWalletAddress?.() ?? params.walletAddress
+    validateWalletAddress(walletAddress)
+    const resolvedParams = { ...params, walletAddress }
     const providers = params.provider
-      ? [this.providers[params.provider]].filter(
-          (provider): provider is ConfiguredLendProvider =>
-            provider !== undefined,
-        )
+      ? [this.getProvider(params.provider)]
       : this.getAllProviders()
 
     const results = await Promise.all(
-      providers.map((provider) => provider.getPositions(walletAddress, params)),
+      providers.map((provider) => provider.getPositions(resolvedParams)),
     )
     const positions = results.flat()
 
@@ -107,20 +104,5 @@ export abstract class BaseLendNamespace<
       provider: marketId.address,
       details: `No provider configured for market on chain ${marketId.chainId}`,
     })
-  }
-
-  private resolveGetPositionsArgs(args: GetPositionsArgs<LendNamespaceScope>): {
-    walletAddress: Address
-    params: GetPositionsParams
-  } {
-    if (typeof args[0] === 'string') {
-      const [walletAddress, params = {}] = args
-      validateWalletAddress(walletAddress)
-      return { walletAddress, params }
-    }
-
-    const walletAddress = this.getBoundWalletAddress?.()
-    validateWalletAddress(walletAddress)
-    return { walletAddress, params: args[0] ?? {} }
   }
 }

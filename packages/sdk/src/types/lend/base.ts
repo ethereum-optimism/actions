@@ -342,6 +342,8 @@ export interface GetLendMarketsParams extends FilterAssetChain {
 
 /** Optional filters for aggregated lending positions. */
 export type GetPositionsParams = {
+  /** Wallet to inspect. Wallet namespaces supply their bound address. */
+  walletAddress?: Address
   /** Filter to one provider ("morpho" | "aave" etc.). */
   provider?: LendProviderName
   /** Result-shaping options applied after positions are aggregated. */

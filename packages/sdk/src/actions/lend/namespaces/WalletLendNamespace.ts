@@ -17,7 +17,7 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace extends BaseLendNamespace<'wallet'> {
+export class WalletLendNamespace extends BaseLendNamespace {
   constructor(
     providers: LendProviders,
     private readonly wallet: Wallet,

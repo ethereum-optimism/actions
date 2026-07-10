@@ -187,17 +187,16 @@ export abstract class LendProvider<
 
   /**
    * @description Gets wallet positions across this provider's configured markets.
-   * @param walletAddress - User wallet address to check positions for
-   * @param params - Optional single-chain or multi-chain filter
+   * @param params - Wallet address and optional chain filters
    * @returns Promise resolving to the positions that resolved successfully
    * @throws AddressRequiredError if `walletAddress` is missing
    * @throws InvalidParamsError if both chain filters are set or `chainIds` is empty
    * @throws ChainNotSupportedError if a requested chain is not configured
    */
   async getPositions(
-    walletAddress: Address,
     params: GetPositionsParams = {},
   ): Promise<LendMarketPosition[]> {
+    const { walletAddress } = params
     validateWalletAddress(walletAddress)
     const chainIds = this.resolvePositionChainIds(params)
     const markets = this.filterMarketConfigs().filter((market) =>

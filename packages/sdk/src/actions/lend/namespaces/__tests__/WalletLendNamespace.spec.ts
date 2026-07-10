@@ -214,7 +214,7 @@ describe('WalletLendNamespace', () => {
 
       expect(positions).toHaveLength(1)
       expect(positions[0].marketId.address).toBe(mockMarketId.address)
-      expect(spy).toHaveBeenCalledWith(mockWalletAddress, {})
+      expect(spy).toHaveBeenCalledWith({ walletAddress: mockWalletAddress })
     })
   })
 

@@ -218,7 +218,7 @@ describe('LendProvider', () => {
         marketAllowlist: [marketA, marketB],
       })
 
-      const positions = await provider.getPositions(walletAddress)
+      const positions = await provider.getPositions({ walletAddress })
 
       expect(positions).toHaveLength(2)
       expect(positions.map((p) => p.marketId.address)).toEqual([
@@ -230,7 +230,7 @@ describe('LendProvider', () => {
     it('returns an empty array when the allowlist is empty', async () => {
       const provider = new MockLendProvider()
 
-      const positions = await provider.getPositions(walletAddress)
+      const positions = await provider.getPositions({ walletAddress })
 
       expect(positions).toEqual([])
     })
@@ -238,16 +238,15 @@ describe('LendProvider', () => {
     it('throws AddressRequiredError when walletAddress is missing', async () => {
       const provider = new MockLendProvider({ marketAllowlist: [marketA] })
 
-      await expect(
-        provider.getPositions(undefined as unknown as Address),
-      ).rejects.toThrow('walletAddress')
+      await expect(provider.getPositions({})).rejects.toThrow('walletAddress')
     })
 
     it('validates chainId against supported chains', async () => {
       const provider = new MockLendProvider({ marketAllowlist: [marketA] })
 
       await expect(
-        provider.getPositions(walletAddress, {
+        provider.getPositions({
+          walletAddress,
           chainId: 999 as unknown as 84532,
         }),
       ).rejects.toThrow('Chain 999 is not supported')
@@ -256,7 +255,8 @@ describe('LendProvider', () => {
     it('filters positions by multiple configured chain IDs', async () => {
       const provider = createMultiChainProvider()
 
-      const positions = await provider.getPositions(walletAddress, {
+      const positions = await provider.getPositions({
+        walletAddress,
         chainIds: [84532, 130],
       })
 
@@ -267,10 +267,10 @@ describe('LendProvider', () => {
     })
 
     it('filters positions by one configured chain ID', async () => {
-      const positions = await createMultiChainProvider().getPositions(
+      const positions = await createMultiChainProvider().getPositions({
         walletAddress,
-        { chainId: 130 },
-      )
+        chainId: 130,
+      })
 
       expect(positions.map((position) => position.marketId.address)).toEqual([
         marketC.address,
@@ -278,8 +278,9 @@ describe('LendProvider', () => {
     })
 
     it('checks every configured chain when no filter is provided', async () => {
-      const positions =
-        await createMultiChainProvider().getPositions(walletAddress)
+      const positions = await createMultiChainProvider().getPositions({
+        walletAddress,
+      })
 
       expect(positions.map((position) => position.marketId.address)).toEqual([
         marketA.address,
@@ -291,7 +292,7 @@ describe('LendProvider', () => {
       const provider = new MockLendProvider({ marketAllowlist: [marketA] })
 
       await expect(
-        provider.getPositions(walletAddress, { chainIds: [] }),
+        provider.getPositions({ walletAddress, chainIds: [] }),
       ).rejects.toBeInstanceOf(InvalidParamsError)
     })
 
@@ -313,7 +314,7 @@ describe('LendProvider', () => {
         }
       })
 
-      const positions = await provider.getPositions(walletAddress)
+      const positions = await provider.getPositions({ walletAddress })
 
       expect(positions).toHaveLength(1)
       expect(positions[0].marketId.address).toBe(marketB.address)

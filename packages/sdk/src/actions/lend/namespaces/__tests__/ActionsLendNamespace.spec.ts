@@ -5,6 +5,7 @@ import { getRandomAddress } from '@/__mocks__/utils.js'
 import type { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 
 describe('ActionsLendNamespace', () => {
   let mockProvider: MockLendProvider
@@ -93,7 +94,7 @@ describe('ActionsLendNamespace', () => {
         aave: mockAaveProvider,
       })
 
-      const positions = await namespace.getPositions(walletAddress)
+      const positions = await namespace.getPositions({ walletAddress })
 
       expect(positions).toHaveLength(2)
       expect(positions.map((p) => p.marketId.address)).toEqual(
@@ -108,13 +109,22 @@ describe('ActionsLendNamespace', () => {
       })
       const aaveSpy = vi.spyOn(mockAaveProvider, 'getPositions')
 
-      const positions = await namespace.getPositions(walletAddress, {
+      const positions = await namespace.getPositions({
+        walletAddress,
         provider: 'morpho',
       })
 
       expect(positions).toHaveLength(1)
       expect(positions[0].marketId.address).toBe(mockMarketId.address)
       expect(aaveSpy).not.toHaveBeenCalled()
+    })
+
+    it('rejects an explicitly unconfigured provider', async () => {
+      const namespace = new ActionsLendNamespace({ morpho: mockProvider })
+
+      await expect(
+        namespace.getPositions({ walletAddress, provider: 'aave' }),
+      ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
     it('drops zero-balance positions when nonZeroOnly is set', async () => {
@@ -130,8 +140,9 @@ describe('ActionsLendNamespace', () => {
         aave: mockAaveProvider,
       })
 
-      const all = await namespace.getPositions(walletAddress)
-      const nonZero = await namespace.getPositions(walletAddress, {
+      const all = await namespace.getPositions({ walletAddress })
+      const nonZero = await namespace.getPositions({
+        walletAddress,
         options: { nonZeroOnly: true },
       })
 
