@@ -1,10 +1,12 @@
-import { BaseLendNamespace } from '@/actions/lend/namespaces/BaseLendNamespace.js'
+import {
+  BaseLendNamespace,
+  type WalletGetPositionsArgs,
+} from '@/actions/lend/namespaces/BaseLendNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketIdRequiredError } from '@/core/error/errors.js'
 import type {
   ClosePositionParams,
   GetPositionParams,
-  GetPositionsParams,
   LendMarketPosition,
   LendOpenPositionParams,
   LendTransaction,
@@ -18,12 +20,12 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace extends BaseLendNamespace {
+export class WalletLendNamespace extends BaseLendNamespace<WalletGetPositionsArgs> {
   constructor(
     providers: LendProviders,
     private readonly wallet: Wallet,
   ) {
-    super(providers)
+    super(providers, () => wallet.address)
   }
 
   /**
@@ -62,18 +64,6 @@ export class WalletLendNamespace extends BaseLendNamespace {
       params.marketId,
       params.asset,
     )
-  }
-
-  /**
-   * @description Gets this wallet's positions across configured providers and markets.
-   * @param params - Optional chain/provider filters and result options
-   * @returns Promise resolving to the wallet's positions
-   * @throws InvalidParamsError or ChainNotSupportedError for invalid filters
-   */
-  async getPositions(
-    params: GetPositionsParams = {},
-  ): Promise<LendMarketPosition[]> {
-    return this.fetchPositions(this.wallet.address, params)
   }
 
   /**
