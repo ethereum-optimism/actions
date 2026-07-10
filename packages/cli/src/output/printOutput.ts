@@ -5,6 +5,8 @@ import type {
   BorrowMarketId,
   BorrowMarketPosition,
   BorrowProviderName,
+  EnsInfo,
+  EnsName,
   LendAction,
   LendMarket,
   LendMarketPosition,
@@ -18,6 +20,7 @@ import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import { stripControlChars } from '@/output/sanitize.js'
 import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
@@ -32,6 +35,16 @@ export interface ChainRow {
 
 export interface AddressDoc {
   address: string
+}
+
+export interface EnsAddressDoc {
+  name: EnsName
+  address: Address
+}
+
+export interface EnsNameLookupDoc {
+  address: Address
+  name: EnsName | null
 }
 
 export interface LendActionDoc {
@@ -102,6 +115,9 @@ interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
+  ensAddress: EnsAddressDoc
+  ensName: EnsNameLookupDoc
+  ensInfo: EnsInfo
   balance: readonly TokenBalance[]
   lendAction: LendActionDoc
   lendMarkets: readonly LendMarket[]
@@ -143,6 +159,29 @@ function formatChains(rows: Printers['chains']): void {
 
 function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
+}
+
+function formatEnsAddress(doc: Printers['ensAddress']): void {
+  writeLine(`${stripControlChars(doc.name)} -> ${doc.address}`)
+}
+
+function formatEnsName(doc: Printers['ensName']): void {
+  writeLine(
+    doc.name
+      ? `${doc.address} -> ${stripControlChars(doc.name)}`
+      : `${doc.address} -> (no primary ENS name)`,
+  )
+}
+
+function formatEnsInfo(info: Printers['ensInfo']): void {
+  const set = Object.entries(info).filter(([, value]) => value != null)
+  if (set.length === 0) {
+    writeLine('(no ENS profile records set)')
+    return
+  }
+  for (const [key, value] of set) {
+    writeLine(`${key.padEnd(12)} ${stripControlChars(String(value))}`)
+  }
 }
 
 function formatBalance(balances: Printers['balance']): void {
@@ -349,6 +388,9 @@ const TEXT_FORMATTERS: {
   assets: formatAssets,
   chains: formatChains,
   address: formatAddress,
+  ensAddress: formatEnsAddress,
+  ensName: formatEnsName,
+  ensInfo: formatEnsInfo,
   balance: formatBalance,
   lendAction: formatLendAction,
   lendMarkets: formatLendMarkets,

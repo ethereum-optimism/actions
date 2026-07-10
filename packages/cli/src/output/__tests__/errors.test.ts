@@ -1,3 +1,4 @@
+import { EnsResolutionError, EnsRpcError } from '@eth-optimism/actions-sdk'
 import { BaseError } from 'viem'
 import { describe, expect, it } from 'vitest'
 
@@ -6,6 +7,7 @@ import {
   exitCodeFor,
   retryableDefaultFor,
   safeDetails,
+  toCliError,
 } from '@/output/errors.js'
 
 class FakeHttpRequestError extends BaseError {
@@ -56,6 +58,34 @@ describe('retryableDefaultFor', () => {
     expect(retryableDefaultFor('validation')).toBe(false)
     expect(retryableDefaultFor('config')).toBe(false)
     expect(retryableDefaultFor('onchain')).toBe(false)
+  })
+})
+
+describe('toCliError', () => {
+  it('maps an unresolvable ENS name to non-retryable validation, not network', () => {
+    // Unregistered names are permanent, not retryable network failures.
+    const err = toCliError(
+      new EnsResolutionError('"nope.eth" could not be resolved', 'nope.eth'),
+    )
+    expect(err.code).toBe('validation')
+    expect(err.retryable).toBe(false)
+    expect(err.details).toEqual({ input: 'nope.eth' })
+  })
+
+  it('maps a transient ENS RPC failure to retryable network, not validation', () => {
+    // ENS RPC failures are transient and should remain retryable.
+    const err = toCliError(
+      new EnsRpcError('ENS text record lookup failed', 'vitalik.eth'),
+    )
+    expect(err.code).toBe('network')
+    expect(err.retryable).toBe(true)
+    expect(err.details).toEqual({ input: 'vitalik.eth' })
+  })
+
+  it('maps an unknown error to retryable network', () => {
+    const err = toCliError(new Error('fetch failed'))
+    expect(err.code).toBe('network')
+    expect(err.retryable).toBe(true)
   })
 })
 

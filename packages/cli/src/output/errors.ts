@@ -1,11 +1,14 @@
 import {
   ActionsError,
+  EnsResolutionError,
+  EnsRpcError,
   ProviderNotConfiguredError,
   serializeBigInt,
 } from '@eth-optimism/actions-sdk'
 import { BaseError, ContractFunctionRevertedError } from 'viem'
 
 import { isJsonMode } from '@/output/mode.js'
+import { stripControlChars } from '@/output/sanitize.js'
 
 /**
  * @description Error categories consumed by the caller. The code determines
@@ -84,7 +87,7 @@ const URL_PATTERN = /https?:\/\/[^\s'"<>]+/g
 const REDACTED_URL = '[redacted-url]'
 
 // Own-property keys set by viem's `BaseError` constructor that we must NOT
-// surface as part of an SDK error's `details` payload — they are framework
+// surface as part of an SDK error's `details` payload, they are framework
 // metadata, not caller-relevant context.
 const VIEM_BASE_ERROR_KEYS = new Set([
   'name',
@@ -108,6 +111,8 @@ function sdkErrorDetails(err: ActionsError): Record<string, unknown> {
  * @description Maps any thrown value into a `CliError` with the right code:
  * - `CliError` instances pass through unchanged.
  * - `ProviderNotConfiguredError` → `config`.
+ * - `EnsResolutionError` → `validation`.
+ * - `EnsRpcError` → retryable `network`.
  * - Other `ActionsError` subclasses → `validation` (carries the SDK error's own properties as `details`).
  * - viem `ContractFunctionRevertedError` → `onchain`.
  * - Anything else → retryable `network`.
@@ -122,6 +127,12 @@ export function toCliError(err: unknown): CliError {
   if (err instanceof CliError) return err
   if (err instanceof ProviderNotConfiguredError) {
     return new CliError('config', err.shortMessage, sdkErrorDetails(err))
+  }
+  if (err instanceof EnsResolutionError) {
+    return new CliError('validation', err.message, { input: err.input })
+  }
+  if (err instanceof EnsRpcError) {
+    return new CliError('network', err.message, { input: err.input })
   }
   if (err instanceof ActionsError) {
     return new CliError('validation', err.shortMessage, sdkErrorDetails(err))
@@ -311,7 +322,7 @@ export function writeError(err: unknown): never {
         null,
         2,
       ) + '\n'
-    : `Error (${code}): ${message}\n`
+    : `Error (${code}): ${stripControlChars(message)}\n`
   try {
     process.stderr.write(body)
   } catch (writeErr) {

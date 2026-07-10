@@ -64,7 +64,7 @@ export function borrowCommand(): Command {
     )
     .requiredOption(
       '--wallet <address>',
-      '0x-prefixed 20-byte address to inspect; checksummed by the CLI before dispatch',
+      '0x-prefixed wallet address to inspect',
     )
     .addHelpText(
       'after',

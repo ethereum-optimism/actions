@@ -2,6 +2,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
+import { MOCK_ADDRESS } from '@/__tests__/helpers/ens.js'
 import { runWalletBorrowPosition } from '@/commands/wallet/borrow/position.js'
 import { __resetEnvCacheForTests } from '@/config/env.js'
 import * as walletCtx from '@/context/walletContext.js'
@@ -79,7 +80,7 @@ describe('runWalletBorrowPosition', () => {
         ltv: 0.4,
         maxLtv: 0.86,
       }
-    }, '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
+    }, MOCK_ADDRESS.toLowerCase())
     await runWalletBorrowPosition({ market: 'demo-dusdc-op' })
     const call = captured[0] as {
       marketId: { kind: string; chainId: number }
@@ -87,9 +88,7 @@ describe('runWalletBorrowPosition', () => {
     }
     expect(call.marketId.kind).toBe('morpho-blue')
     expect(call.marketId.chainId).toBe(84532)
-    expect(call.walletAddress).toBe(
-      '0xd8da6bf26964af9d7eed9e03e53415d37aa96045',
-    )
+    expect(call.walletAddress).toBe(MOCK_ADDRESS.toLowerCase())
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.healthFactor).toBe(2.5)
     expect(body.ltv).toBe(0.4)
