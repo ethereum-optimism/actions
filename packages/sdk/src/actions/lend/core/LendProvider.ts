@@ -12,6 +12,7 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   AssetMetadataRequiredError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
@@ -27,6 +28,7 @@ import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
+  GetPositionsParams,
   LendClosePositionParams,
   LendMarket,
   LendMarketConfig,
@@ -43,7 +45,7 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import { validateWalletAddress } from '@/utils/validation.js'
+import { validateChainIds, validateWalletAddress } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -184,6 +186,41 @@ export abstract class LendProvider<
   }
 
   /**
+   * @description Gets wallet positions across this provider's configured markets.
+   * @param params - Wallet address and optional chain filters
+   * @returns Promise resolving to the positions that resolved successfully
+   * @throws AddressRequiredError if `walletAddress` is missing
+   * @throws InvalidParamsError if both chain filters are set or `chainIds` is empty
+   * @throws ChainNotSupportedError if a requested chain is not configured
+   */
+  async getPositions(
+    params: GetPositionsParams = {},
+  ): Promise<LendMarketPosition[]> {
+    const { walletAddress } = params
+    validateWalletAddress(walletAddress)
+    const chainIds = this.resolvePositionChainIds(params)
+    const markets = this.filterMarketConfigs().filter((market) =>
+      chainIds.includes(market.chainId),
+    )
+
+    const settled = await Promise.allSettled(
+      markets.map((market) =>
+        this.getPosition(walletAddress, {
+          address: market.address,
+          chainId: market.chainId,
+        }),
+      ),
+    )
+
+    return settled
+      .filter(
+        (result): result is PromiseFulfilledResult<LendMarketPosition> =>
+          result.status === 'fulfilled',
+      )
+      .map((result) => result.value)
+  }
+
+  /**
    * Close a lending position (withdraw assets from a market)
    * @param amount - Amount to withdraw (human-readable number)
    * @param asset - Asset to withdraw (optional, validated against marketId)
@@ -269,6 +306,24 @@ export abstract class LendProvider<
     amount: bigint,
   ): TransactionData {
     return buildErc20ApprovalTx({ assetAddress: tokenAddress, spender, amount })
+  }
+
+  private resolvePositionChainIds(
+    params: GetPositionsParams,
+  ): SupportedChainId[] {
+    if (params.chainId !== undefined && params.chainIds !== undefined) {
+      throw new InvalidParamsError({
+        param: 'chainId/chainIds',
+        expected: 'only one chain filter',
+        received: 'both filters',
+      })
+    }
+    const configuredChainIds = this.chainManager.getSupportedChains()
+    const chainIds =
+      params.chainIds ??
+      (params.chainId === undefined ? configuredChainIds : [params.chainId])
+    validateChainIds(chainIds, configuredChainIds)
+    return [...new Set(chainIds)]
   }
 
   /**

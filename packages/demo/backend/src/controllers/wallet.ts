@@ -4,7 +4,11 @@ import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
-import { Bytes32Schema, ChainIdStringSchema } from '@/helpers/schemas.js'
+import {
+  Bytes32Schema,
+  ChainIdsStringSchema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
 import * as faucetService from '@/services/faucet.js'
@@ -18,6 +22,23 @@ const LendPositionRequestSchema = z.object({
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
   }),
+})
+
+const LendPositionsRequestSchema = z.object({
+  query: z
+    .object({
+      chainId: ChainIdStringSchema.optional(),
+      chainIds: ChainIdsStringSchema.optional(),
+      nonZeroOnly: z.enum(['true', 'false']).optional(),
+    })
+    .refine(
+      ({ chainId, chainIds }) =>
+        chainId === undefined || chainIds === undefined,
+      {
+        message: 'Pass either chainId or chainIds, not both',
+        path: ['chainIds'],
+      },
+    ),
 })
 
 const BorrowPositionRequestSchema = z.object({
@@ -92,6 +113,34 @@ export class WalletController {
     }
     const position = await walletService.getLendPosition({ marketId, wallet })
     return c.json({ result: position })
+  }
+
+  /** GET - All wallet lend positions with optional chain and balance filters. */
+  async getLendPositions(c: Context) {
+    const validation = await validateRequest(c, LendPositionsRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      query: { chainId, chainIds, nonZeroOnly },
+    } = validation.data
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const positions = await walletService.getLendPositions({
+      wallet,
+      params: {
+        ...(chainIds ? { chainIds } : chainId ? { chainId } : {}),
+        ...(nonZeroOnly === undefined
+          ? {}
+          : { options: { nonZeroOnly: nonZeroOnly === 'true' } }),
+      },
+    })
+    return c.json({ result: positions })
   }
 
   /**

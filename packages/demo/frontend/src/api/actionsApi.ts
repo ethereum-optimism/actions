@@ -14,7 +14,10 @@ interface GetWalletResponse {
   address: Address
 }
 
-import type { LendExecutePositionParams } from '../types/index.js'
+import type {
+  LendExecutePositionParams,
+  LendPositionsParams,
+} from '../types/index.js'
 import type { Serialized } from '../util/serialize.js'
 import {
   ActionsApiError,
@@ -103,6 +106,31 @@ class ActionsApiClient extends BaseApiClient {
       balance: BigInt(result.balance),
       shares: BigInt(result.shares),
     }
+  }
+
+  async getPositions(
+    params: LendPositionsParams = {},
+    headers: HeadersInit = {},
+  ): Promise<LendMarketPosition[]> {
+    const search = new URLSearchParams()
+    if (params.chainIds !== undefined) {
+      search.set('chainIds', params.chainIds.join(','))
+    } else if (params.chainId !== undefined) {
+      search.set('chainId', String(params.chainId))
+    }
+    if (params.options?.nonZeroOnly) search.set('nonZeroOnly', 'true')
+    const qs = search.toString()
+    const { result } = await this.request<{
+      result: Serialized<LendMarketPosition>[]
+    }>(`/wallet/lend/positions${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers,
+    })
+    return result.map((position) => ({
+      ...position,
+      balance: BigInt(position.balance),
+      shares: BigInt(position.shares),
+    }))
   }
 
   private async lendMutation(

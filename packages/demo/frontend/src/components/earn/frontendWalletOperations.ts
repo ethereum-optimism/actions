@@ -85,6 +85,7 @@ export function buildFrontendWalletOperations(
     getTokenBalances: async () => wallet.getBalance(),
     getMarkets: async () => actions.lend.getMarkets(),
     getPosition: async (marketId) => wallet.lend!.getPosition({ marketId }),
+    getPositions: async (params) => wallet.lend!.getPositions(params),
     mintAsset: async (asset) => mintDemoAsset(wallet, asset),
     openPosition: async (params) => wallet.lend!.openPosition(params),
     closePosition: async (params) => wallet.lend!.closePosition(params),

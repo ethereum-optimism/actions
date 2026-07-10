@@ -10,6 +10,7 @@ vi.mock('@/services/wallet.js', () => ({
   getWallet: vi.fn(),
   getBorrowPosition: vi.fn(),
   getLendPosition: vi.fn(),
+  getLendPositions: vi.fn(),
   getWalletBalance: vi.fn(),
   mintDemoUsdcToWallet: vi.fn(),
 }))
@@ -47,6 +48,38 @@ const okDrip = { success: true, userOpHash: '0x' + 'd'.repeat(64) }
 beforeEach(async () => {
   vi.resetAllMocks()
   await mockVerifiedUser('user-a')
+})
+
+describe('GET /wallet/lend/positions', () => {
+  it('forwards multiple chain IDs to the SDK service', async () => {
+    const wallet = { address: '0x' + 'a'.repeat(40) }
+    vi.mocked(walletService.getWallet).mockResolvedValue(wallet as never)
+    vi.mocked(walletService.getLendPositions).mockResolvedValue([])
+
+    const res = await createApp().request(
+      '/wallet/lend/positions?chainIds=84532,11155420&nonZeroOnly=true',
+      { headers: authHeaders() },
+    )
+
+    expect(res.status).toBe(200)
+    expect(walletService.getLendPositions).toHaveBeenCalledWith({
+      wallet,
+      params: {
+        chainIds: [84532, 11155420],
+        options: { nonZeroOnly: true },
+      },
+    })
+  })
+
+  it('rejects simultaneous single and multi-chain filters', async () => {
+    const res = await createApp().request(
+      '/wallet/lend/positions?chainId=84532&chainIds=84532,11155420',
+      { headers: authHeaders() },
+    )
+
+    expect(res.status).toBe(400)
+    expect(walletService.getLendPositions).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /wallet/eth (faucet drip)', () => {

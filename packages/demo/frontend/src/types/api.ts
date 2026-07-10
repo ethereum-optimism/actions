@@ -3,7 +3,11 @@
  * @description Types matching backend API responses with serialized values
  */
 
-import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
+import type {
+  Asset,
+  LendMarketId,
+  SupportedChainId,
+} from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 export interface MarketResponse {
@@ -69,3 +73,16 @@ export interface LendExecutePositionParams {
   /** Market identifier containing address and chainId */
   marketId: LendMarketId
 }
+
+export type LendPositionsParams = {
+  options?: { nonZeroOnly?: boolean }
+} & (
+  | {
+      chainId?: SupportedChainId
+      chainIds?: never
+    }
+  | {
+      chainId?: never
+      chainIds: readonly SupportedChainId[]
+    }
+)

@@ -82,6 +82,11 @@ function createMockOperations(): EarnOperations {
     getTokenBalances: vi.fn().mockResolvedValue(mockTokenBalances),
     getMarkets: vi.fn().mockResolvedValue(mockMarkets),
     getPosition: vi.fn().mockResolvedValue(mockPosition),
+    getPositions: vi
+      .fn()
+      .mockResolvedValue(
+        mockMarkets.map((m) => ({ ...mockPosition, marketId: m.marketId })),
+      ),
     mintAsset: vi.fn().mockResolvedValue({}),
     openPosition: vi.fn().mockResolvedValue({
       transactionHash: '0xabc',
@@ -233,15 +238,15 @@ describe('Activity Logging', () => {
       return callCount <= 1 ? mockTokenBalances : updatedBalances
     })
 
-    let positionCallCount = 0
-    vi.mocked(operations.getPosition).mockImplementation(async () => {
-      positionCallCount++
-      // First N calls are for initial batch fetch (one per market)
-      // After that, return updated position for post-mutation refetch
-      return positionCallCount <= mockMarkets.length
-        ? mockPosition
-        : updatedPosition
+    // Single-market reads update only after deposit.
+    let deposited = false
+    vi.mocked(operations.openPosition).mockImplementation(async () => {
+      deposited = true
+      return { transactionHash: '0xabc', status: 'success' } as never
     })
+    vi.mocked(operations.getPosition).mockImplementation(async () =>
+      deposited ? updatedPosition : mockPosition,
+    )
 
     const { result } = renderHook(
       () => useLendProviderWithLog({ operations, ready: true }),
