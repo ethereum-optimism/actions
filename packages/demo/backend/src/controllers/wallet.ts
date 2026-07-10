@@ -4,7 +4,11 @@ import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
-import { Bytes32Schema, ChainIdStringSchema } from '@/helpers/schemas.js'
+import {
+  Bytes32Schema,
+  ChainIdsStringSchema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
 import * as faucetService from '@/services/faucet.js'
@@ -21,13 +25,20 @@ const LendPositionRequestSchema = z.object({
 })
 
 const LendPositionsRequestSchema = z.object({
-  query: z.object({
-    chainId: z
-      .string()
-      .regex(/^\d+$/, 'chainId must be a positive integer')
-      .optional(),
-    nonZeroOnly: z.enum(['true', 'false']).optional(),
-  }),
+  query: z
+    .object({
+      chainId: ChainIdStringSchema.optional(),
+      chainIds: ChainIdsStringSchema.optional(),
+      nonZeroOnly: z.enum(['true', 'false']).optional(),
+    })
+    .refine(
+      ({ chainId, chainIds }) =>
+        chainId === undefined || chainIds === undefined,
+      {
+        message: 'Pass either chainId or chainIds, not both',
+        path: ['chainIds'],
+      },
+    ),
 })
 
 const BorrowPositionRequestSchema = z.object({
@@ -106,14 +117,14 @@ export class WalletController {
 
   /**
    * GET - All lend positions for a wallet across configured markets/providers.
-   * Optional `chainId` / `nonZeroOnly` query params flow through to the SDK's
-   * `wallet.lend.getPositions` chain filter and result options.
+   * Optional `chainId`, `chainIds`, and `nonZeroOnly` query params flow through
+   * to the SDK's `wallet.lend.getPositions` chain filter and result options.
    */
   async getLendPositions(c: Context) {
     const validation = await validateRequest(c, LendPositionsRequestSchema)
     if (!validation.success) return validation.response
     const {
-      query: { chainId, nonZeroOnly },
+      query: { chainId, chainIds, nonZeroOnly },
     } = validation.data
 
     const authResult = requireAuth(c)
@@ -127,7 +138,7 @@ export class WalletController {
     const positions = await walletService.getLendPositions({
       wallet,
       params: {
-        ...(chainId ? { chainId: Number(chainId) as SupportedChainId } : {}),
+        ...(chainIds ? { chainIds } : chainId ? { chainId } : {}),
         ...(nonZeroOnly === undefined
           ? {}
           : { options: { nonZeroOnly: nonZeroOnly === 'true' } }),

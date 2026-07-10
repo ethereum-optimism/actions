@@ -7,6 +7,7 @@ import {
   BorrowMarketIdSchema,
   Bytes32Schema,
   ChainIdSchema,
+  ChainIdsStringSchema,
   ChainIdStringSchema,
 } from './schemas.js'
 
@@ -115,6 +116,27 @@ describe('ChainIdStringSchema', () => {
   it('rejects non-numeric string', () => {
     expect(ChainIdStringSchema.safeParse('abc').success).toBe(false)
   })
+})
+
+describe('ChainIdsStringSchema', () => {
+  it('parses comma-separated chain IDs', () => {
+    expect(ChainIdsStringSchema.parse('84532,11155420')).toEqual([
+      84532, 11155420,
+    ])
+  })
+
+  it('removes duplicate chain IDs', () => {
+    expect(ChainIdsStringSchema.parse('84532,11155420,84532')).toEqual([
+      84532, 11155420,
+    ])
+  })
+
+  it.each(['', '0', '84532,0', '84532,', '84532, 11155420', 'abc'])(
+    'rejects invalid chain list %j',
+    (value) => {
+      expect(ChainIdsStringSchema.safeParse(value).success).toBe(false)
+    },
+  )
 })
 
 describe('AmountExactSchema', () => {

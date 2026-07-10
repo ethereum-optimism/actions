@@ -20,7 +20,10 @@ import { useMarketData } from '@/hooks/useMarketData'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
-import type { LendExecutePositionParams } from '@/types/api'
+import type {
+  LendExecutePositionParams,
+  LendPositionsParams,
+} from '@/types/api'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
@@ -112,10 +115,7 @@ export interface EarnOperations {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
-  getPositions: (params?: {
-    chainId?: SupportedChainId
-    options?: { nonZeroOnly?: boolean }
-  }) => Promise<LendMarketPosition[]>
+  getPositions: (params?: LendPositionsParams) => Promise<LendMarketPosition[]>
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (
     params: LendExecutePositionParams,

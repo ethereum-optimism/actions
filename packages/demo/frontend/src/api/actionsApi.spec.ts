@@ -55,16 +55,19 @@ describe('ActionsApiClient', () => {
     })
   })
 
-  it('maps nested position options to query parameters', async () => {
+  it('maps multi-chain filters and nested options to query parameters', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: [] }),
     })
 
-    await actionsApi.getPositions({ options: { nonZeroOnly: true } })
+    await actionsApi.getPositions({
+      chainIds: [84532, 11155420],
+      options: { nonZeroOnly: true },
+    })
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/wallet/lend/positions?nonZeroOnly=true',
+      'https://api.test.com/wallet/lend/positions?chainIds=84532%2C11155420&nonZeroOnly=true',
       expect.objectContaining({ method: 'GET' }),
     )
   })
