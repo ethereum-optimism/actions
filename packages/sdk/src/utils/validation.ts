@@ -146,9 +146,7 @@ export function resolveSupportedChainIds(
 }
 
 /**
- * Validate an optional chain list against a supported chain set.
- * @description Accepts an omitted list, rejects an empty list, and verifies
- * every supplied ID is supported.
+ * @description Validates an optional non-empty list against supported chain IDs.
  * @param chainIds - Optional configured chain subset.
  * @param supportedChainIds - Chain IDs available to the caller.
  * @returns Nothing.
@@ -173,7 +171,7 @@ export function validateChainIds(
 }
 
 /**
- * Guard for `BalanceFetchOptions` chain filters.
+ * @description Validates balance-fetch chain filters.
  * @param options - Optional balance query filters.
  * @param chainManager - Source of developer-configured chain IDs.
  * @returns Nothing.

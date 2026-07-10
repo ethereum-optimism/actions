@@ -238,9 +238,7 @@ describe('Activity Logging', () => {
       return callCount <= 1 ? mockTokenBalances : updatedBalances
     })
 
-    // Mount now aggregates via getPositions (not per-market getPosition), so
-    // getPosition is only called by the single-market query post-mutation.
-    // Flip to the updated position once a deposit has been submitted.
+    // Single-market reads update only after deposit.
     let deposited = false
     vi.mocked(operations.openPosition).mockImplementation(async () => {
       deposited = true

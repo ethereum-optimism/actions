@@ -186,13 +186,7 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get this provider's positions for a wallet across its configured markets
-   * @description Walks the provider's market allowlist on one, several, or all
-   * configured chains and fetches each position concurrently. Per-market
-   * failures are isolated via `Promise.allSettled` and dropped from the result
-   * so a single bad RPC cannot poison the batch. Returns every queried market's
-   * position (including zero balances); zero-balance filtering is applied by
-   * the aggregating namespace.
+   * @description Gets wallet positions across this provider's configured markets.
    * @param walletAddress - User wallet address to check positions for
    * @param params - Optional single-chain or multi-chain filter
    * @returns Promise resolving to the positions that resolved successfully

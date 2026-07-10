@@ -10,9 +10,10 @@ export interface LendPositionsFlags extends ChainFlags {
 }
 
 /**
- * @description Handler for `actions wallet lend positions`. Calls `wallet.lend.getPositions()` once across the selected chains, or every configured chain when no chain flag is set. `--chain` and `--chain-id` accept comma-separated lists and map to `GetPositionsParams.chainIds`; `--non-zero-only` maps to `GetPositionsParams.options.nonZeroOnly`.
- * @param flags - Commander-parsed options; all filters are optional.
- * @returns Promise that resolves once stdout has been written.
+ * @description Lists wallet lend positions.
+ * @param flags - Optional chain and balance filters.
+ * @returns A promise that resolves after writing output.
+ * @throws A CLI error when position retrieval fails.
  */
 export async function runWalletLendPositions(
   flags: LendPositionsFlags = {},

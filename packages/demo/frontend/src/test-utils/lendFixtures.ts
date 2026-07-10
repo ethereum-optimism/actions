@@ -27,12 +27,6 @@ const LEND_ASSET: Asset = {
   type: 'erc20',
 }
 
-/**
- * @description Builds a lend market fixture on the default test chain.
- * @param address The market contract address.
- * @param name The provider name shown by the demo.
- * @returns A lend market fixture.
- */
 export function buildLendMarket(address: Address, name: string): LendMarket {
   return {
     marketId: { address, chainId: LEND_CHAIN_ID },
@@ -49,12 +43,6 @@ export function buildLendMarket(address: Address, name: string): LendMarket {
   }
 }
 
-/**
- * @description Builds a lend position fixture on the default test chain.
- * @param address The position's market contract address.
- * @param balance The supplied asset balance in base units.
- * @returns A lend position fixture.
- */
 export function buildLendPosition(
   address: Address,
   balance: bigint,
@@ -68,10 +56,6 @@ export function buildLendPosition(
   }
 }
 
-/**
- * @description Creates the providers required to render lend hooks in tests.
- * @returns A React wrapper with isolated query and activity-log providers.
- */
 export function makeLendHookWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -85,11 +69,6 @@ export function makeLendHookWrapper() {
   }
 }
 
-/**
- * @description Creates lend operation mocks backed by the supplied positions.
- * @param positions The positions returned by aggregate position reads.
- * @returns Mock lend operations for frontend hook tests.
- */
 export function createMockLendOperations(
   positions: readonly LendMarketPosition[],
 ): EarnOperations {

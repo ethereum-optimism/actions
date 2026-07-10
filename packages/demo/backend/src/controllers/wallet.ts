@@ -115,11 +115,7 @@ export class WalletController {
     return c.json({ result: position })
   }
 
-  /**
-   * GET - All lend positions for a wallet across configured markets/providers.
-   * Optional `chainId`, `chainIds`, and `nonZeroOnly` query params flow through
-   * to the SDK's `wallet.lend.getPositions` chain filter and result options.
-   */
+  /** GET - All wallet lend positions with optional chain and balance filters. */
   async getLendPositions(c: Context) {
     const validation = await validateRequest(c, LendPositionsRequestSchema)
     if (!validation.success) return validation.response

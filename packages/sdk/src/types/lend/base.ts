@@ -340,13 +340,7 @@ export interface GetLendMarketsParams extends FilterAssetChain {
   markets?: LendMarketConfig[]
 }
 
-/**
- * Parameters for getting all of a wallet's lending positions
- * @description Optional filters for `getPositions`. A caller can select one
- * chain with `chainId`, several chains with `chainIds`, or omit both to query
- * every configured chain. Provider filters select sources, while options
- * control how the aggregated result is shaped.
- */
+/** Optional filters for aggregated lending positions. */
 export type GetPositionsParams = {
   /** Filter to one provider ("morpho" | "aave" etc.). */
   provider?: LendProviderName

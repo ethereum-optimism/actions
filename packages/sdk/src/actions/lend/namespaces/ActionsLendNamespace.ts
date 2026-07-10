@@ -13,14 +13,11 @@ import { BaseLendNamespace } from './BaseLendNamespace.js'
  */
 export class ActionsLendNamespace extends BaseLendNamespace {
   /**
-   * Get all of a wallet's positions across configured providers and markets
-   * @description One call replaces the per-market `getPosition` fan-out: walks
-   * every configured provider's market allowlist, isolates per-market RPC
-   * failures, and returns the same `LendMarketPosition` shape `getPosition`
-   * returns.
+   * @description Gets wallet positions across configured providers and markets.
    * @param walletAddress - Wallet address to fetch positions for
    * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions
+   * @throws InvalidParamsError or ChainNotSupportedError for invalid filters
    */
   async getPositions(
     walletAddress: Address,

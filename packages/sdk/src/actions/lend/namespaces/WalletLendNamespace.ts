@@ -65,13 +65,10 @@ export class WalletLendNamespace extends BaseLendNamespace {
   }
 
   /**
-   * Get all of this wallet's positions across configured providers and markets
-   * @description One call replaces the per-market `getPosition` fan-out: walks
-   * every configured provider's market allowlist using `this.wallet.address`,
-   * isolates per-market RPC failures, and returns the same `LendMarketPosition`
-   * shape `getPosition` returns.
+   * @description Gets this wallet's positions across configured providers and markets.
    * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions
+   * @throws InvalidParamsError or ChainNotSupportedError for invalid filters
    */
   async getPositions(
     params: GetPositionsParams = {},

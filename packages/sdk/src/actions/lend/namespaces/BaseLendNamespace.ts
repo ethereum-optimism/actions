@@ -50,16 +50,11 @@ export abstract class BaseLendNamespace extends BaseNamespace<
   }
 
   /**
-   * Aggregate a wallet's positions across configured providers
-   * @description Runs `getPositions` over every configured provider (or just
-   * the one named in `params.provider`) in parallel and flattens the result.
-   * Each provider isolates its own per-market RPC failures, so a single bad
-   * market never poisons the batch. `options.nonZeroOnly` drops zero-balance
-   * positions after aggregation. Shared by the read-only `actions.lend` and
-   * wallet-scoped `wallet.lend` namespaces.
+   * @description Aggregates wallet positions across selected providers.
    * @param walletAddress - User wallet address to check positions for
    * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions across providers
+   * @throws InvalidParamsError or ChainNotSupportedError for invalid filters
    */
   protected async fetchPositions(
     walletAddress: Address,

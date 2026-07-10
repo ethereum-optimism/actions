@@ -41,10 +41,7 @@ export const ChainIdStringSchema = z
   .regex(/^\d+$/, 'chainId must be a positive integer string')
   .transform((s) => Number(s) as SupportedChainId)
 
-/**
- * @description Parses a comma-separated list of positive chain IDs and removes duplicates.
- * @returns The parsed chain IDs in their first-seen order.
- */
+/** Parse comma-separated positive chain IDs and remove duplicates. */
 export const ChainIdsStringSchema = z
   .string()
   .regex(
