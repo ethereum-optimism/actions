@@ -30,13 +30,9 @@ import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
 
-/**
- * Find the position whose market matches `marketId` (case-insensitive on the
- * address). `getPositions` returns one entry per configured market, so this is
- * how a market view-model is reunited with its on-chain balance.
- */
+/** Match a market to its position by chain and case-insensitive address. */
 function findPosition(
-  positions: LendMarketPosition[],
+  positions: readonly LendMarketPosition[],
   marketId: { address: string; chainId: number },
 ): LendMarketPosition | undefined {
   return positions.find(
@@ -46,11 +42,6 @@ function findPosition(
   )
 }
 
-/**
- * Build the `MarketPosition` view-model from a market and its on-chain
- * position. Shared by the mount-time load and the post-trade refresh so both
- * render identical shapes from a single `getPositions` call.
- */
 function toMarketPosition(
   market: MarketInfo,
   position: LendMarketPosition,
@@ -80,7 +71,7 @@ function toMarketPosition(
 /** Seed the per-market position cache so single-market queries don't re-fetch. */
 function seedPositionCache(
   queryClient: ReturnType<typeof useQueryClient>,
-  positions: LendMarketPosition[],
+  positions: readonly LendMarketPosition[],
 ): void {
   for (const position of positions) {
     queryClient.setQueryData(
@@ -92,8 +83,8 @@ function seedPositionCache(
 
 /** Join configured markets to their positions, keeping only funded markets. */
 function buildFundedPositions(
-  markets: MarketInfo[],
-  positions: LendMarketPosition[],
+  markets: readonly MarketInfo[],
+  positions: readonly LendMarketPosition[],
 ): MarketPosition[] {
   return markets
     .map((market) => ({
@@ -174,21 +165,25 @@ export function useLendProvider({
 
   const isReady = useCallback(() => ready, [ready])
 
-  const refreshAllPositions = useCallback(async () => {
-    if (!ready || markets.length === 0) return
-    // One SDK call aggregates every market/provider position (see #14),
-    // replacing the per-market getPosition fan-out. Kept best-effort: the
-    // event-driven caller invokes this as `void`, so a refresh failure must
-    // log rather than surface as an unhandled rejection (the old per-market
-    // fan-out swallowed errors the same way).
-    try {
+  const loadMarketPositions = useCallback(
+    async (marketList: readonly MarketInfo[]) => {
       const positions = await operations.getPositions()
       seedPositionCache(queryClient, positions)
-      setMarketPositions(buildFundedPositions(markets, positions))
+      setMarketPositions(buildFundedPositions(marketList, positions))
+      return positions
+    },
+    [operations, queryClient, setMarketPositions],
+  )
+
+  const refreshAllPositions = useCallback(async () => {
+    if (!ready || markets.length === 0) return
+    // Preserve best-effort refreshes for event-driven callers.
+    try {
+      await loadMarketPositions(markets)
     } catch (error) {
       console.error('Error refreshing positions:', error)
     }
-  }, [markets, operations, queryClient, ready, setMarketPositions])
+  }, [loadMarketPositions, markets, ready])
 
   // Fetch available markets on mount
   useEffect(() => {
@@ -213,18 +208,10 @@ export function useLendProvider({
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
-        // One SDK call aggregates every market/provider position (see #14),
-        // replacing the per-market getPosition fan-out. The single activity-log
-        // entry is now honest: one call, one log line.
+        // Log the aggregate position fetch once.
         const positionActivity = logActivity('getPosition')
-        const positions = await operations.getPositions()
+        const positions = await loadMarketPositions(marketInfoList)
         positionActivity?.confirm()
-
-        // Seed position cache for each market so useMarketPosition doesn't re-fetch
-        seedPositionCache(queryClient, positions)
-
-        // Build initial market positions array with all markets that have deposits
-        setMarketPositions(buildFundedPositions(marketInfoList, positions))
 
         // Set default selected market (first one, preferably Morpho/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
@@ -274,9 +261,9 @@ export function useLendProvider({
     operations,
     logPrefix,
     logActivity,
+    loadMarketPositions,
     queryClient,
     setMarkets,
-    setMarketPositions,
     selectedMarket,
     setSelectedMarket,
     setIsLoadingMarkets,
