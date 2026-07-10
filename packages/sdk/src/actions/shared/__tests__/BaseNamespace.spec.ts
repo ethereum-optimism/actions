@@ -5,6 +5,7 @@ import {
   type NamespaceProvider,
 } from '@/actions/shared/BaseNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 
 class FakeProvider implements NamespaceProvider {
   constructor(private readonly chains: readonly SupportedChainId[]) {}
@@ -22,6 +23,10 @@ class TestNamespace extends BaseNamespace<FakeProvider, FakeProviders> {
   providersSnapshot(): FakeProvider[] {
     return this.getAllProviders()
   }
+
+  provider(name: keyof FakeProviders): FakeProvider {
+    return this.getProvider(name)
+  }
 }
 
 describe('BaseNamespace', () => {
@@ -38,6 +43,19 @@ describe('BaseNamespace', () => {
     const ns = new TestNamespace({ morpho, aave })
 
     expect(ns.providersSnapshot()).toEqual([morpho, aave])
+  })
+
+  it('returns a configured provider by name', () => {
+    const morpho = new FakeProvider([1])
+    const ns = new TestNamespace({ morpho })
+
+    expect(ns.provider('morpho')).toBe(morpho)
+  })
+
+  it('rejects an unconfigured provider name', () => {
+    const ns = new TestNamespace({})
+
+    expect(() => ns.provider('aave')).toThrow(ProviderNotConfiguredError)
   })
 
   it('returns empty array when no providers are configured', () => {
