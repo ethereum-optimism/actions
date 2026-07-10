@@ -106,13 +106,16 @@ class ActionsApiClient extends BaseApiClient {
   }
 
   async getPositions(
-    params: { chainId?: SupportedChainId; nonZeroOnly?: boolean } = {},
+    params: {
+      chainId?: SupportedChainId
+      options?: { nonZeroOnly?: boolean }
+    } = {},
     headers: HeadersInit = {},
   ): Promise<LendMarketPosition[]> {
     const search = new URLSearchParams()
     if (params.chainId !== undefined)
       search.set('chainId', String(params.chainId))
-    if (params.nonZeroOnly) search.set('nonZeroOnly', 'true')
+    if (params.options?.nonZeroOnly) search.set('nonZeroOnly', 'true')
     const qs = search.toString()
     const { result } = await this.request<{
       result: Serialized<LendMarketPosition>[]

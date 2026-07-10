@@ -54,4 +54,18 @@ describe('ActionsApiClient', () => {
       }
     })
   })
+
+  it('maps nested position options to query parameters', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: [] }),
+    })
+
+    await actionsApi.getPositions({ options: { nonZeroOnly: true } })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/wallet/lend/positions?nonZeroOnly=true',
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
 })

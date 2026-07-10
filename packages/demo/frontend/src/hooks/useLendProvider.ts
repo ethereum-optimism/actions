@@ -114,7 +114,7 @@ export interface EarnOperations {
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
   getPositions: (params?: {
     chainId?: SupportedChainId
-    nonZeroOnly?: boolean
+    options?: { nonZeroOnly?: boolean }
   }) => Promise<LendMarketPosition[]>
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (

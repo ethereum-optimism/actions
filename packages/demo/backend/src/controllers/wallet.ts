@@ -107,7 +107,7 @@ export class WalletController {
   /**
    * GET - All lend positions for a wallet across configured markets/providers.
    * Optional `chainId` / `nonZeroOnly` query params flow through to the SDK's
-   * `wallet.lend.getPositions` (`GetPositionsParams`).
+   * `wallet.lend.getPositions` chain filter and result options.
    */
   async getLendPositions(c: Context) {
     const validation = await validateRequest(c, LendPositionsRequestSchema)
@@ -127,8 +127,10 @@ export class WalletController {
     const positions = await walletService.getLendPositions({
       wallet,
       params: {
-        chainId: chainId ? (Number(chainId) as SupportedChainId) : undefined,
-        nonZeroOnly: nonZeroOnly === 'true',
+        ...(chainId ? { chainId: Number(chainId) as SupportedChainId } : {}),
+        ...(nonZeroOnly === undefined
+          ? {}
+          : { options: { nonZeroOnly: nonZeroOnly === 'true' } }),
       },
     })
     return c.json({ result: positions })

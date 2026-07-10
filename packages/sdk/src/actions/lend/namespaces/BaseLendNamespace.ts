@@ -54,11 +54,11 @@ export abstract class BaseLendNamespace extends BaseNamespace<
    * @description Runs `getPositions` over every configured provider (or just
    * the one named in `params.provider`) in parallel and flattens the result.
    * Each provider isolates its own per-market RPC failures, so a single bad
-   * market never poisons the batch. `nonZeroOnly` drops zero-balance positions
-   * after aggregation. Shared by the read-only `actions.lend` and wallet-scoped
-   * `wallet.lend` namespaces.
+   * market never poisons the batch. `options.nonZeroOnly` drops zero-balance
+   * positions after aggregation. Shared by the read-only `actions.lend` and
+   * wallet-scoped `wallet.lend` namespaces.
    * @param walletAddress - User wallet address to check positions for
-   * @param params - Optional chain/provider filters and zero-balance toggle
+   * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions across providers
    */
   protected async fetchPositions(
@@ -77,7 +77,7 @@ export abstract class BaseLendNamespace extends BaseNamespace<
     )
     const positions = results.flat()
 
-    return params.nonZeroOnly
+    return params.options?.nonZeroOnly
       ? positions.filter((position) => position.balance > 0n)
       : positions
   }

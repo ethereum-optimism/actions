@@ -132,7 +132,7 @@ describe('ActionsLendNamespace', () => {
 
       const all = await namespace.getPositions(walletAddress)
       const nonZero = await namespace.getPositions(walletAddress, {
-        nonZeroOnly: true,
+        options: { nonZeroOnly: true },
       })
 
       expect(all).toHaveLength(2)

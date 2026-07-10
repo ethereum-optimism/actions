@@ -70,7 +70,7 @@ export class WalletLendNamespace extends BaseLendNamespace {
    * every configured provider's market allowlist using `this.wallet.address`,
    * isolates per-market RPC failures, and returns the same `LendMarketPosition`
    * shape `getPosition` returns.
-   * @param params - Optional chain/provider filters and zero-balance toggle
+   * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions
    */
   async getPositions(

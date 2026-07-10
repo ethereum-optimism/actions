@@ -10,7 +10,7 @@ export interface LendPositionsFlags extends ChainFlags {
 }
 
 /**
- * @description Handler for `actions wallet lend positions`. Calls `wallet.lend.getPositions()` once across the selected chains, or every configured chain when no chain flag is set. `--chain` and `--chain-id` accept comma-separated lists and map to `GetPositionsParams.chainIds`; `--non-zero-only` maps to `nonZeroOnly`.
+ * @description Handler for `actions wallet lend positions`. Calls `wallet.lend.getPositions()` once across the selected chains, or every configured chain when no chain flag is set. `--chain` and `--chain-id` accept comma-separated lists and map to `GetPositionsParams.chainIds`; `--non-zero-only` maps to `GetPositionsParams.options.nonZeroOnly`.
  * @param flags - Commander-parsed options; all filters are optional.
  * @returns Promise that resolves once stdout has been written.
  */
@@ -23,12 +23,15 @@ export async function runWalletLendPositions(
     flags,
     config.chains.map((c) => c.chainId),
   )
+  const options =
+    flags.nonZeroOnly === undefined
+      ? undefined
+      : { nonZeroOnly: flags.nonZeroOnly }
   try {
-    const positions = await wallet.lend.getPositions(
-      chainIds
-        ? { chainIds, nonZeroOnly: flags.nonZeroOnly }
-        : { nonZeroOnly: flags.nonZeroOnly },
-    )
+    const positions = await wallet.lend.getPositions({
+      ...(chainIds ? { chainIds } : {}),
+      ...(options ? { options } : {}),
+    })
     printOutput('lendPositions', positions)
   } catch (err) {
     rethrowAsCliError(err)

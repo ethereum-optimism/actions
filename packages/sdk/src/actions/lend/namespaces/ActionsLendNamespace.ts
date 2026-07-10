@@ -19,7 +19,7 @@ export class ActionsLendNamespace extends BaseLendNamespace {
    * failures, and returns the same `LendMarketPosition` shape `getPosition`
    * returns.
    * @param walletAddress - Wallet address to fetch positions for
-   * @param params - Optional chain/provider filters and zero-balance toggle
+   * @param params - Optional chain/provider filters and result options
    * @returns Promise resolving to the wallet's positions
    */
   async getPositions(

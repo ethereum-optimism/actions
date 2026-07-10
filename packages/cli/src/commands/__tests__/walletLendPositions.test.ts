@@ -70,7 +70,7 @@ describe('runWalletLendPositions', () => {
     await runWalletLendPositions({ chain: 'base-sepolia', nonZeroOnly: true })
     expect(getPositions).toHaveBeenCalledWith({
       chainIds: [84532],
-      nonZeroOnly: true,
+      options: { nonZeroOnly: true },
     })
   })
 
@@ -78,9 +78,7 @@ describe('runWalletLendPositions', () => {
     const getPositions = vi.fn(async () => [])
     mockWallet(getPositions)
     await runWalletLendPositions()
-    expect(getPositions).toHaveBeenCalledWith({
-      nonZeroOnly: undefined,
-    })
+    expect(getPositions).toHaveBeenCalledWith({})
   })
 
   it('forwards multi-chain --chain values to the SDK', async () => {
@@ -91,7 +89,6 @@ describe('runWalletLendPositions', () => {
 
     expect(getPositions).toHaveBeenCalledWith({
       chainIds: [84532, 11155420],
-      nonZeroOnly: undefined,
     })
   })
 

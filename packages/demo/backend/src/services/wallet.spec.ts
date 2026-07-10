@@ -112,12 +112,15 @@ describe('Wallet Service', () => {
 
       const result = await walletService.getLendPositions({
         wallet: wallet as never,
-        params: { chainId: 84532 as never, nonZeroOnly: true },
+        params: {
+          chainId: 84532 as never,
+          options: { nonZeroOnly: true },
+        },
       })
 
       expect(getPositions).toHaveBeenCalledWith({
         chainId: 84532,
-        nonZeroOnly: true,
+        options: { nonZeroOnly: true },
       })
       expect(result).toEqual([
         {
