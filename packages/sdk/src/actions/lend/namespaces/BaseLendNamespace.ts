@@ -19,19 +19,18 @@ import { validateWalletAddress } from '@/utils/validation.js'
 export type { LendProviders } from '@/types/providers.js'
 
 type ConfiguredLendProvider = LendProvider<LendProviderConfig>
-type ActionsGetPositionsArgs = [
-  walletAddress: Address,
-  params?: GetPositionsParams,
-]
-export type WalletGetPositionsArgs = [params?: GetPositionsParams]
-type GetPositionsArgs = ActionsGetPositionsArgs | WalletGetPositionsArgs
+type LendNamespaceScope = 'actions' | 'wallet'
+type GetPositionsArgs<TScope extends LendNamespaceScope> =
+  TScope extends 'wallet'
+    ? [params?: GetPositionsParams]
+    : [walletAddress: Address, params?: GetPositionsParams]
 
 /**
  * Base Lend Namespace
  * @description Shared lending operations for Actions and Wallet namespaces.
  */
 export abstract class BaseLendNamespace<
-  TGetPositionsArgs extends GetPositionsArgs = ActionsGetPositionsArgs,
+  TScope extends LendNamespaceScope = 'actions',
 > extends BaseNamespace<ConfiguredLendProvider, LendProviders> {
   constructor(
     providers: LendProviders,
@@ -69,7 +68,7 @@ export abstract class BaseLendNamespace<
    * @throws AddressRequiredError, InvalidParamsError, or ChainNotSupportedError
    */
   async getPositions(
-    ...args: TGetPositionsArgs
+    ...args: GetPositionsArgs<TScope>
   ): Promise<LendMarketPosition[]> {
     const { walletAddress, params } = this.resolveGetPositionsArgs(args)
     const providers = params.provider
@@ -110,7 +109,7 @@ export abstract class BaseLendNamespace<
     })
   }
 
-  private resolveGetPositionsArgs(args: GetPositionsArgs): {
+  private resolveGetPositionsArgs(args: GetPositionsArgs<LendNamespaceScope>): {
     walletAddress: Address
     params: GetPositionsParams
   } {

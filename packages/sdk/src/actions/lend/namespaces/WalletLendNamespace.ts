@@ -1,7 +1,4 @@
-import {
-  BaseLendNamespace,
-  type WalletGetPositionsArgs,
-} from '@/actions/lend/namespaces/BaseLendNamespace.js'
+import { BaseLendNamespace } from '@/actions/lend/namespaces/BaseLendNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketIdRequiredError } from '@/core/error/errors.js'
 import type {
@@ -20,11 +17,12 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace extends BaseLendNamespace<WalletGetPositionsArgs> {
+export class WalletLendNamespace extends BaseLendNamespace<'wallet'> {
   constructor(
     providers: LendProviders,
     private readonly wallet: Wallet,
   ) {
+    // Smart wallets initialize their address after namespace construction.
     super(providers, () => wallet.address)
   }
 
