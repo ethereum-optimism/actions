@@ -41,6 +41,17 @@ export const ChainIdStringSchema = z
   .regex(/^\d+$/, 'chainId must be a positive integer string')
   .transform((s) => Number(s) as SupportedChainId)
 
+/** Parse comma-separated positive chain IDs and remove duplicates. */
+export const ChainIdsStringSchema = z
+  .string()
+  .regex(
+    /^[1-9]\d*(,[1-9]\d*)*$/,
+    'chainIds must be comma-separated positive integers',
+  )
+  .transform(
+    (value) => [...new Set(value.split(',').map(Number))] as SupportedChainId[],
+  )
+
 // Shared amount branches. `.max(78)` on `amountRaw` caps the BigInt()
 // input at the width of `2^256` to prevent DoS via large digit strings.
 const AmountByHuman = z.strictObject({ amount: z.number().positive() })

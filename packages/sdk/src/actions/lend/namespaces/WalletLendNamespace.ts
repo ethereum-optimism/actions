@@ -22,7 +22,8 @@ export class WalletLendNamespace extends BaseLendNamespace {
     providers: LendProviders,
     private readonly wallet: Wallet,
   ) {
-    super(providers)
+    // Smart wallets initialize their address after namespace construction.
+    super(providers, () => wallet.address)
   }
 
   /**

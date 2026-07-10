@@ -123,6 +123,7 @@ interface Printers {
   lendMarkets: readonly LendMarket[]
   lendMarket: LendMarket
   lendPosition: LendMarketPosition
+  lendPositions: readonly LendMarketPosition[]
   borrowAction: BorrowActionDoc
   borrowMarkets: readonly BorrowMarket[]
   borrowMarket: BorrowMarket
@@ -258,6 +259,14 @@ function formatLendPosition(p: LendMarketPosition): void {
   )
 }
 
+function formatLendPositions(positions: readonly LendMarketPosition[]): void {
+  if (positions.length === 0) {
+    writeLine('(no positions)')
+    return
+  }
+  for (const p of positions) formatLendPosition(p)
+}
+
 const BORROW_ACTION_VERBS = {
   open: 'opened',
   close: 'closed',
@@ -387,6 +396,7 @@ const TEXT_FORMATTERS: {
   lendMarkets: formatLendMarkets,
   lendMarket: formatLendMarket,
   lendPosition: formatLendPosition,
+  lendPositions: formatLendPositions,
   borrowAction: formatBorrowAction,
   borrowMarkets: formatBorrowMarkets,
   borrowMarket: formatBorrowMarket,

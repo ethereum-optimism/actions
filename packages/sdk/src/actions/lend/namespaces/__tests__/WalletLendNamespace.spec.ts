@@ -202,6 +202,22 @@ describe('WalletLendNamespace', () => {
     })
   })
 
+  describe('getPositions', () => {
+    it("fetches positions for the wallet's own address", async () => {
+      const namespace = new WalletLendNamespace(
+        { morpho: mockProvider },
+        mockWallet,
+      )
+      const spy = vi.spyOn(mockProvider, 'getPositions')
+
+      const positions = await namespace.getPositions()
+
+      expect(positions).toHaveLength(1)
+      expect(positions[0].marketId.address).toBe(mockMarketId.address)
+      expect(spy).toHaveBeenCalledWith({ walletAddress: mockWalletAddress })
+    })
+  })
+
   it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
     // Reverted receipts must propagate instead of producing quote-derived success data.
     vi.mocked(mockWallet.send).mockRejectedValue(

@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 
 /**
  * Minimum contract a concrete provider must expose for `BaseNamespace` to
@@ -42,5 +43,19 @@ export abstract class BaseNamespace<
     return Object.values(this.providers).filter(
       (p): p is TProvider => p !== undefined,
     )
+  }
+
+  /**
+   * @description Returns a configured provider by name.
+   * @param name - Provider registry key.
+   * @returns The configured provider.
+   * @throws ProviderNotConfiguredError when the provider is not configured.
+   */
+  protected getProvider(name: keyof TProviders): TProvider {
+    const provider = this.providers[name]
+    if (!provider) {
+      throw new ProviderNotConfiguredError({ provider: String(name) })
+    }
+    return provider
   }
 }
