@@ -17,7 +17,7 @@ describe('retryOnStaleRead', () => {
     vi.useFakeTimers()
 
     const read = vi
-      .fn<[], Promise<number>>()
+      .fn<() => Promise<number>>()
       .mockResolvedValueOnce(-1) // stale
       .mockResolvedValueOnce(7) // fresh
     const isStale = (v: number) => v === -1

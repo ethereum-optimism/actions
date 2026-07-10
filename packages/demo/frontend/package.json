@@ -18,8 +18,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "4.31.4",
-    "@dynamic-labs/sdk-react-core": "4.31.4",
+    "@dynamic-labs/ethereum": "4.92.2",
+    "@dynamic-labs/sdk-react-core": "4.92.2",
     "@eth-optimism/actions-sdk": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@privy-io/react-auth": "^2.24.0",
@@ -32,8 +32,8 @@
     "react": "^18",
     "reflect-metadata": "^0.1.14",
     "react-dom": "^18",
-    "react-router": "7",
-    "react-router-dom": "7",
+    "react-router": "^7.18.1",
+    "react-router-dom": "^7.18.1",
     "react-scrolly-telling": "^0.2.2",
     "viem": "^2.24.1",
     "zod": "^4.0.5"
@@ -52,11 +52,11 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "globals": "^15.0.0",
     "jsdom": "^23.0.1",
-    "postcss": "^8.4.31",
+    "postcss": "^8.5.16",
     "tailwindcss": "^4.1.15",
     "typescript": "^5.2.2",
     "typescript-eslint": "^8.0.0",
     "vite": "^6.4.3",
-    "vitest": "^1.6.1"
+    "vitest": "^3.2.7"
   }
 }
