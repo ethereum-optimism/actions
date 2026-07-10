@@ -8,10 +8,7 @@ import {
   buildRepayInternalParams,
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
-import {
-  requireAllowlistedBorrowMarketConfig,
-  validateBorrowWalletAddress,
-} from '@/actions/borrow/core/validations.js'
+import { requireAllowlistedBorrowMarketConfig } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { filterMatchingConfigs } from '@/actions/shared/marketConfigs.js'
@@ -37,7 +34,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import { validateWalletAddress } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
@@ -66,6 +63,13 @@ export abstract class BorrowProvider<
   ) {
     super(config, chainManager, settings)
   }
+
+  /**
+   * The `BorrowMarketId` discriminator this provider services. Lets the
+   * namespace route a market to its provider by kind without naming concrete
+   * providers, and is the fallback when a provider carries no market allowlist.
+   */
+  public abstract get marketKind(): BorrowMarketId['kind']
 
   /** Resolved quote expiration in seconds: provider → settings → `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   public get quoteExpirationSeconds(): number {
@@ -195,7 +199,7 @@ export abstract class BorrowProvider<
    * @throws MarketNotAllowedError when the market is not allowlisted.
    */
   public async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
-    validateChainSupported(marketId.chainId, this.supportedChainIds())
+    this.assertChainSupported(marketId.chainId)
     const market = this.requireAllowlistedMarketConfig(marketId)
     return this._getMarket(market)
   }
@@ -212,7 +216,7 @@ export abstract class BorrowProvider<
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
     if (params.chainId !== undefined) {
-      validateChainSupported(params.chainId, this.supportedChainIds())
+      this.assertChainSupported(params.chainId)
     }
     const filtered = filterMatchingConfigs(this._config.marketAllowlist, [
       params.chainId === undefined
@@ -245,8 +249,8 @@ export abstract class BorrowProvider<
   public async getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    validateBorrowWalletAddress(params.walletAddress)
-    validateChainSupported(params.marketId.chainId, this.supportedChainIds())
+    validateWalletAddress(params.walletAddress)
+    this.assertChainSupported(params.marketId.chainId)
     const market = this.requireAllowlistedMarketConfig(params.marketId)
     return this._getPosition({ market, walletAddress: params.walletAddress })
   }
@@ -261,6 +265,24 @@ export abstract class BorrowProvider<
    */
   protected resolveHealthBufferPct(market: BorrowMarketConfig): number {
     return market.healthBufferPct ?? this.defaultHealthBufferPct
+  }
+
+  /**
+   * Narrow a trusted `BorrowMarketConfig` to this provider's own variant. The
+   * base resolves configs from this provider's allowlist, which only holds
+   * markets of `this.marketKind`, so a mismatched kind is a misconfiguration
+   * rather than a routing path. The cast is sound: the runtime check guarantees
+   * `kind` matches, and callers pass the matching variant as `T`.
+   */
+  protected requireOwnMarket<T extends BorrowMarketConfig>(
+    market: BorrowMarketConfig,
+  ): T {
+    if (market.kind !== this.marketKind) {
+      throw new Error(
+        `${this.constructor.name} received a ${market.kind} market config`,
+      )
+    }
+    return market as T
   }
 
   /**
@@ -288,8 +310,8 @@ export abstract class BorrowProvider<
     market: BorrowMarketConfig
     base: ResolvedBorrowBaseParams
   } {
-    validateBorrowWalletAddress(params.walletAddress)
-    validateChainSupported(params.market.chainId, this.supportedChainIds())
+    validateWalletAddress(params.walletAddress)
+    this.assertChainSupported(params.market.chainId)
     const market = this.requireAllowlistedMarketConfig(params.market)
     const base: ResolvedBorrowBaseParams = {
       walletAddress: params.walletAddress,
@@ -330,9 +352,30 @@ export abstract class BorrowProvider<
     market: BorrowMarketConfig,
   ): Promise<BorrowMarket>
 
-  protected abstract _getMarkets(
+  /**
+   * Read each requested market concurrently. A market whose read rejects
+   * (e.g. a reverting reserve call or transient RPC failure) is dropped from
+   * the result rather than failing the whole list, but the rejection is
+   * logged so a shrinking market list can be correlated to the underlying
+   * fault instead of silently looking like a smaller successful response.
+   */
+  protected async _getMarkets(
     params: GetBorrowMarketsParams,
-  ): Promise<BorrowMarket[]>
+  ): Promise<BorrowMarket[]> {
+    const markets = params.markets ?? []
+    const results = await Promise.allSettled(
+      markets.map((market) => this._getMarket(market)),
+    )
+    return results.flatMap((result, i) => {
+      if (result.status === 'fulfilled') return result.value
+      const market = markets[i]
+      console.error(
+        `Failed to read borrow market ${market.marketId} on chain ${market.chainId}:`,
+        result.reason,
+      )
+      return []
+    })
+  }
 
   protected abstract _getPosition(params: {
     market: BorrowMarketConfig

@@ -27,6 +27,13 @@ actions --json wallet balance --chain base-sepolia
   asset and/or one chain (no wallet).
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
+- `actions borrow markets [--collateral <symbol>] [--borrow-asset <symbol>]
+  [--chain <name> | --chain-id <id>]` - borrow markets across configured
+  providers, optionally filtered (no wallet).
+- `actions borrow market --market <name>` - inspect one borrow market
+  by name (no wallet).
+- `actions borrow position --market <name> --wallet <address>` - read any
+  wallet's borrow position (no `PRIVATE_KEY` required).
 - `actions swap markets [--chain <name>]` - all swap markets across
   configured providers (no wallet).
 - `actions swap market --pool <id> --chain <name>` - inspect one swap
@@ -49,6 +56,24 @@ actions --json wallet balance --chain base-sepolia
   withdraw assets. Pass `--max` to withdraw the wallet's full balance in
   the market (the CLI fetches the position first; subject to inflight
   interest accrual).
+- `actions wallet borrow position --market <name>` - the wallet's current
+  collateral, debt, LTV, and health factor in a borrow market.
+- `actions wallet borrow open --market <name> --borrow-amount <n>
+  [--collateral-amount <n>] [--approval-mode <exact|max>]` - borrow
+  against existing or newly-deposited collateral. No `--max` (open path
+  only accepts strict amounts).
+- `actions wallet borrow close --market <name> [--borrow-amount <n> |
+  --borrow-max] [--collateral-amount <n> | --collateral-max]` - unwind a
+  position. Each leg is independently xor'd; the borrow leg is required.
+  `--*-max` resolves on-chain at dispatch time so interest-accrual dust
+  doesn't strand the position.
+- `actions wallet borrow deposit-collateral --market <name> --amount <n>
+  [--approval-mode <exact|max>]` - top up collateral without changing
+  debt.
+- `actions wallet borrow withdraw-collateral --market <name>
+  (--amount <n> | --max)` - pull collateral back without touching debt.
+- `actions wallet borrow repay --market <name> (--amount <n> | --max)
+  [--approval-mode <exact|max>]` - repay debt without touching collateral.
 - `actions wallet swap execute --in <symbol> --out <symbol>
   (--amount-in <n> | --amount-out <n>) --chain <name>
   [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
@@ -77,6 +102,12 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   and hyphens are ignored, so `gauntlet-usdc` and `gauntletusdc`
   resolve to the same entry. The market entry carries its own chain
   and asset, so no `--chain` is needed.
+- **Markets (borrow)** - same name-based resolution as lend, plus `/`
+  is stripped (so `Demo dUSDC / OP` and `demo-dusdc-op` collapse to the
+  same key). Borrow market identifiers are discriminated unions (e.g.
+  `{ kind: 'morpho-blue', marketId: '0x...', chainId: ... }`); the CLI
+  forwards the resolved config to the SDK so a future second provider
+  variant adds no CLI work.
 - **Markets (swap)** - addressed pair-wise via `--in/--out/--chain` for
   quotes and execution. `--pool <id>` is only used for direct
   `swap market` lookups; the `poolId` surfaces in `swap markets`.
@@ -182,6 +213,68 @@ NL -> command examples:
 - "deposit 0.5 ETH into Aave on op-sepolia" -> `actions --json wallet lend open --market aave-eth --amount 0.5`
 - "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
 - "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
+
+## Borrow semantics
+
+The wallet-scoped write verbs (`open`, `close`, `deposit-collateral`,
+`withdraw-collateral`, `repay`) emit a structured envelope on stdout:
+
+```json
+{
+  "action": "open" | "close" | "depositCollateral" | "withdrawCollateral" | "repay",
+  "market": {
+    "name": "...",
+    "marketId": { "kind": "morpho-blue", "marketId": "0x...", "chainId": ... },
+    "chainId": ...,
+    "provider": "morpho"
+  },
+  "borrowAmount":     <number | "max">,
+  "collateralAmount": <number | "max">,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ],
+  "ltv": <number | null>,
+  "healthFactor": <number | null>,
+  "liquidationPriceFormatted": "<string>"
+}
+```
+
+`borrowAmount` / `collateralAmount` echo what the verb touched (the
+inverse pair is omitted; e.g. `repay` reports only `borrowAmount`). The
+literal string `"max"` means the SDK resolved the full balance at
+dispatch time. `ltv` and `healthFactor` come from the SDK's
+`positionAfter` snapshot and are `null` when the action left no debt
+(divide-by-zero guard); they are omitted when the SDK did not surface a
+`positionAfter`. `transactions` is always an array, normalised the same
+way as lend / swap.
+
+A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
+error envelope on stderr (exit 5).
+
+`actions borrow position --market <name> --wallet <address>` reads any
+wallet's position without needing `PRIVATE_KEY`; the CLI checksums the
+address (viem `getAddress`) before forwarding. `wallet borrow position`
+uses the connected wallet instead.
+
+`borrow markets` / `borrow market` / both `position` commands return the
+SDK shapes verbatim with bigints stringified. Position fields `ltv` and
+`healthFactor` are `null` when there is no outstanding debt.
+
+NL -> command examples:
+
+- "what borrow markets are available" -> `actions --json borrow markets`
+- "borrow 1 OP against 2 USDC of collateral on the demo market" ->
+  `actions --json wallet borrow open --market demo-dusdc-op --borrow-amount 1 --collateral-amount 2`
+- "close my borrow position completely" ->
+  `actions --json wallet borrow close --market demo-dusdc-op --borrow-max --collateral-max`
+- "repay all my debt on demo dUSDC/OP" ->
+  `actions --json wallet borrow repay --market demo-dusdc-op --max`
+- "withdraw all collateral from demo dUSDC/OP" ->
+  `actions --json wallet borrow withdraw-collateral --market demo-dusdc-op --max`
+- "top up 5 USDC of collateral on demo dUSDC/OP" ->
+  `actions --json wallet borrow deposit-collateral --market demo-dusdc-op --amount 5`
+- "what's the health factor of 0x... on demo dUSDC/OP" ->
+  `actions --json borrow position --market demo-dusdc-op --wallet 0x...`
+- "how am I doing in demo dUSDC/OP" ->
+  `actions --json wallet borrow position --market demo-dusdc-op`
 
 ## Swap semantics
 

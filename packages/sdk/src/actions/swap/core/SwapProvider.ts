@@ -5,12 +5,12 @@ import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
-import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
+import { resolveSwapRequestRecipient } from '@/actions/swap/recipients.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  InvalidParamsError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
-  QuoteExpiredError,
   QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -50,12 +50,13 @@ import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
   validateAssetOnChain,
-  validateChainSupported,
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
+  validateQuoteNotExpired,
   validateRecipient,
   validateSlippage,
+  validateWalletAddress,
 } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider nor global config sets a value */
@@ -149,7 +150,7 @@ export abstract class SwapProvider<
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    validateWalletAddress(params.walletAddress)
     return this._execute(
       this.resolveParams({ ...params, approvalMode: resolvedApprovalMode }),
     )
@@ -162,7 +163,12 @@ export abstract class SwapProvider<
    * @returns SwapQuote with pricing, amounts, and pre-encoded calldata
    */
   async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
+    // Validate slippage and amounts before quote calldata is built.
+    validateNotBothAmounts(params.amountIn, params.amountOut)
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     return this._getQuote(params)
   }
 
@@ -174,7 +180,7 @@ export abstract class SwapProvider<
    * @throws If market is blocklisted
    */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
     const market = await this._getMarket(params)
     this.validateMarketAllowed(
       market.assets[0],
@@ -192,7 +198,7 @@ export abstract class SwapProvider<
    */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
-      validateChainSupported(params.chainId, this.supportedChainIds())
+      this.assertChainSupported(params.chainId)
     }
     const markets = await this._getMarkets(params)
     return this.filterBlockedMarkets(markets)
@@ -264,16 +270,23 @@ export abstract class SwapProvider<
 
   /**
    * Resolve common quote parameters with provider defaults.
+   * Wallet-bound quotes default output to the executor across providers.
+   * Provider-specific router sentinels stay in concrete providers.
    * @param params - Raw quote params from the user
-   * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
+   * @returns Resolved slippage, deadline, optional recipient and wallet address,
+   * amountInRaw, and current timestamp
    */
   protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const recipient = resolveSwapRequestRecipient(
+      params.recipient,
+      params.walletAddress,
+    )
+    const walletAddress = params.walletAddress
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
-    return { slippage, now, deadline, recipient, amountInRaw }
+    return { slippage, now, deadline, recipient, walletAddress, amountInRaw }
   }
 
   /**
@@ -288,13 +301,41 @@ export abstract class SwapProvider<
     slippage: number,
     assetOut: Asset,
   ): { amountOutMinRaw: bigint; amountOutMin: number } {
-    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    const slippageBps = this.computeSlippageBps(slippage)
     const amountOutMinRaw =
       (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
+    // Reject min-out floors that disable protection or exceed the quote.
+    if (amountOutMinRaw < 0n || amountOutMinRaw > amountOutRaw) {
+      throw new InvalidParamsError({
+        param: 'slippage',
+        expected: `amountOutMinRaw within [0, ${amountOutRaw}]`,
+        received: `${amountOutMinRaw}`,
+      })
+    }
     const amountOutMin = parseFloat(
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
     return { amountOutMinRaw, amountOutMin }
+  }
+
+  /**
+   * Compute the maximum input for an exact-output swap after slippage.
+   * Symmetric to {@link computeSlippageBounds} on the input side. The ceiling
+   * can only grow with slippage, so it needs no negative-floor clamp; callers
+   * pass this through to the encoder so the displayed and enforced max-in are
+   * the same number.
+   * @param amountInRaw - Quoted input as raw bigint
+   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
+   */
+  protected computeAmountInMaxRaw(
+    amountInRaw: bigint,
+    slippage: number,
+  ): bigint {
+    const slippageBps = this.computeSlippageBps(slippage)
+    return (
+      (amountInRaw * (BPS_DENOMINATOR + slippageBps) + BPS_DENOMINATOR - 1n) /
+      BPS_DENOMINATOR
+    )
   }
 
   protected resolveMarketConfig(
@@ -394,10 +435,10 @@ export abstract class SwapProvider<
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping
    * the swap calldata. Used by both the quote-execute path and provider
-   * `_execute` implementations. Quotes are required to have `recipient` set
-   * by the provider's `_getQuote`; sub-providers can dereference
-   * `quote.recipient` directly. Reads `quote.approvalMode` (populated by
-   * `execute()` at entry).
+   * `_execute` implementations. Quotes are required to have `recipient` set by
+   * the provider's `_getQuote`; providers can use `walletAddress` for signer
+   * and allowance ownership when present. Reads `quote.approvalMode`
+   * (populated by `execute()` at entry).
    * @param quote - SwapQuote with recipient and approvalMode set
    */
   protected async buildSwapTransactions(
@@ -431,15 +472,22 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // Safe but not ideal, flooring to whole bps is conservative because it tightens bounds. This issue expands flexibility:
+  // https://github.com/ethereum-optimism/actions/issues/379
+  private computeSlippageBps(slippage: number): bigint {
+    validateSlippage(slippage, this.maxSlippage)
+    return BigInt(Math.floor(slippage * Number(BPS_DENOMINATOR)))
+  }
+
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
-    this.validateQuoteExpiration(quote)
+    validateQuoteNotExpired(quote.expiresAt)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
     return this.buildSwapTransactions(quote)
   }
 
   private validateSwapExecute(params: SwapExecuteParams | SwapQuote): void {
     validateNotSameAsset(params.assetIn, params.assetOut)
-    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.assertChainSupported(params.chainId)
     this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
     validateAssetOnChain(params.assetIn, params.chainId)
     validateAssetOnChain(params.assetOut, params.chainId)
@@ -448,16 +496,6 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     validateRecipient(params.recipient)
-  }
-
-  private validateQuoteExpiration(quote: SwapQuote): void {
-    const now = Math.floor(Date.now() / 1000)
-    if (now >= quote.expiresAt) {
-      throw new QuoteExpiredError({
-        expiresAt: quote.expiresAt,
-        currentTime: now,
-      })
-    }
   }
 
   private resolveParams(
@@ -472,8 +510,10 @@ export abstract class SwapProvider<
       deadline:
         params.deadline ??
         Math.floor(Date.now() / 1000) + this.quoteExpirationSeconds,
-      // Send output tokens to specified recipient, or back to the initiating wallet
-      recipient: params.recipient ?? params.walletAddress,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        params.walletAddress,
+      ),
       walletAddress: params.walletAddress,
       chainId: params.chainId,
       approvalMode: params.approvalMode,
@@ -556,7 +596,8 @@ export abstract class SwapProvider<
   /**
    * Build provider-specific approval transactions for a swap.
    * Called by the base class during executeFromQuote with a validated
-   * recipient and resolved approvalMode. Implementations read
+   * recipient and resolved approvalMode. Implementations use
+   * `quote.walletAddress` for allowance ownership and read
    * `quote.approvalMode` to choose between exact and max approvals.
    * @param quote - SwapQuote with recipient set by the provider's _getQuote and approvalMode populated by execute() at entry
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)

@@ -20,17 +20,17 @@ WORKDIR /usr/src/app
 
 RUN apk add --no-cache python3 make g++
 
-COPY ../pnpm-lock.yaml ./
+COPY pnpm-lock.yaml ./
 RUN pnpm fetch
 
 COPY . ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
 RUN pnpm --config.ignore-scripts=false rebuild resolve-tspaths
 
-# provide the ability to build a single projects
 ARG DOCKER_TARGET
 
-RUN pnpm nx build @eth-optimism/actions-service
+RUN pnpm --filter @eth-optimism/actions-sdk build
+RUN pnpm --filter @eth-optimism/actions-service build
 RUN pnpm deploy --filter @eth-optimism/actions-service --prod /prod/actions-service
 
 ########################################################

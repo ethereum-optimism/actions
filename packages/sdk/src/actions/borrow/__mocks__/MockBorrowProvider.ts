@@ -1,10 +1,7 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import {
-  requireAllowlistedBorrowMarketConfig,
-  validateBorrowWalletAddress,
-} from '@/actions/borrow/core/validations.js'
+import { requireAllowlistedBorrowMarketConfig } from '@/actions/borrow/core/validations.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -27,7 +24,11 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import type { BorrowProviderName } from '@/types/providers.js'
+import {
+  validateChainSupported,
+  validateWalletAddress,
+} from '@/utils/validation.js'
 
 export interface MockBorrowProviderConfig {
   supportedChains: number[]
@@ -35,6 +36,8 @@ export interface MockBorrowProviderConfig {
   defaultLiquidationBonus: number
   defaultMaxLtv: number
   defaultMockBalance: bigint
+  /** Provider name stamped on mock quotes (e.g. `'morpho'` or `'aave'`). */
+  provider: BorrowProviderName
 }
 
 /**
@@ -90,6 +93,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       defaultLiquidationBonus: mockConfig?.defaultLiquidationBonus ?? 0.05,
       defaultMaxLtv: mockConfig?.defaultMaxLtv ?? 0.86,
       defaultMockBalance: mockConfig?.defaultMockBalance ?? 0n,
+      provider: mockConfig?.provider ?? 'morpho',
     }
 
     this.openPosition = vi
@@ -116,6 +120,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     this.getPosition = vi
       .fn()
       .mockImplementation(this.defaultGetPosition.bind(this))
+  }
+
+  public get marketKind(): BorrowMarketId['kind'] {
+    return this.mockConfig.provider === 'aave' ? 'aave-v3' : 'morpho-blue'
   }
 
   protocolSupportedChainIds(): number[] {
@@ -189,7 +197,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private defaultGetPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     const config = this.findConfig(params.marketId)
     return Promise.resolve(this.emptyPosition(config))
   }
@@ -201,7 +209,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       walletAddress?: `0x${string}`
     },
   ): Promise<BorrowQuote> {
-    validateBorrowWalletAddress(params.walletAddress)
+    validateWalletAddress(params.walletAddress)
     const config = this.findConfig(params.market)
     const now = Math.floor(Date.now() / 1000)
     const position = this.emptyPosition(config)
@@ -211,6 +219,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         marketId: config.marketId,
         chainId: config.chainId,
       },
+      recipient: params.walletAddress,
       action,
       positionBefore: null,
       positionAfter: position,
@@ -220,7 +229,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       },
       safeCeilingLtv: this.mockConfig.defaultMaxLtv * 0.95,
       execution: { transactions: [] },
-      provider: 'morpho',
+      provider: this.mockConfig.provider,
       quotedAt: now,
       expiresAt: now + this.quoteExpirationSeconds,
     })
@@ -261,8 +270,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         chainId: config.chainId,
       },
       collateralAsset: config.collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
+      collateralShares: 0n,
       borrowAsset: config.borrowAsset,
       borrowAmount: 0n,
       borrowAmountFormatted: '0',

@@ -6,6 +6,15 @@ export function displaySymbol(symbol: string): string {
 }
 
 /**
+ * Truncate (not round) a number to `decimals` places. Used for Max-button
+ * prefills so the filled amount never exceeds the available balance.
+ */
+export function floorToFixed(value: number, decimals: number): string {
+  const factor = 10 ** decimals
+  return (Math.floor(value * factor) / factor).toFixed(decimals)
+}
+
+/**
  * Check if a token is a stablecoin (currently only USDC)
  */
 export function isStablecoin(symbol: string): boolean {
@@ -65,6 +74,44 @@ export function deriveUsdRates(
       : 1
 
   return { usdPerIn, usdPerOut }
+}
+
+/**
+ * Split a token amount string into a main part and a secondary part (the
+ * latter rendered as smaller, dimmer trailing digits).
+ *
+ * Default precision is two decimals with no secondary part. Pass
+ * `extended` (used for ETH, where two decimals is too coarse) to show
+ * four decimals split as two main + two secondary digits.
+ */
+export function formatAmountParts(
+  amount: string,
+  extended = false,
+): {
+  main: string
+  secondary: string
+} {
+  const num = parseFloat(amount)
+  if (!extended) {
+    return { main: Number.isNaN(num) ? '0.00' : num.toFixed(2), secondary: '' }
+  }
+  if (Number.isNaN(num)) return { main: '0.00', secondary: '00' }
+  const [wholePart, decimalPart = '0000'] = num.toFixed(4).split('.')
+  return {
+    main: `${wholePart}.${decimalPart.substring(0, 2)}`,
+    secondary: decimalPart.substring(2, 4),
+  }
+}
+
+export function formatReviewAmount(value: string): {
+  main: string
+  secondary: string
+} {
+  const [wholeRaw, decimals = ''] = value.split('.')
+  const whole = wholeRaw || '0'
+  const main = `${whole}.${decimals.slice(0, 2).padEnd(2, '0')}`
+  const secondary = decimals.slice(2, 8).replace(/0+$/, '')
+  return { main, secondary }
 }
 
 /**

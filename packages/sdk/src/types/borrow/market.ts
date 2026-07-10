@@ -1,22 +1,44 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { BorrowProviderName, LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+
+/**
+ * Fields shared by every `BorrowMarketId` variant.
+ */
+interface BorrowMarketIdBase {
+  /** Protocol-specific market identifier as a `0x`-prefixed hex string */
+  marketId: Hex
+  /** Chain the market is deployed on */
+  chainId: SupportedChainId
+}
 
 /**
  * Identifier for a borrow market.
  * @description Tagged union designed to grow as additional protocols ship.
- * PR #3 only carries the Morpho Blue variant; Aave / Comet / Liquity / Euler
- * variants will land alongside their respective providers without breaking
- * existing callers.
+ * Carries the Morpho Blue variant (keccak of `MarketParams`) and the Aave V3
+ * variant (synthetic id derived from chain + collateral/debt addresses, since
+ * Aave has no params-hash market id). Comet / Liquity / Euler variants land
+ * alongside their providers without breaking existing callers.
  */
-export type BorrowMarketId = {
-  kind: 'morpho-blue'
-  /** keccak256 hash of MarketParams; Morpho Blue's canonical market id */
-  marketId: Hex
-  /** Chain the market is deployed on */
-  chainId: SupportedChainId
+export type BorrowMarketId =
+  | (BorrowMarketIdBase & { kind: 'morpho-blue' })
+  | (BorrowMarketIdBase & { kind: 'aave-v3' })
+
+/**
+ * Aave V3 market parameters for the synthetic (collateral, debt) pair model.
+ * @description Aave is a shared multi-asset pool, so a borrow "market" is the
+ * pairing of a collateral reserve and a debt reserve on a chain. Persisted
+ * alongside the synthetic `marketId` so the provider can resolve reserves
+ * without re-deriving them.
+ */
+export interface AaveBorrowMarketParams {
+  /** Underlying address of the debt asset reserve (e.g. USDC) */
+  debtReserve: Address
+  /** Underlying address of the collateral reserve (e.g. WETH for ETH collateral) */
+  collateralReserve: Address
+  /** Whether collateral deposit/withdraw routes through the WETH gateway (native ETH) */
+  collateralUsesWethGateway: boolean
 }
 
 /**
@@ -49,14 +71,6 @@ export interface BorrowMarketConfigMetadata {
   collateralAsset: Asset
   /** Asset borrowed from the market */
   borrowAsset: Asset
-  /** Borrow provider that services this market */
-  borrowProvider: BorrowProviderName
-  /**
-   * Lend provider that issues the collateral token, when collateral is a
-   * yield-bearing receipt (e.g. a Morpho vault share). Informational; lets
-   * frontends coordinate cross-namespace flows.
-   */
-  lendProvider?: LendProviderName
   /**
    * Optional per-market override for `BorrowSettings.healthBufferPct`
    * Frontends use the resolved value to compute the safe-ceiling LTV;
@@ -68,17 +82,40 @@ export interface BorrowMarketConfigMetadata {
 /**
  * Discriminated config describing a single borrow market.
  * @description Each variant pairs a `BorrowMarketId` with the protocol-specific
- * configuration the provider needs to build calldata and read state.
+ * configuration the provider needs to build calldata and read state. The params
+ * live under a protocol-named key (`marketParams` for Morpho, `aave` for Aave)
+ * rather than a shared `params` field on purpose: the two shapes are unrelated
+ * (a single Morpho market vs. a synthetic Aave reserve pair), and the named key
+ * makes the discriminant obvious at the call site without reading `kind`.
  */
-export type BorrowMarketConfig = BorrowMarketId &
-  BorrowMarketConfigMetadata & {
-    kind: 'morpho-blue'
-    /**
-     * Full Morpho Blue market parameters. Persisted alongside `marketId` so
-     * the provider can encode write-side calldata without an extra RPC.
-     */
-    marketParams: MorphoMarketParams
-  }
+export type BorrowMarketConfig =
+  | (BorrowMarketIdBase &
+      BorrowMarketConfigMetadata & {
+        kind: 'morpho-blue'
+        /**
+         * Full Morpho Blue market parameters. Persisted alongside `marketId` so
+         * the provider can encode write-side calldata without an extra RPC.
+         */
+        marketParams: MorphoMarketParams
+      })
+  | (BorrowMarketIdBase &
+      BorrowMarketConfigMetadata & {
+        kind: 'aave-v3'
+        /** Aave V3 reserve pairing for the synthetic (collateral, debt) market. */
+        aave: AaveBorrowMarketParams
+      })
+
+/** The Morpho Blue variant of `BorrowMarketConfig`. */
+export type MorphoBorrowMarketConfig = Extract<
+  BorrowMarketConfig,
+  { kind: 'morpho-blue' }
+>
+
+/** The Aave V3 variant of `BorrowMarketConfig`. */
+export type AaveBorrowMarketConfig = Extract<
+  BorrowMarketConfig,
+  { kind: 'aave-v3' }
+>
 
 /**
  * Public information about a borrow market.
@@ -123,10 +160,12 @@ export interface BorrowMarketPosition {
   marketId: BorrowMarketId
   /** Collateral asset metadata */
   collateralAsset: Asset
-  /** Collateral balance in wei */
-  collateralAmount: bigint
-  /** Pre-formatted collateral balance */
-  collateralAmountFormatted: string
+  /**
+   * Raw on-chain collateral balance held inside the borrow market. For
+   * vault-wrapped collateral these are ERC-4626 shares; callers convert to
+   * underlying-asset units via the vault when they need a display amount.
+   */
+  collateralShares: bigint
   /** Borrow asset metadata */
   borrowAsset: Asset
   /** Accrued debt in wei (loan asset units) */

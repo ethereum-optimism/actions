@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { WalletNotFoundError } from '@/helpers/errors.js'
+
 import * as lendService from './lend.js'
 
 // Mock the actions config module
@@ -120,7 +122,7 @@ describe('Lend Service', () => {
   })
 
   describe('closePosition', () => {
-    it('should throw error when wallet not found', async () => {
+    it('should throw WalletNotFoundError when wallet not found', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null as any)
 
@@ -134,7 +136,7 @@ describe('Lend Service', () => {
             chainId: 130,
           },
         }),
-      ).rejects.toThrow('Wallet not found')
+      ).rejects.toBeInstanceOf(WalletNotFoundError)
     })
   })
 })

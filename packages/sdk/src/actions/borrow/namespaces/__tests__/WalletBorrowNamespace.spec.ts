@@ -4,8 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
 import {
   BASE_SEPOLIA_ID,
-  borrowAsset,
-  collateralAsset,
+  makeBorrowQuote,
   market,
   walletAddress,
 } from '@/actions/borrow/__tests__/fixtures.js'
@@ -16,11 +15,13 @@ import {
   InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
+  QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type { BorrowMarketConfig, BorrowQuote } from '@/types/borrow/index.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 
@@ -74,37 +75,7 @@ function makeEoaReceipt(
 }
 
 function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
-  const now = Math.floor(Date.now() / 1000)
-  return {
-    marketId: {
-      kind: market.kind,
-      marketId: market.marketId,
-      chainId: market.chainId,
-    },
-    action: 'open',
-    positionBefore: null,
-    positionAfter: {
-      marketId: {
-        kind: market.kind,
-        marketId: market.marketId,
-        chainId: market.chainId,
-      },
-      collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
-      borrowAsset,
-      borrowAmount: 0n,
-      borrowAmountFormatted: '0',
-      healthFactor: null,
-      liquidationPrice: 0n,
-      liquidationPriceFormatted: '0',
-      borrowApy: 0.05,
-      liquidationBonus: 0.05,
-      ltv: null,
-      maxLtv: 0.86,
-    },
-    fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
-    safeCeilingLtv: 0.86 * 0.95,
+  return makeBorrowQuote({
     execution: {
       transactions: [
         {
@@ -114,11 +85,8 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
         },
       ],
     },
-    provider: 'morpho',
-    quotedAt: now,
-    expiresAt: now + 30,
     ...overrides,
-  }
+  })
 }
 
 function makeProvider(): MockBorrowProvider {
@@ -178,6 +146,24 @@ describe('WalletBorrowNamespace - quote dispatch', () => {
     await namespace.openPosition(quote)
     expect(mocks.sendBatch).toHaveBeenCalledTimes(1)
     expect(mocks.send).not.toHaveBeenCalled()
+  })
+
+  it('rejects when the underlying send reverts (no quote-derived receipt)', async () => {
+    // Reverted receipts must propagate instead of producing quote-derived success data.
+    const { wallet, mocks } = makeWallet()
+    mocks.send.mockRejectedValue(
+      new TransactionConfirmedButRevertedError(
+        'transaction confirmed but reverted',
+        makeEoaReceipt(singleTransactionHash),
+      ),
+    )
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(namespace.openPosition(makeQuote())).rejects.toBeInstanceOf(
+      TransactionConfirmedButRevertedError,
+    )
   })
 
   it('re-quotes raw params that happen to include quotedAt', async () => {
@@ -264,9 +250,47 @@ describe('WalletBorrowNamespace - quote validation', () => {
       namespace.openPosition(makeQuote({ action: 'repay' })),
     ).rejects.toBeInstanceOf(InvalidParamsError)
   })
+
+  it('throws QuoteRecipientMismatchError for a quote bound to another wallet', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    // Calldata bound to a different recipient would route borrowed funds to
+    // that address; dispatch must reject rather than re-bind a baked quote.
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          recipient: '0x000000000000000000000000000000000000c0de',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(QuoteRecipientMismatchError)
+  })
 })
 
 describe('WalletBorrowNamespace - re-quote', () => {
+  it('injects walletAddress for getPosition reads', async () => {
+    const { wallet } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+    await namespace.getPosition({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+    })
+    expect(provider.getPosition).toHaveBeenCalledWith({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+      walletAddress,
+    })
+  })
+
   it('re-quotes raw params through the underlying provider', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()

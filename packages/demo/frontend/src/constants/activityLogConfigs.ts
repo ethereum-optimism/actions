@@ -1,5 +1,5 @@
 export type ActivityConfigEntry = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap' | 'borrow' | 'repay'
   description: string
   apiMethod: string
   tooltip: string
@@ -73,5 +73,49 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
     description: 'Swap tokens',
     apiMethod: 'wallet.swap.execute()',
     tooltip: 'Swaps tokens via DEX',
+  },
+  borrow: {
+    type: 'borrow',
+    description: 'Open borrow position',
+    apiMethod: 'wallet.borrow.openPosition()',
+    tooltip: 'Opens a new borrow position against collateral',
+  },
+  repay: {
+    type: 'repay',
+    description: 'Repay borrowed amount',
+    apiMethod: 'wallet.borrow.repay()',
+    tooltip: 'Reduces an existing borrow position',
+  },
+  closePosition: {
+    type: 'borrow',
+    description: 'Close borrow position',
+    apiMethod: 'wallet.borrow.closePosition()',
+    tooltip: 'Repays the full debt and withdraws all collateral',
+  },
+  depositCollateral: {
+    type: 'borrow',
+    description: 'Deposit collateral',
+    apiMethod: 'wallet.borrow.depositCollateral()',
+    tooltip: 'Adds collateral to an existing borrow position',
+  },
+  withdrawCollateral: {
+    type: 'borrow',
+    description: 'Withdraw collateral',
+    apiMethod: 'wallet.borrow.withdrawCollateral()',
+    tooltip: 'Releases collateral from an existing borrow position',
+  },
+  getBorrowMarkets: {
+    type: 'borrow',
+    description: 'Get borrow markets',
+    apiMethod: 'actions.borrow.getMarkets()',
+    tooltip: 'Fetches available borrow markets',
+    isReadOnly: true,
+  },
+  getBorrowPosition: {
+    type: 'borrow',
+    description: 'Get borrow position',
+    apiMethod: 'actions.borrow.getPosition()',
+    tooltip: "Returns a wallet's borrow positions",
+    isReadOnly: true,
   },
 }

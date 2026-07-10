@@ -21,7 +21,7 @@ import {
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
 
 // Helper to build a tuple-shaped market() return value.
 function marketTuple(
@@ -86,7 +86,7 @@ describe('MorphoBorrowProvider - constructor', () => {
 
   it('throws BorrowMarketParamsMismatchError on inconsistent pair', () => {
     const cm = makeChainManagerWithMulticall(async () => [])
-    const bad: BorrowMarketConfig = {
+    const bad: MorphoBorrowMarketConfig = {
       ...market,
       marketId:
         '0x9999999999999999999999999999999999999999999999999999999999999999',
@@ -118,6 +118,7 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       return [
         marketTuple({ totalBorrowAssets: 1234n }),
         500_000_000_000_000_000_000_000_000_000_000_000n, // some price
+        0n, // rateAtTarget
       ]
     })
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -127,7 +128,7 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       chainId: market.chainId,
     })
     expect(calls).toHaveLength(1)
-    expect(calls[0]).toHaveLength(2)
+    expect(calls[0]).toHaveLength(3)
     expect(result.maxLtv).toBeCloseTo(0.86)
     expect(result.totalBorrowed).toBe(1234n)
     expect(result.collateralAsset).toBe(collateralAsset)
@@ -141,17 +142,25 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       if (callCount === 2) {
         throw new Error('oracle reverted')
       }
-      return [marketTuple(), 500_000_000_000_000_000_000_000_000_000_000_000n]
+      return [
+        marketTuple(),
+        500_000_000_000_000_000_000_000_000_000_000_000n,
+        0n,
+      ]
     })
     const provider = new MorphoBorrowProvider(
       { marketAllowlist: [market, otherMarket] },
       cm,
     )
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const results = await provider.getMarkets()
 
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe(market.name)
+    // The dropped market is logged so a shrinking list traces to the fault.
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    errorSpy.mockRestore()
   })
 })
 
@@ -165,13 +174,14 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       positionTuple({ collateral: collateralWad, borrowShares: 0n }),
       marketTuple(),
       1n, // any non-zero price
+      0n, // rateAtTarget
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
-    expect(position.collateralAmount).toBe(collateralWad)
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
     expect(position.ltv).toBeNull()
@@ -183,13 +193,14 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       positionTuple({ collateral: collateralWad, borrowShares }),
       marketTuple(),
       1_000_000_000_000_000_000_000_000_000_000_000_000n, // mid price
+      0n, // rateAtTarget
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
-    expect(position.collateralAmount).toBe(collateralWad)
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.borrowAmount).toBeGreaterThan(0n)
     expect(position.healthFactor).not.toBeNull()
     expect(position.ltv).not.toBeNull()
@@ -204,8 +215,11 @@ function stateMulticallResult(
     collateral?: bigint
     borrowShares?: bigint
     allowance?: bigint
+    balance?: bigint
   } = {},
 ) {
+  // The state-with-allowance multicall returns 6 entries: position, market,
+  // price, rateAtTarget, allowance, balance.
   return [
     positionTuple({
       collateral: opts.collateral ?? 0n,
@@ -213,7 +227,9 @@ function stateMulticallResult(
     }),
     marketTuple(),
     1_000_000_000_000_000_000_000_000_000_000_000_000n,
+    0n, // rateAtTarget
     opts.allowance ?? 0n,
+    opts.balance ?? 0n,
   ]
 }
 
@@ -230,6 +246,19 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     expect(quote.execution.transactions).toHaveLength(2)
     expect(quote.execution.approvalsSkipped).toBe(false)
     expect(quote.collateralAmountRaw).toBe(oneEth)
+  })
+
+  it('resolves a max deposit to the wallet collateral balance', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ allowance: oneEth * 10n, balance: oneEth * 3n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(quote.collateralAmountRaw).toBe(oneEth * 3n)
   })
 
   it('omits the approval tx when allowance already covers the amount', async () => {
@@ -253,7 +282,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
       return stateMulticallResult()
     })
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
-    const tamperedMarket: BorrowMarketConfig = {
+    const tamperedMarket: MorphoBorrowMarketConfig = {
       ...market,
       marketParams: {
         ...market.marketParams,
@@ -268,7 +297,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     })
 
     expect(calls).toHaveLength(1)
-    expect(calls[0].contracts[3].address).toBe(
+    expect(calls[0].contracts[4].address).toBe(
       market.marketParams.collateralToken,
     )
     expect(quote.execution.transactions[0].to).toBe(
@@ -363,15 +392,24 @@ describe('MorphoBorrowProvider - repay', () => {
       amount: { max: true },
     })
     expect(quote.action).toBe('repay')
-    expect(quote.execution.transactions).toHaveLength(2)
-    expect(quote.execution.approvalsSkipped).toBe(false)
+    // Ample allowance covers the live debt, so no approval is prepended.
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    const decoded = decodeFunctionData({
+      abi: blueAbi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('repay')
+    // Shares-based path: assets arg is 0, shares arg carries the position.
+    expect(decoded.args?.[1]).toBe(0n)
+    expect(decoded.args?.[2]).toBe(oneEth * 3n)
   })
 
-  it('prepends a max approval for shares-based repay when allowance is finite', async () => {
+  it('prepends a bounded (non-max) approval for shares-based repay in exact mode', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({
         borrowShares: oneEth * 3n,
-        allowance: oneEth * 3n,
+        allowance: 0n,
       }),
     )
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -382,6 +420,33 @@ describe('MorphoBorrowProvider - repay', () => {
     })
 
     expect(quote.execution.transactions).toHaveLength(2)
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    // Exact mode bounds the approval to the live-debt snapshot, never maxUint256.
+    expect(decoded.args?.[1]).not.toBe(maxUint256)
+    expect(decoded.args?.[1]).toBe(quote.borrowAmountRaw)
+  })
+
+  it('uses a max approval for shares-based repay when approvalMode is max', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        borrowShares: oneEth * 3n,
+        allowance: 0n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider(
+      { marketAllowlist: [market], approvalMode: 'max' },
+      cm,
+    )
+    const quote = await provider.repay({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+
     const decoded = decodeFunctionData({
       abi: erc20Abi,
       data: quote.execution.transactions[0].data,
@@ -497,12 +562,12 @@ describe('MorphoBorrowProvider - closePosition', () => {
     ).rejects.toBeInstanceOf(EmptyPositionError)
   })
 
-  it('uses a max approval for shares-based close when allowance is finite', async () => {
+  it('uses a bounded (non-max) approval for shares-based close in exact mode', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({
         collateral: oneEth * 2n,
         borrowShares: oneEth,
-        allowance: oneEth,
+        allowance: 0n,
       }),
     )
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -518,7 +583,9 @@ describe('MorphoBorrowProvider - closePosition', () => {
       data: quote.execution.transactions[0].data,
     })
     expect(decoded.functionName).toBe('approve')
-    expect(decoded.args?.[1]).toBe(maxUint256)
+    // Exact mode bounds the approval to the live-debt snapshot, never maxUint256.
+    expect(decoded.args?.[1]).not.toBe(maxUint256)
+    expect(decoded.args?.[1]).toBe(quote.borrowAmountRaw)
   })
 
   it('supports max borrow with an exact collateral withdrawal', async () => {

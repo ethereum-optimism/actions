@@ -5,9 +5,11 @@ import type {
   SwapQuote,
   SwapReceipt,
 } from '@eth-optimism/actions-sdk'
+import { ProviderNotConfiguredError } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 import { getActions } from '@/config/actions.js'
+import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import { resolveAsset } from '@/utils/assets.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
@@ -80,37 +82,27 @@ export async function executeSwap(
 
   const wallet = await getWallet(idToken)
   if (!wallet) {
-    throw new Error('Wallet not found')
+    throw new WalletNotFoundError()
   }
 
   if (!wallet.swap) {
-    throw new Error('Swap not configured for this wallet')
+    throw new ProviderNotConfiguredError({
+      provider: 'swap',
+      details: 'Swap namespace is not enabled on this wallet.',
+    })
   }
 
   const assetIn = resolveAsset(tokenInAddress, chainId)
   const assetOut = resolveAsset(tokenOutAddress, chainId)
 
-  let result
-  try {
-    result = await wallet.swap.execute({
-      amountIn,
-      assetIn,
-      assetOut,
-      chainId,
-      slippage,
-      provider,
-    })
-  } catch (err) {
-    console.error('[swap] execute failed:', {
-      provider,
-      assetIn: assetIn.metadata.symbol,
-      assetOut: assetOut.metadata.symbol,
-      amountIn,
-      chainId,
-      error: err instanceof Error ? err.message : err,
-    })
-    throw err
-  }
+  const result = await wallet.swap.execute({
+    amountIn,
+    assetIn,
+    assetOut,
+    chainId,
+    slippage,
+    provider,
+  })
 
   const receipt = result.receipt
   const blockExplorerUrls = getBlockExplorerUrls({

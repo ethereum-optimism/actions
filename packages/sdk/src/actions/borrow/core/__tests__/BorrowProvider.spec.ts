@@ -41,6 +41,10 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
   public repayCalls: BorrowRepayInternalParams[] = []
   public marketCalls: BorrowMarket[] = []
 
+  public get marketKind(): 'morpho-blue' {
+    return 'morpho-blue'
+  }
+
   constructor(
     config: BorrowProviderConfig,
     chainManager: ChainManager,
@@ -105,8 +109,7 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return {
       marketId: params.market,
       collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
+      collateralShares: 0n,
       borrowAsset,
       borrowAmount: 0n,
       borrowAmountFormatted: '0',
@@ -142,13 +145,13 @@ function makeStubQuote(
 ): BorrowQuote {
   return {
     marketId,
+    recipient: walletAddress,
     action,
     positionBefore: null,
     positionAfter: {
       marketId,
       collateralAsset: marketId.collateralAsset,
-      collateralAmount: 0n,
-      collateralAmountFormatted: '0',
+      collateralShares: 0n,
       borrowAsset: marketId.borrowAsset,
       borrowAmount: 0n,
       borrowAmountFormatted: '0',
@@ -350,9 +353,19 @@ describe('BorrowProvider - single-amount actions', () => {
       walletAddress,
       amount: { amount: 250 },
     })
-    expect(provider.depositCalls[0].amountWei).toBe(
-      250_000_000_000_000_000_000n,
-    )
+    expect(provider.depositCalls[0].amount).toEqual({
+      amountWei: 250_000_000_000_000_000_000n,
+    })
+  })
+
+  it('depositCollateral preserves { max: true }', async () => {
+    const provider = makeProvider()
+    await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(provider.depositCalls[0].amount).toEqual({ max: true })
   })
 
   it('withdrawCollateral preserves { max: true }', async () => {

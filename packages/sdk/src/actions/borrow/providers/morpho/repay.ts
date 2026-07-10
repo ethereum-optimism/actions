@@ -8,13 +8,16 @@ import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
 import type {
   AmountWeiOrMax,
-  BorrowMarketConfig,
+  MorphoBorrowMarketConfig,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
 export type RepayResult = {
   repayAssetsWei: bigint
   repaySharesWei: bigint
+  // Live accrued debt at quote time. Used to bound a shares-based (max) repay
+  // approval in exact mode, where there is no fixed asset amount to approve.
+  liveDebtAssetsWei: bigint
   after: AccrualPosition
 }
 
@@ -43,27 +46,42 @@ export function computeRepay(
     repayAssetsWei = amount.amountWei
   }
   const { position: after } = current.repay(repayAssetsWei, repaySharesWei)
-  return { repayAssetsWei, repaySharesWei, after }
+  return {
+    repayAssetsWei,
+    repaySharesWei,
+    liveDebtAssetsWei: current.borrowAssets,
+    after,
+  }
 }
 
 /**
- * Loan-token approval for a repay leg. Shares-based repays (max path)
- * need a `maxUint256` approval because interest accrual between quote and
- * dispatch can push the on-chain transfer above the quoted assets value;
- * exact-assets repays use the precise amount.
+ * Loan-token approval for a repay leg. Shares-based repays (max path) have no
+ * fixed asset amount because interest accrual between quote and dispatch can
+ * push the on-chain transfer above the quoted debt: `max` mode grants the
+ * canonical unlimited allowance, while `exact` mode bounds the approval to the
+ * live-debt snapshot (tradeoff: accrual past the snapshot can under-approve;
+ * quote expiry bounds the window). Exact-assets repays use the precise amount.
  */
 export function buildRepayApproval(
-  market: BorrowMarketConfig,
+  market: MorphoBorrowMarketConfig,
   repay: RepayResult,
   allowance: bigint,
   approvalMode: ApprovalMode,
 ): TransactionData | undefined {
-  return repay.repaySharesWei > 0n
-    ? buildMorphoMaxLoanApproval(market, allowance)
-    : buildMorphoLoanApproval(
-        market,
-        repay.repayAssetsWei,
-        allowance,
-        approvalMode,
-      )
+  if (repay.repaySharesWei > 0n) {
+    return approvalMode === 'max'
+      ? buildMorphoMaxLoanApproval(market, allowance)
+      : buildMorphoLoanApproval(
+          market,
+          repay.liveDebtAssetsWei,
+          allowance,
+          approvalMode,
+        )
+  }
+  return buildMorphoLoanApproval(
+    market,
+    repay.repayAssetsWei,
+    allowance,
+    approvalMode,
+  )
 }

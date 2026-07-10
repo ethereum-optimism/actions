@@ -9,7 +9,10 @@ import {
   computeRepay,
   type RepayResult,
 } from '@/actions/borrow/providers/morpho/repay.js'
-import type { BorrowClosePositionInternalParams } from '@/types/borrow/index.js'
+import type {
+  BorrowClosePositionInternalParams,
+  MorphoBorrowMarketConfig,
+} from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
 export type CloseResult = {
@@ -46,10 +49,10 @@ export function computeClose(
  */
 export function buildCloseTransactions(
   params: BorrowClosePositionInternalParams,
+  market: MorphoBorrowMarketConfig,
   plan: CloseResult,
   allowance: bigint,
 ): { txs: TransactionData[]; approvalTx: TransactionData | undefined } {
-  const market = params.market
   const approvalTx = buildRepayApproval(
     market,
     plan.repay,

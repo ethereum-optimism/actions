@@ -20,6 +20,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -140,6 +141,14 @@ describe('ActionsError hierarchy', () => {
     expect(err.shortMessage).toContain('Quote.recipient')
   })
 
+  it('QuoteWalletAddressMissingError', () => {
+    const err = new QuoteWalletAddressMissingError()
+    expect(err.name).toBe('QuoteWalletAddressMissingError')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err.shortMessage).toContain('Quote.walletAddress')
+    expect(err.shortMessage).toContain('wallet.swap.getQuote')
+  })
+
   it('ExactOutputNotSupportedError', () => {
     const err = new ExactOutputNotSupportedError('Velodrome')
     expect(err.name).toBe('ExactOutputNotSupportedError')
@@ -236,6 +245,7 @@ describe('ActionsError hierarchy', () => {
         walletAddress: '0xbbb',
       }),
       new QuoteRecipientMissingError(),
+      new QuoteWalletAddressMissingError(),
       new ExactOutputNotSupportedError('X'),
       new ZeroAddressError('label'),
       new SlippageOutOfRangeError(1, 0.5),
