@@ -9,6 +9,16 @@ import {
 import type { Asset } from '@/types/asset.js'
 
 /**
+ * Parse a human-readable amount using explicit token decimals.
+ * @param amount - Human-readable amount
+ * @param decimals - Token decimals
+ * @returns Amount in smallest unit
+ */
+export function parseDecimalAmount(amount: number, decimals: number): bigint {
+  return parseUnits(amount.toString(), decimals)
+}
+
+/**
  * Parse human-readable amount to wei using an asset's decimals.
  * Returns undefined when amount is undefined.
  */
@@ -22,7 +32,7 @@ export function parseAssetAmount(
   amount: number | undefined,
 ): bigint | undefined {
   if (amount === undefined) return undefined
-  return parseUnits(amount.toString(), asset.metadata.decimals)
+  return parseDecimalAmount(amount, asset.metadata.decimals)
 }
 
 /**

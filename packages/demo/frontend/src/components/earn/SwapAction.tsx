@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { ActionsError } from '@eth-optimism/actions-sdk'
 import type {
   SupportedChainId,
   SwapMarket,
@@ -26,6 +27,7 @@ import {
 } from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
+import ArrowDownIcon from '@/components/icons/ArrowDownIcon'
 
 interface SwapActionProps {
   assets: SwapAsset[]
@@ -162,15 +164,7 @@ function FlipButton({ onClick }: { onClick: () => void }) {
           justifyContent: 'center',
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M8 3V13M8 13L4 9M8 13L12 9"
-            stroke="#666666"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <ArrowDownIcon color="#666666" />
       </button>
     </div>
   )
@@ -253,6 +247,7 @@ export function SwapAction({
   const [txModalStatus, setTxModalStatus] = useState<'loading' | 'error'>(
     'loading',
   )
+  const [txModalError, setTxModalError] = useState<string | undefined>()
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -425,6 +420,7 @@ export function SwapAction({
     setReviewOpen(false)
     setTxModalOpen(true)
     setTxModalStatus('loading')
+    setTxModalError(undefined)
 
     try {
       const result = await onSwap(quote)
@@ -450,6 +446,11 @@ export function SwapAction({
     } catch (err) {
       console.error('[swap] execution failed:', err)
       activity?.error()
+      setTxModalError(
+        err instanceof ActionsError && err.shortMessage
+          ? err.shortMessage
+          : 'Swap failed. Please try again.',
+      )
       setTxModalStatus('error')
       trackEvent('swap_error', {
         assetIn: assetIn.asset.metadata.symbol,
@@ -462,6 +463,7 @@ export function SwapAction({
   const handleTxModalClose = () => {
     setTxModalOpen(false)
     setTxModalStatus('loading')
+    setTxModalError(undefined)
   }
 
   const amountValue = parseFloat(amountIn) || 0
@@ -615,6 +617,7 @@ export function SwapAction({
       <TransactionModal
         isOpen={txModalOpen}
         status={txModalStatus}
+        errorMessage={txModalError}
         onClose={handleTxModalClose}
       />
 

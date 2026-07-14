@@ -1,3 +1,4 @@
+import type { Chain } from 'viem'
 import {
   base,
   baseSepolia,
@@ -26,7 +27,7 @@ const slug = (name: string): string => name.toLowerCase().replace(/\s+/g, '-')
  * Single source of truth for the chains the SDK supports. All other
  * chain-related constants in this module are derived from this list.
  */
-const SUPPORTED_CHAINS = [
+const SUPPORTED_CHAINS_TUPLE = [
   mainnet,
   sepolia,
   optimism,
@@ -48,7 +49,15 @@ const SUPPORTED_CHAINS = [
   swellchain,
 ] as const
 
-export type SupportedChainId = (typeof SUPPORTED_CHAINS)[number]['id']
+const SUPPORTED_CHAINS: readonly Chain[] = SUPPORTED_CHAINS_TUPLE
+
+export type SupportedChainId = (typeof SUPPORTED_CHAINS_TUPLE)[number]['id']
+
+export function getSupportedChain(
+  chainId: SupportedChainId,
+): Chain | undefined {
+  return SUPPORTED_CHAINS.find((chain) => chain.id === chainId)
+}
 
 export const SUPPORTED_CHAIN_IDS = SUPPORTED_CHAINS.map(
   (c) => c.id,

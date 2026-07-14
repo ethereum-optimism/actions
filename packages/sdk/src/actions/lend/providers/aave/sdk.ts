@@ -3,11 +3,12 @@ import { formatReserves } from '@aave/math-utils'
 import { providers } from 'ethers'
 import type { Address } from 'viem'
 
-import { POOL_GET_RESERVE_DATA_ABI } from '@/actions/lend/providers/aave/abis/pool.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
+import { POOL_GET_RESERVE_DATA_ABI } from '@/actions/shared/aave/abis/pool.js'
 import {
   getAaveAddresses,
   getPoolAddress,
-} from '@/actions/lend/providers/aave/addresses.js'
+} from '@/actions/shared/aave/addresses.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
@@ -43,23 +44,6 @@ interface GetReservesParams {
   chainManager: ChainManager
   lendConfig: LendProviderConfig
   markets: LendMarketConfig[]
-}
-
-/**
- * Find market configuration in allowlist
- * @param marketAllowlist - Array of allowed market configurations
- * @param marketId - Market identifier to find
- * @returns Market configuration if found, undefined otherwise
- */
-function findMarketInAllowlist(
-  marketAllowlist: LendMarketConfig[],
-  marketId: LendMarketId,
-): LendMarketConfig | undefined {
-  return marketAllowlist.find(
-    (config) =>
-      config.address.toLowerCase() === marketId.address.toLowerCase() &&
-      config.chainId === marketId.chainId,
-  )
 }
 
 /**

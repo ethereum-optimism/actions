@@ -1,7 +1,11 @@
 import { isAddressEqual } from 'viem'
 
-import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
+import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
+import {
+  resolveSwapQuoteWalletAddress,
+  resolveSwapRequestRecipient,
+} from '@/actions/swap/recipients.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
 import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
@@ -34,37 +38,49 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   }
 
   /**
-   * Get a swap quote with the wallet address as recipient.
-   * Ensures calldata is encoded for the real wallet, not a placeholder.
+   * Get a swap quote bound to the wallet as executor.
+   * Defaults the output recipient to the wallet address when omitted.
    */
   override async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    return super.getQuote({
+    const quote = await super.getQuote({
       ...params,
-      recipient: params.recipient ?? this.wallet.address,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        this.wallet.address,
+      ),
+      walletAddress: this.wallet.address,
     })
+    return { ...quote, walletAddress: this.wallet.address }
   }
 
   /**
-   * Get quotes from all providers with the wallet address as recipient.
+   * Get quotes from all providers bound to the wallet as executor.
    */
   override async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
-    return super.getQuotes({
+    const quotes = await super.getQuotes({
       ...params,
-      recipient: params.recipient ?? this.wallet.address,
+      recipient: resolveSwapRequestRecipient(
+        params.recipient,
+        this.wallet.address,
+      ),
+      walletAddress: this.wallet.address,
     })
+    return quotes.map((quote) => ({
+      ...quote,
+      walletAddress: this.wallet.address,
+    }))
   }
 
   /**
    * Execute a token swap.
    * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote
-   * (skips re-quoting). When a pre-built quote is passed, its recipient must
-   * equal this wallet's address — otherwise the calldata would route output
-   * tokens to a different address (a real risk on Velodrome v2/leaf paths
-   * where the recipient is encoded directly into the swap call). Re-quote via
+   * (skips re-quoting). When a pre-built quote is passed, its wallet address
+   * must equal this wallet's address so approvals are checked against the
+   * account that will execute the swap. Re-quote via
    * `wallet.swap.getQuote(...)` to bind the quote to this wallet.
    * @param params - Swap parameters or a pre-built SwapQuote from getQuote()
    * @returns Swap receipt with transaction details
-   * @throws If `params` is a SwapQuote whose recipient differs from this wallet
+   * @throws If `params` is a SwapQuote bound to a different wallet
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
     const executeParams =
@@ -86,14 +102,14 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
   /**
    * Validate that a pre-built quote is bound to this wallet. Throws when the
-   * quote's recipient differs from `wallet.address` — silently swapping
-   * recipients would route output tokens to the wrong address on routers that
-   * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   * quote's wallet address differs from `wallet.address`; silently executing
+   * with a different wallet would check allowances for the wrong account.
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
-    if (!isAddressEqual(quote.recipient, this.wallet.address)) {
+    const quoteWalletAddress = resolveSwapQuoteWalletAddress(quote)
+    if (!isAddressEqual(quoteWalletAddress, this.wallet.address)) {
       throw new QuoteRecipientMismatchError({
-        quoteRecipient: quote.recipient,
+        quoteRecipient: quoteWalletAddress,
         walletAddress: this.wallet.address,
       })
     }
@@ -112,7 +128,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
       ...params,
       walletAddress: this.wallet.address,
       recipient: await this.resolveRecipient(
-        params.recipient ?? this.wallet.address,
+        resolveSwapRequestRecipient(params.recipient, this.wallet.address),
       ),
     }
   }

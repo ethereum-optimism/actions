@@ -1,14 +1,19 @@
 import type { Address } from 'viem'
 import { isAddress } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  SUPPORTED_CHAIN_IDS,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
+import {
+  AddressRequiredError,
   AmountRequiredError,
   AssetNotSupportedOnChainError,
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
   InvalidParamsError,
+  QuoteExpiredError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -29,7 +34,7 @@ export function validateAmountProvided(
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
-  if (amount !== undefined && amount <= 0) {
+  if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
     throw new InvalidAmountError(amount)
   }
 }
@@ -58,8 +63,59 @@ export function validateNotZeroAddress(address: Address, label: string): void {
   }
 }
 
+/**
+ * Reject a value that is not a syntactically valid EVM address.
+ * @throws InvalidParamsError when `isAddress` rejects the value.
+ */
+export function validateAddress(
+  address: string,
+  label: string,
+): asserts address is Address {
+  if (!isAddress(address)) {
+    throw new InvalidParamsError({
+      param: label,
+      expected: 'a valid EVM address',
+      received: address,
+    })
+  }
+}
+
+/**
+ * Reject a quote whose expiration timestamp (unix seconds) has passed.
+ * @throws QuoteExpiredError when expired.
+ */
+export function validateQuoteNotExpired(expiresAt: number): void {
+  const now = Math.floor(Date.now() / 1000)
+  if (now >= expiresAt) {
+    throw new QuoteExpiredError({ expiresAt, currentTime: now })
+  }
+}
+
+/**
+ * Reject a missing, malformed, or zero-address wallet address in one call.
+ * @throws AddressRequiredError when undefined/empty.
+ * @throws InvalidParamsError when not a syntactically valid EVM address.
+ * @throws ZeroAddressError when the zero address.
+ */
+export function validateWalletAddress(
+  walletAddress: Address | undefined,
+): asserts walletAddress is Address {
+  const label = 'walletAddress'
+  if (!walletAddress) {
+    throw new AddressRequiredError(label)
+  }
+  validateAddress(walletAddress, label)
+  validateNotZeroAddress(walletAddress, label)
+}
+
+/** Reject non-finite slippage and enforce both `[0, 1)` bounds and `maxSlippage`. */
 export function validateSlippage(slippage: number, maxSlippage: number): void {
-  if (slippage < 0 || slippage > maxSlippage) {
+  if (
+    !Number.isFinite(slippage) ||
+    slippage < 0 ||
+    slippage >= 1 ||
+    slippage > maxSlippage
+  ) {
     throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }
@@ -74,24 +130,59 @@ export function validateChainSupported(
 }
 
 /**
- * Guard for `BalanceFetchOptions` — verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
- * @throws InvalidParamsError when `chainIds` is `[]`.
- * @throws ChainNotSupportedError when any id is not configured on the manager.
+ * Resolve the effective chain set for a provider instance.
+ * @description Intersects protocol-native chains, SDK-supported chains, and
+ * developer-configured chains while preserving the protocol's declared order.
  */
-export function validateBalanceFetchOptions(
-  options: BalanceFetchOptions | undefined,
-  chainManager: ChainManager,
+export function resolveSupportedChainIds(
+  protocolSupportedChainIds: readonly number[],
+  configuredChainIds: readonly number[],
+): SupportedChainId[] {
+  return protocolSupportedChainIds.filter(
+    (chainId): chainId is SupportedChainId =>
+      (SUPPORTED_CHAIN_IDS as readonly number[]).includes(chainId) &&
+      configuredChainIds.includes(chainId),
+  )
+}
+
+/**
+ * @description Validates an optional non-empty list against supported chain IDs.
+ * @param chainIds - Optional configured chain subset.
+ * @param supportedChainIds - Chain IDs available to the caller.
+ * @returns Nothing.
+ * @throws InvalidParamsError when `chainIds` is `[]`.
+ * @throws ChainNotSupportedError when any ID is unsupported.
+ */
+export function validateChainIds(
+  chainIds: readonly SupportedChainId[] | undefined,
+  supportedChainIds: readonly SupportedChainId[],
 ): void {
-  if (options?.chainIds === undefined) return
-  if (options.chainIds.length === 0) {
+  if (chainIds === undefined) return
+  if (chainIds.length === 0) {
     throw new InvalidParamsError({
       param: 'chainIds',
       expected: 'SupportedChainId[] (non-empty)',
       received: '[]',
     })
   }
-  const supported = chainManager.getSupportedChains()
-  for (const id of options.chainIds) validateChainSupported(id, supported)
+  for (const chainId of chainIds) {
+    validateChainSupported(chainId, supportedChainIds)
+  }
+}
+
+/**
+ * @description Validates balance-fetch chain filters.
+ * @param options - Optional balance query filters.
+ * @param chainManager - Source of developer-configured chain IDs.
+ * @returns Nothing.
+ * @throws InvalidParamsError when `chainIds` is `[]`.
+ * @throws ChainNotSupportedError when any ID is not configured.
+ */
+export function validateBalanceFetchOptions(
+  options: BalanceFetchOptions | undefined,
+  chainManager: ChainManager,
+): void {
+  validateChainIds(options?.chainIds, chainManager.getSupportedChains())
 }
 
 export function validateAssetOnChain(
@@ -105,7 +196,7 @@ export function validateAssetOnChain(
 
 /**
  * Validate that a resolved recipient address is not the zero address.
- * ENS names are skipped — only resolved `Address` values are checked.
+ * ENS names are skipped; only resolved `Address` values are checked.
  */
 export function validateRecipient(recipient: string | undefined): void {
   if (recipient && isAddress(recipient)) {

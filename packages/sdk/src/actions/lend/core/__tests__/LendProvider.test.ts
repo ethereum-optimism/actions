@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
+import { ChainManager } from '@/services/ChainManager.js'
 import type {
   LendMarketConfig,
   LendMarketId,
@@ -14,8 +16,8 @@ import { validateChainSupported } from '@/utils/validation.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
-  public validateConfigSupported(marketId: LendMarketId): void {
-    return super.validateConfigSupported(marketId)
+  public validateMarketAllowed(marketId: LendMarketId): void {
+    return super.validateMarketAllowed(marketId)
   }
 
   public isChainSupported(chainId: number): boolean {
@@ -173,6 +175,152 @@ describe('LendProvider', () => {
     })
   })
 
+  describe('getPositions', () => {
+    const walletAddress =
+      '0x0000000000000000000000000000000000005678' as Address
+    const marketA: LendMarketConfig = {
+      address: '0xaaaa' as Address,
+      chainId: 84532,
+      name: 'Market A',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const marketB: LendMarketConfig = {
+      address: '0xbbbb' as Address,
+      chainId: 84532,
+      name: 'Market B',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const marketC: LendMarketConfig = {
+      address: '0xcccc' as Address,
+      chainId: 130,
+      name: 'Market C',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const marketD: LendMarketConfig = {
+      address: '0xdddd' as Address,
+      chainId: 8453,
+      name: 'Market D',
+      asset: MockUSDCAsset,
+      lendProvider: 'morpho',
+    }
+    const createMultiChainProvider = () =>
+      new MockLendProvider(
+        { marketAllowlist: [marketA, marketC, marketD] },
+        undefined,
+        new ChainManager([{ chainId: 84532 }, { chainId: 130 }]),
+      )
+
+    it('walks the allowlist and returns one position per market', async () => {
+      const provider = new MockLendProvider({
+        marketAllowlist: [marketA, marketB],
+      })
+
+      const positions = await provider.getPositions({ walletAddress })
+
+      expect(positions).toHaveLength(2)
+      expect(positions.map((p) => p.marketId.address)).toEqual([
+        marketA.address,
+        marketB.address,
+      ])
+    })
+
+    it('returns an empty array when the allowlist is empty', async () => {
+      const provider = new MockLendProvider()
+
+      const positions = await provider.getPositions({ walletAddress })
+
+      expect(positions).toEqual([])
+    })
+
+    it('throws AddressRequiredError when walletAddress is missing', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(provider.getPositions({})).rejects.toThrow('walletAddress')
+    })
+
+    it('validates chainId against supported chains', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(
+        provider.getPositions({
+          walletAddress,
+          chainId: 999 as unknown as 84532,
+        }),
+      ).rejects.toThrow('Chain 999 is not supported')
+    })
+
+    it('filters positions by multiple configured chain IDs', async () => {
+      const provider = createMultiChainProvider()
+
+      const positions = await provider.getPositions({
+        walletAddress,
+        chainIds: [84532, 130],
+      })
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketA.address,
+        marketC.address,
+      ])
+    })
+
+    it('filters positions by one configured chain ID', async () => {
+      const positions = await createMultiChainProvider().getPositions({
+        walletAddress,
+        chainId: 130,
+      })
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketC.address,
+      ])
+    })
+
+    it('checks every configured chain when no filter is provided', async () => {
+      const positions = await createMultiChainProvider().getPositions({
+        walletAddress,
+      })
+
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketA.address,
+        marketC.address,
+      ])
+    })
+
+    it('rejects an empty chainIds filter', async () => {
+      const provider = new MockLendProvider({ marketAllowlist: [marketA] })
+
+      await expect(
+        provider.getPositions({ walletAddress, chainIds: [] }),
+      ).rejects.toBeInstanceOf(InvalidParamsError)
+    })
+
+    it('isolates per-market failures and drops the rejected ones', async () => {
+      const provider = new MockLendProvider({
+        marketAllowlist: [marketA, marketB],
+      })
+      // Fail only the first market; the batch must still return market B.
+      provider.getPosition.mockImplementation(async (_addr, marketId) => {
+        if (marketId?.address === marketA.address) {
+          throw new Error('RPC exploded')
+        }
+        return {
+          balance: 500000n,
+          balanceFormatted: '500000',
+          shares: 500000n,
+          sharesFormatted: '500000',
+          marketId: marketId!,
+        }
+      })
+
+      const positions = await provider.getPositions({ walletAddress })
+
+      expect(positions).toHaveLength(1)
+      expect(positions[0].marketId.address).toBe(marketB.address)
+    })
+  })
+
   describe('approvalMode resolution', () => {
     const mockAsset = {
       address: {
@@ -211,7 +359,7 @@ describe('LendProvider', () => {
     const EXACT_AMOUNT_HEX = '3b9aca00'
     const MAX_UINT256_HEX = 'f'.repeat(64)
 
-    it('defaults to "exact" — approval encodes the required amount', async () => {
+    it('defaults to "exact". approval encodes the required amount', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, baseParams)
       expect(approvalAmountHex(result).replace(/^0+/, '')).toBe(
@@ -219,7 +367,7 @@ describe('LendProvider', () => {
       )
     })
 
-    it('honours per-call "max" override — approval uses maxUint256', async () => {
+    it('honours per-call "max" override. approval uses maxUint256', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, {
         ...baseParams,
@@ -284,14 +432,14 @@ describe('LendProvider', () => {
       })
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x1234' as Address,
           chainId: 84532,
         })
       }).not.toThrow()
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x9999' as Address,
           chainId: 84532,
         })

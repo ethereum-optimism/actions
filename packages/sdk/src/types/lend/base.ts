@@ -340,6 +340,30 @@ export interface GetLendMarketsParams extends FilterAssetChain {
   markets?: LendMarketConfig[]
 }
 
+/** Optional filters for aggregated lending positions. */
+export type GetPositionsParams = {
+  /** Wallet to inspect. Wallet namespaces supply their bound address. */
+  walletAddress?: Address
+  /** Filter to one provider ("morpho" | "aave" etc.). */
+  provider?: LendProviderName
+  /** Result-shaping options applied after positions are aggregated. */
+  options?: {
+    /** Drop zero-balance positions. Defaults to `false`. */
+    nonZeroOnly?: boolean
+  }
+} & (
+  | {
+      /** Filter to one configured chain. */
+      chainId?: SupportedChainId
+      chainIds?: never
+    }
+  | {
+      chainId?: never
+      /** Filter to one or more configured chains. */
+      chainIds: readonly SupportedChainId[]
+    }
+)
+
 /**
  * Parameters for getting market balance
  * @description Parameters required for fetching market balance

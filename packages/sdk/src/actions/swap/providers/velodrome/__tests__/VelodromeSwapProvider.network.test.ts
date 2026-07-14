@@ -7,10 +7,7 @@
  * Run: pnpm test:network
  * Requires: anvil (from foundry) and network access
  */
-import { type ChildProcess, spawn } from 'node:child_process'
-
 import type { Address } from 'viem'
-import { createPublicClient, http } from 'viem'
 import { base, optimism } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -19,6 +16,12 @@ import { VelodromeSwapProvider } from '@/actions/swap/providers/velodrome/Velodr
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
+import {
+  type AnvilFork,
+  createForkChainManager,
+  startAnvilFork,
+  stopAnvilFork,
+} from '@/utils/test.js'
 
 // ── Real mainnet assets ──
 
@@ -62,64 +65,6 @@ const BASE_WETH: Asset = {
   metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
 }
 
-// ── Anvil fork helpers ──
-
-interface AnvilFork {
-  port: number
-  process: ChildProcess
-  rpcUrl: string
-}
-
-async function startAnvilFork(
-  forkUrl: string,
-  port: number,
-): Promise<AnvilFork> {
-  const proc = spawn(
-    'anvil',
-    ['--fork-url', forkUrl, '--port', String(port), '--silent'],
-    {
-      stdio: 'ignore',
-    },
-  )
-
-  const rpcUrl = `http://127.0.0.1:${port}`
-  for (let i = 0; i < 30; i++) {
-    try {
-      const res = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_blockNumber',
-          params: [],
-          id: 1,
-        }),
-      })
-      if (res.ok) return { port, process: proc, rpcUrl }
-    } catch {
-      // not ready yet
-    }
-    await new Promise((r) => setTimeout(r, 500))
-  }
-  proc.kill()
-  throw new Error(`Anvil fork on port ${port} did not start in time`)
-}
-
-function stopAnvilFork(fork: AnvilFork) {
-  fork.process.kill()
-}
-
-function createForkChainManager(
-  rpcUrl: string,
-  chain: typeof optimism | typeof base,
-): ChainManager {
-  const client = createPublicClient({ chain, transport: http(rpcUrl) })
-  return {
-    getPublicClient: () => client,
-    getSupportedChains: () => [chain.id],
-  } as unknown as ChainManager
-}
-
 function createProvider(
   chainId: SupportedChainId,
   chainManager: ChainManager,
@@ -142,8 +87,8 @@ describe('VelodromeSwapProvider network fork tests', () => {
     const baseRpc = process.env.BASE_MAINNET_RPC || 'https://mainnet.base.org'
 
     ;[opFork, baseFork] = await Promise.all([
-      startAnvilFork(opRpc, 18545),
-      startAnvilFork(baseRpc, 18546),
+      startAnvilFork(opRpc, optimism.id),
+      startAnvilFork(baseRpc, base.id),
     ])
   }, 60_000)
 
@@ -152,9 +97,9 @@ describe('VelodromeSwapProvider network fork tests', () => {
     if (baseFork) stopAnvilFork(baseFork)
   })
 
-  describe('Optimism — v2 router', () => {
+  describe('Optimism - v2 router', () => {
     it('getQuote returns valid quote for USDC/OP volatile pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
+      const chainManager = createForkChainManager(opFork.rpcUrl, optimism.id)
       const provider = createProvider(
         optimism.id as SupportedChainId,
         chainManager,
@@ -187,7 +132,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
 
     it('getQuote returns valid quote for USDC/WETH volatile pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
+      const chainManager = createForkChainManager(opFork.rpcUrl, optimism.id)
       const provider = createProvider(
         optimism.id as SupportedChainId,
         chainManager,
@@ -215,9 +160,9 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Base — v2 router (Aerodrome)', () => {
+  describe('Base - v2 router (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH volatile pool', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
+      const chainManager = createForkChainManager(baseFork.rpcUrl, base.id)
       const provider = createProvider(
         base.id as SupportedChainId,
         chainManager,
@@ -245,9 +190,9 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Optimism — CL/Slipstream pool', () => {
+  describe('Optimism - CL/Slipstream pool', () => {
     it('getQuote returns valid quote for WETH/USDC CL pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
+      const chainManager = createForkChainManager(opFork.rpcUrl, optimism.id)
       const provider = createProvider(
         optimism.id as SupportedChainId,
         chainManager,
@@ -277,9 +222,9 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
   })
 
-  describe('Base — CL/Slipstream pool (Aerodrome)', () => {
+  describe('Base - CL/Slipstream pool (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH CL pool', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
+      const chainManager = createForkChainManager(baseFork.rpcUrl, base.id)
       const provider = createProvider(
         base.id as SupportedChainId,
         chainManager,
@@ -308,7 +253,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
 
     it('execute(quote) produces valid transaction data', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
+      const chainManager = createForkChainManager(baseFork.rpcUrl, base.id)
       const provider = createProvider(
         base.id as SupportedChainId,
         chainManager,

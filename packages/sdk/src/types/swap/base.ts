@@ -73,7 +73,7 @@ export interface GetSwapMarketsParams {
 }
 
 /**
- * Parameters for a wallet swap — what the developer passes.
+ * Parameters for a wallet swap, what the developer passes.
  * Exactly one of amountIn or amountOut must be provided.
  */
 export interface WalletSwapParams {
@@ -91,7 +91,10 @@ export interface WalletSwapParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
-  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  /**
+   * Recipient address or ENS name (e.g. "vitalik.eth").
+   * Wallet namespaces default this to wallet address.
+   */
   recipient?: Address | EnsName
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
@@ -166,8 +169,16 @@ export interface SwapQuoteParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp */
   deadline?: number
-  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  /**
+   * Recipient address or ENS name (e.g. "vitalik.eth").
+   * Wallet namespaces default this to wallet address.
+   */
   recipient?: Address | EnsName
+  /**
+   * Wallet address expected to execute the quote and own the input tokens.
+   * Wallet namespaces inject this automatically.
+   */
+  walletAddress?: Address
   /** Explicitly select a swap provider */
   provider?: SwapProviderName
 }
@@ -205,11 +216,11 @@ export interface SwapQuote {
   chainId: SupportedChainId
 
   // ── Amounts (Raw = on-chain precision, number = display approximation) ──
-  /** Human-readable input amount (display only — use amountInRaw for precision) */
+  /** Human-readable input amount (display only, use amountInRaw for precision) */
   amountIn: number
   /** Input amount as raw bigint (native decimals). Source of truth. */
   amountInRaw: bigint
-  /** Human-readable expected output (display only — use amountOutRaw for precision) */
+  /** Human-readable expected output (display only, use amountOutRaw for precision) */
   amountOut: number
   /** Expected output as raw bigint. Source of truth. */
   amountOutRaw: bigint
@@ -217,6 +228,11 @@ export interface SwapQuote {
   amountOutMin: number
   /** Minimum output as raw bigint after slippage. Source of truth for on-chain execution. */
   amountOutMinRaw: bigint
+  /**
+   * Maximum input as raw bigint after slippage for exact-output swaps.
+   * Source of truth for approvals, native value, and on-chain execution.
+   */
+  amountInMaxRaw?: bigint
 
   // ── Price (display approximations derived from number amounts) ──
   /** Exchange rate: amountOut / amountIn. Display approximation. */
@@ -247,14 +263,13 @@ export interface SwapQuote {
   expiresAt: number
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
-  /**
-   * Recipient address baked into execution.swapCalldata at quote time.
-   * Required. To execute a quote on a wallet, the quote must have been
-   * generated for that wallet (recipient === wallet.address); otherwise
-   * WalletSwapNamespace.execute throws. Re-quote via wallet.swap.getQuote
-   * when the executor differs from the quote's recipient.
-   */
+  /** Recipient address baked into execution.swapCalldata at quote time. */
   recipient: Address
+  /**
+   * Wallet address expected to execute this quote and own input-token
+   * allowances. Wallet-bound quote paths set this to `wallet.address`.
+   */
+  walletAddress?: Address
   /**
    * Per-call override for the approval-amount strategy. When set, the provider
    * uses this for the swap's approvals instead of the wallet-level config

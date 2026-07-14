@@ -56,8 +56,11 @@ const receipt = wallet.lend.openPosition({
     title: 'Borrow',
     description:
       'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
-    soonBadge: true,
-    imageLabel: 'Supported borrow providers: Coming soon™',
+    images: [
+      { src: '/aave-full.svg', link: 'https://aave.com/' },
+      { src: '/morpho-full.svg', link: 'https://morpho.org/' },
+    ],
+    imageLabel: 'Supported borrow providers:',
     code: `// Fetch live market data
 const markets = actions.borrow.getMarkets(ETH);
 
@@ -134,7 +137,7 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
       { src: '/soneium-logo.webp', link: 'https://soneium.org/' },
       { src: '/zora-logo.svg', link: 'https://zora.co/' },
     ],
-    imageLabel: 'Supports EVM chains like:',
+    imageLabel: 'Supports OP Stack chains:',
     mobileHeightBuffer: 0,
     code: `// Define chains once in a global config
 const OPTIMISM = {

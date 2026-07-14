@@ -12,7 +12,7 @@ import {
   POOL_ADDRESSES_TESTNET,
   WETH_GATEWAY_ADDRESSES_MAINNET,
   WETH_GATEWAY_ADDRESSES_TESTNET,
-} from '@/actions/lend/providers/aave/addresses.js'
+} from '@/actions/shared/aave/addresses.js'
 import { MORPHO_CONTRACTS } from '@/actions/shared/morpho/contracts.js'
 import { UNISWAP_ADDRESSES } from '@/actions/swap/providers/uniswap/addresses.js'
 import { VELODROME_CHAINS } from '@/actions/swap/providers/velodrome/addresses.js'
@@ -339,10 +339,12 @@ describe('Actions constructor address validation', () => {
         validateOptions(options): options is NodeOptionsMap['privy'] {
           return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
-        create({ chainManager }, options) {
+        create({ chainManager, actionProviders, actionSettings }, options) {
           return new PrivyHostedWalletProvider({
             privyClient: options.privyClient,
             chainManager,
+            actionProviders,
+            actionSettings,
             authorizationContext: options.authorizationContext,
           })
         },

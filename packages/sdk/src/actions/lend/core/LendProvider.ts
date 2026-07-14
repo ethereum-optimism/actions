@@ -1,12 +1,18 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
 
-import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
-  AddressRequiredError,
+  lendMarketIdMatches,
+  validateMarketAsset,
+} from '@/actions/lend/utils/markets.js'
+import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
+import {
+  filterMatchingConfigs,
+  findMatchingConfig,
+} from '@/actions/shared/marketConfigs.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
   AssetMetadataRequiredError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
@@ -22,6 +28,7 @@ import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
+  GetPositionsParams,
   LendClosePositionParams,
   LendMarket,
   LendMarketConfig,
@@ -35,11 +42,10 @@ import type {
 } from '@/types/lend/index.js'
 import {
   buildErc20ApprovalTx,
-  resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
-import { isNativeAsset } from '@/utils/assets.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
+import { validateChainIds, validateWalletAddress } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -54,16 +60,7 @@ interface BuildLendApprovalParams {
  */
 export abstract class LendProvider<
   TConfig extends LendProviderConfig = LendProviderConfig,
-> {
-  /** Lending provider configuration */
-  protected readonly _config: TConfig
-
-  /** Shared lend settings (defaults applied across all lend providers) */
-  protected readonly _settings: LendSettings
-
-  /** Chain manager for blockchain interactions */
-  protected readonly chainManager: ChainManager
-
+> extends BaseActionProvider<TConfig, LendSettings> {
   /**
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
@@ -75,29 +72,7 @@ export abstract class LendProvider<
     chainManager: ChainManager,
     settings?: LendSettings,
   ) {
-    this._config = config
-    this._settings = settings ?? {}
-    this.chainManager = chainManager
-  }
-
-  public get config(): TConfig {
-    return this._config
-  }
-
-  /**
-   * Effective supported chain IDs.
-   * @description Intersection of the protocol's supported chains,
-   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
-   * All validation in public methods uses this set.
-   * @returns Array of chain IDs usable through this provider instance
-   */
-  supportedChainIds(): SupportedChainId[] {
-    const configuredChains = this.chainManager.getSupportedChains()
-    return this.protocolSupportedChainIds().filter(
-      (id): id is SupportedChainId =>
-        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        (configuredChains as readonly number[]).includes(id),
-    )
+    super(config, chainManager, settings)
   }
 
   /**
@@ -109,17 +84,12 @@ export abstract class LendProvider<
    * @returns Promise resolving to lending transaction details
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
+    validateWalletAddress(params.walletAddress)
 
-    this.validateConfigSupported(params.marketId)
+    this.validateMarketAllowed(params.marketId)
 
     // Convert human-readable amount to wei using the asset's decimals
-    const amountWei = parseUnits(
-      params.amount.toString(),
-      params.asset.metadata.decimals,
-    )
+    const amountWei = parseAssetAmount(params.asset, params.amount)
 
     const position = await this._openPosition({
       ...params,
@@ -133,11 +103,7 @@ export abstract class LendProvider<
       ? undefined
       : this.buildLendApproval({
           position,
-          approvalMode: resolveApprovalMode(
-            params.approvalMode,
-            this._config.approvalMode,
-            this._settings.approvalMode,
-          ),
+          approvalMode: this.resolveApprovalMode(params.approvalMode),
           amountWei,
         })
 
@@ -165,7 +131,7 @@ export abstract class LendProvider<
       chainId: params.chainId,
     }
 
-    this.validateConfigSupported(marketId)
+    this.validateMarketAllowed(marketId)
     return this._getMarket(marketId)
   }
 
@@ -175,8 +141,7 @@ export abstract class LendProvider<
    * @returns Promise resolving to array of market information
    */
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
-    if (params.chainId !== undefined)
-      validateChainSupported(params.chainId, this.supportedChainIds())
+    if (params.chainId !== undefined) this.assertChainSupported(params.chainId)
 
     const filteredMarkets = this.filterMarketConfigs(
       params.chainId,
@@ -215,9 +180,44 @@ export abstract class LendProvider<
       )
     }
 
-    this.validateConfigSupported(marketId)
+    this.validateMarketAllowed(marketId)
 
     return this._getPosition({ marketId, walletAddress })
+  }
+
+  /**
+   * @description Gets wallet positions across this provider's configured markets.
+   * @param params - Wallet address and optional chain filters
+   * @returns Promise resolving to the positions that resolved successfully
+   * @throws AddressRequiredError if `walletAddress` is missing
+   * @throws InvalidParamsError if both chain filters are set or `chainIds` is empty
+   * @throws ChainNotSupportedError if a requested chain is not configured
+   */
+  async getPositions(
+    params: GetPositionsParams = {},
+  ): Promise<LendMarketPosition[]> {
+    const { walletAddress } = params
+    validateWalletAddress(walletAddress)
+    const chainIds = this.resolvePositionChainIds(params)
+    const markets = this.filterMarketConfigs().filter((market) =>
+      chainIds.includes(market.chainId),
+    )
+
+    const settled = await Promise.allSettled(
+      markets.map((market) =>
+        this.getPosition(walletAddress, {
+          address: market.address,
+          chainId: market.chainId,
+        }),
+      ),
+    )
+
+    return settled
+      .filter(
+        (result): result is PromiseFulfilledResult<LendMarketPosition> =>
+          result.status === 'fulfilled',
+      )
+      .map((result) => result.value)
   }
 
   /**
@@ -230,11 +230,9 @@ export abstract class LendProvider<
    * @returns Promise resolving to withdrawal transaction details
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
+    validateWalletAddress(params.walletAddress)
 
-    this.validateConfigSupported(params.marketId)
+    this.validateMarketAllowed(params.marketId)
 
     const market = await this.getMarket({
       address: params.marketId.address,
@@ -251,9 +249,9 @@ export abstract class LendProvider<
     }
 
     // Convert human-readable amount to wei using the asset's decimals
-    const amountWei = parseUnits(
-      params.amount.toString(),
-      assetMetadata.decimals,
+    const amountWei = parseAssetAmount(
+      params.asset ?? market.asset,
+      params.amount,
     )
 
     return this._closePosition({
@@ -266,21 +264,12 @@ export abstract class LendProvider<
   }
 
   /**
-   * Check if a chain is supported by this lending provider
-   * @param chainId - Chain ID to check
-   * @returns true if chain is supported, false otherwise
-   */
-  protected isChainSupported(chainId: number): boolean {
-    return (this.supportedChainIds() as readonly number[]).includes(chainId)
-  }
-
-  /**
    * Validate that a market is in the config's market allowlist
    * @param marketId - Market identifier containing address and chainId
    * @throws Error if market allowlist is configured but market is not in it
    */
-  protected validateConfigSupported(marketId: LendMarketId): void {
-    validateChainSupported(marketId.chainId, this.supportedChainIds())
+  protected validateMarketAllowed(marketId: LendMarketId): void {
+    this.assertChainSupported(marketId.chainId)
 
     if (
       !this._config.marketAllowlist ||
@@ -289,12 +278,11 @@ export abstract class LendProvider<
       return
     }
 
-    const foundMarket = this._config.marketAllowlist.find(
-      (allowedMarket: LendMarketConfig) =>
-        allowedMarket.address.toLowerCase() ===
-          marketId.address.toLowerCase() &&
-        allowedMarket.chainId === marketId.chainId,
-    )
+    const foundMarket = findMatchingConfig({
+      configs: this._config.marketAllowlist,
+      target: marketId,
+      matches: lendMarketIdMatches,
+    })
 
     if (!foundMarket) {
       throw new MarketNotAllowedError({
@@ -317,7 +305,25 @@ export abstract class LendProvider<
     spender: Address,
     amount: bigint,
   ): TransactionData {
-    return buildErc20ApprovalTx(tokenAddress, spender, amount)
+    return buildErc20ApprovalTx({ assetAddress: tokenAddress, spender, amount })
+  }
+
+  private resolvePositionChainIds(
+    params: GetPositionsParams,
+  ): SupportedChainId[] {
+    if (params.chainId !== undefined && params.chainIds !== undefined) {
+      throw new InvalidParamsError({
+        param: 'chainId/chainIds',
+        expected: 'only one chain filter',
+        received: 'both filters',
+      })
+    }
+    const configuredChainIds = this.chainManager.getSupportedChains()
+    const chainIds =
+      params.chainIds ??
+      (params.chainId === undefined ? configuredChainIds : [params.chainId])
+    validateChainIds(chainIds, configuredChainIds)
+    return [...new Set(chainIds)]
   }
 
   /**
@@ -332,11 +338,11 @@ export abstract class LendProvider<
         `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
       )
     }
-    return buildErc20ApprovalTx(
-      position.assetAddress,
-      position.spender,
-      resolveErc20ApprovalAmount(approvalMode, amountWei),
-    )
+    return buildErc20ApprovalTx({
+      assetAddress: position.assetAddress,
+      spender: position.spender,
+      amount: resolveErc20ApprovalAmount(approvalMode, amountWei),
+    })
   }
 
   /**
@@ -349,25 +355,15 @@ export abstract class LendProvider<
     chainId?: SupportedChainId,
     asset?: Asset,
   ): LendMarketConfig[] {
-    let configs = this._config.marketAllowlist || []
-    if (chainId !== undefined)
-      configs = configs.filter((m: LendMarketConfig) => m.chainId === chainId)
-    if (asset !== undefined)
-      configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
-    return configs
+    return filterMatchingConfigs(this._config.marketAllowlist, [
+      chainId === undefined
+        ? undefined
+        : (market: LendMarketConfig) => market.chainId === chainId,
+      asset === undefined
+        ? undefined
+        : (market: LendMarketConfig) => market.asset === asset,
+    ])
   }
-
-  /**
-   * Abstract methods that must be implemented by providers
-   */
-
-  /**
-   * Chain IDs supported by the underlying protocol.
-   * @description Each provider implements this to declare the chains its protocol
-   * is deployed on, without any SDK-level or developer-config filtering.
-   * @returns Array of chain IDs the protocol natively supports
-   */
-  abstract protocolSupportedChainIds(): number[]
 
   /**
    * Describe a deposit for opening a lending position. Providers describe

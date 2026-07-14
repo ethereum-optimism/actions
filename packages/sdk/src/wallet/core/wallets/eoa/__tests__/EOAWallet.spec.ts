@@ -14,6 +14,7 @@ import { getRandomAddress } from '@/__mocks__/utils.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { TransactionData } from '@/types/lend/index.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
 import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 
@@ -33,7 +34,11 @@ class TestEOAWallet extends EOAWallet {
     signer: LocalAccount,
     chainManager: ChainManager,
   ) {
-    super(chainManager)
+    super({
+      chainManager,
+      actionProviders: {},
+      actionSettings: {},
+    })
     this.address = address
     this.signer = signer
   }
@@ -186,6 +191,41 @@ describe('EOAWallet', () => {
       expect(mockChainManager.getChain).toHaveBeenCalledWith(unichain.id)
       expect(createWalletClient).toHaveBeenCalled()
     })
+
+    it('throws TransactionConfirmedButRevertedError on a reverted receipt', async () => {
+      const revertedReceipt: EOATransactionReceipt = {
+        ...mockReceipt,
+        status: 'reverted',
+      }
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValue(
+        revertedReceipt,
+      )
+
+      await expect(
+        wallet.send(mockTransactionData, unichain.id),
+      ).rejects.toBeInstanceOf(TransactionConfirmedButRevertedError)
+    })
+
+    it('attaches the reverted receipt to the thrown error for post-mortem', async () => {
+      const revertedReceipt: EOATransactionReceipt = {
+        ...mockReceipt,
+        status: 'reverted',
+      }
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValue(
+        revertedReceipt,
+      )
+
+      await expect(
+        wallet.send(mockTransactionData, unichain.id),
+      ).rejects.toMatchObject({ receipt: revertedReceipt })
+    })
+
+    it('returns the receipt unchanged on a successful receipt', async () => {
+      const receipt = await wallet.send(mockTransactionData, unichain.id)
+
+      expect(receipt).toBe(mockReceipt)
+      expect(receipt.status).toBe('success')
+    })
   })
 
   describe('sendBatch', () => {
@@ -301,6 +341,40 @@ describe('EOAWallet', () => {
 
       expect(receipts).toEqual([])
       expect(mockWalletClient.sendTransaction).not.toHaveBeenCalled()
+    })
+
+    it('stops on the first reverted leg and does not sign any later tx', async () => {
+      // F021: given [approval (success), position (reverted)], sendBatch must
+      // throw on the reverted leg and never sign the tx after it, so a
+      // max-mode approval can't be left standing with no deposit while the
+      // batch is reported as success.
+      vi.mocked(mockWalletClient.sendTransaction).mockReset()
+      vi.mocked(mockWalletClient.sendTransaction)
+        .mockResolvedValueOnce(mockReceipt.transactionHash)
+        .mockResolvedValueOnce(mockReceipt2.transactionHash)
+        .mockResolvedValueOnce(mockReceipt3.transactionHash)
+
+      const revertedReceipt2: EOATransactionReceipt = {
+        ...mockReceipt2,
+        status: 'reverted',
+      }
+      vi.mocked(mockPublicClient.waitForTransactionReceipt).mockReset()
+      vi.mocked(mockPublicClient.waitForTransactionReceipt)
+        .mockResolvedValueOnce(mockReceipt) // approval lands
+        .mockResolvedValueOnce(revertedReceipt2) // position reverts
+
+      await expect(
+        wallet.sendBatch(
+          [mockTransactionData1, mockTransactionData2, mockTransactionData3],
+          unichain.id,
+        ),
+      ).rejects.toBeInstanceOf(TransactionConfirmedButRevertedError)
+
+      // Signed the approval and the reverting position, but never the third tx.
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(2)
+      expect(mockWalletClient.sendTransaction).not.toHaveBeenCalledWith(
+        mockTransactionData3,
+      )
     })
 
     it('should maintain transaction order in results', async () => {

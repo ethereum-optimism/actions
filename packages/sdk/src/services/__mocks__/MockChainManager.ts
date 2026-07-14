@@ -1,10 +1,13 @@
-import { chainById } from '@eth-optimism/viem/chains'
 import type { Chain, PublicClient } from 'viem'
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
 import { type MockedFunction, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  getSupportedChain,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 
 export interface MockChainManagerConfig {
   supportedChains: SupportedChainId[]
@@ -85,7 +88,11 @@ export class MockChainManager {
   }
 
   getChain(chainId: SupportedChainId): Chain {
-    return chainById[chainId]
+    const chain = getSupportedChain(chainId)
+    if (!chain) {
+      throw new ChainNotSupportedError({ chainId })
+    }
+    return chain
   }
 
   getRpcUrls(chainId: SupportedChainId): string[] {

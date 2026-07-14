@@ -1,5 +1,120 @@
 # @eth-optimism/actions-sdk
 
+## 0.8.0
+
+### Minor Changes
+
+- [#489](https://github.com/ethereum-optimism/actions/pull/489) [`eafff2c`](https://github.com/ethereum-optimism/actions/commit/eafff2cee8f59bf922a66abd3c4f028d21b2e7f6) Thanks [@its-everdred](https://github.com/its-everdred)! - Add `AaveBorrowProvider` for Aave V3 borrow markets.
+  - Registers `aave` in `BORROW_PROVIDER_NAMES` and `config.borrow.aave`, and
+    exports `AaveBorrowProvider` from the SDK entry point.
+  - Adds an `aave-v3` variant to `BorrowMarketId` / `BorrowMarketConfig`, with a
+    synthetic market id derived from `(chainId, collateralReserve, debtReserve)`
+    since Aave has no params-hash market id.
+  - Models a borrow market as the synthetic (collateral, debt) reserve pair on a
+    shared Aave Pool: reads come from `getReserveData` / `getUserAccountData` and
+    the specific reserve token balances via multicall; writes build `Pool.borrow`
+    / `repay` / `supply` / `withdraw` calldata, with native ETH routed through the
+    WETH gateway and full repays using `type(uint256).max`.
+  - Hoists the shared Aave addresses and Pool ABI to `actions/shared/aave/` so
+    both the lend and borrow providers consume one cross-domain home.
+
+  Types note: `BorrowMarketId` and `BorrowMarketConfig` widen from a single shape
+  into a discriminated union over `kind` (`morpho-blue` | `aave-v3`). This is a
+  source-level type change for consumers that constructed those types without a
+  `kind` or read `marketParams` without narrowing first; it ships under a `minor`
+  because the borrow surface is pre-1.0 and still landing incrementally.
+
+- [#490](https://github.com/ethereum-optimism/actions/pull/490) [`7cfe1e2`](https://github.com/ethereum-optimism/actions/commit/7cfe1e22f0c87fad87651e7011ef5881c1d6b229) Thanks [@its-everdred](https://github.com/its-everdred)! - Drop the redundant `borrowProvider` and `lendProvider` fields from
+  `BorrowMarketConfig`. The `kind` discriminant already routes a market to its
+  provider, so the provider name no longer needs to be stored on every market
+  config. The CLI derives the display provider name from `kind` via the new
+  exported `borrowProviderForKind(kind)` helper.
+
+- [#458](https://github.com/ethereum-optimism/actions/pull/458) [`b07e295`](https://github.com/ethereum-optimism/actions/commit/b07e295505953bd3420fa66f0b0d49e97d743466) Thanks [@its-everdred](https://github.com/its-everdred)! - Add SDK borrow namespace with Morpho Blue support.
+  - `actions.borrow.getMarket`/`getMarkets`/`getPosition` and
+    `wallet.borrow.openPosition`/`closePosition`/`depositCollateral`/`withdrawCollateral`/`repay`
+    expose a borrow surface mirroring the existing lend and swap namespaces.
+  - `MorphoBorrowProvider` ships the read side via raw multicall against
+    Morpho Blue with results passed through Morpho's `Market` /
+    `AccrualPosition` for health-factor and liquidation-price math, and
+    the write side via hand-rolled `supplyCollateral` / `borrow` / `repay` /
+    `withdrawCollateral` calldata.
+  - Pre-built `BorrowQuote` flow mirrors swap's `QUOTE_DISCRIMINATOR` pattern,
+    with recipient binding, expiration, and chain/market id validation
+    before dispatch.
+  - Standalone `computeMorphoMarketId` / `verifyMorphoMarketId` helpers
+    enable config-time sanity checks; provider constructor throws
+    `BorrowMarketParamsMismatchError` when configured `marketId` doesn't
+    match the configured `MarketParams`.
+  - New `BorrowSettings` (default `approvalMode: 'exact'`, default
+    `quoteExpirationSeconds: 30`, default `healthBufferPct: 0.05`) and
+    `BorrowConfig` types.
+  - New `MockBorrowProvider` for downstream backend/frontend test suites.
+
+- [#501](https://github.com/ethereum-optimism/actions/pull/501) [`2566c23`](https://github.com/ethereum-optimism/actions/commit/2566c234c3d760dfba5801e0e4dc9c9437b24987) Thanks [@its-everdred](https://github.com/its-everdred)! - Allow Ethereum L1 chains (mainnet, sepolia) in `ChainManager`.
+
+  `ChainManager` resolved chain objects exclusively through `chainById` from
+  `@eth-optimism/viem/chains`, a Superchain-only registry that omits Ethereum
+  mainnet (chain 1) and sepolia. Configuring either chain threw
+  `ChainNotSupportedError`, which made operator-trusted ENS reads (which run on
+  mainnet) impossible. `ChainManager` now resolves chain definitions from the
+  SDK supported-chain registry, which already includes Ethereum L1 chains.
+  `getChain` throws `ChainNotSupportedError` for an unresolvable id instead of
+  returning `undefined`.
+
+- [#466](https://github.com/ethereum-optimism/actions/pull/466) [`338f38e`](https://github.com/ethereum-optimism/actions/commit/338f38e68b4771044a707a60faaa321b6cca55f9) Thanks [@its-everdred](https://github.com/its-everdred)! - Fix Morpho borrow position collateral accounting for pledged vault shares
+  and frontend-wallet borrow position reads.
+  - `BorrowMarketPosition` exposes the raw on-chain collateral balance as
+    `collateralShares` (vault shares for vault-wrapped collateral). The SDK no
+    longer derives or formats an underlying-asset collateral amount: the
+    `collateralAmount`, `collateralAmountFormatted`, and `collateralSharesFormatted`
+    fields are removed. Consumers that need an underlying display amount convert
+    vault shares themselves via the vault's `convertToAssets`.
+  - `WalletBorrowNamespace` gains a public `getPosition(params)` method
+    that binds the recipient to the wallet address.
+
+- [#508](https://github.com/ethereum-optimism/actions/pull/508) [`25c0702`](https://github.com/ethereum-optimism/actions/commit/25c070291c094a9a93f30fab9e468b963b360508) Thanks [@its-everdred](https://github.com/its-everdred)! - Add aggregate lending position queries with single-chain, multi-chain, and all-configured-chain filters plus nested result options.
+
+- [#520](https://github.com/ethereum-optimism/actions/pull/520) [`287bad7`](https://github.com/ethereum-optimism/actions/commit/287bad74fdd7e93041c74586d0e5ce7447d0e19f) Thanks [@its-everdred](https://github.com/its-everdred)! - Pin signing-path dependency ranges and make vendor SDKs optional/lazy.
+
+  Hardens the published manifest so a consumer's fresh install resolves the same
+  signing-path graph CI tests against, and so single-vendor consumers stop pulling
+  vendor SDKs they never use. No runtime behavior change.
+  - **`viem` is now a required `peerDependency`** (`>=2.33.0 <2.34.0`) instead of a
+    bundled `dependency`. **Action required for consumers: install `viem@2.33.x`
+    alongside the SDK.** This lets the consumer dedupe to a single `viem` across
+    the smart-wallet CREATE2 / UserOp path, where the deterministic
+    funds-receiving address is delegated to viem account-abstraction internals.
+  - Signing-path runtime deps pinned to the CI-tested band: `permissionless`,
+    `@morpho-org/blue-sdk`, `@morpho-org/blue-sdk-viem`, `@morpho-org/morpho-ts`.
+    The tight `>=tested <next-minor` ranges are deliberate (not the repo's default
+    caret style): the Morpho marketId/calldata math and the viem CREATE2 address
+    are fund-safety-bearing, and an in-range minor bump can shift them silently.
+  - All 10 hosted-wallet vendor SDKs are now `peerDependenciesMeta.optional` with
+    upper-bounded ranges (`>=x <next-major`), so a Turnkey-only or Local-only
+    integrator is no longer told they are missing 9 packages, and a future
+    breaking vendor major is no longer silently accepted into the signing path.
+  - The node/react wallet barrels re-export `PrivyHostedWalletProvider`,
+    `PrivyWallet`, and `DynamicWallet` as **type-only** exports. Providers are
+    still constructed lazily via the hosted-wallet registry with provider type
+    `privy`; only the eager runtime re-export, which pulled
+    `@privy-io/node` / `@dynamic-labs/ethereum` into every consumer's import graph
+    is removed. Direct `new PrivyHostedWalletProvider(...)` from the SDK root was
+    never the supported construction path.
+
+### Patch Changes
+
+- [#518](https://github.com/ethereum-optimism/actions/pull/518) [`d296846`](https://github.com/ethereum-optimism/actions/commit/d296846f23fd640e95a9a99461c5207ae38ef6d8) Thanks [@its-everdred](https://github.com/its-everdred)! - Consolidate the SDK Anvil fork-test harness behind one network test utility surface.
+
+- [#517](https://github.com/ethereum-optimism/actions/pull/517) [`42323a6`](https://github.com/ethereum-optimism/actions/commit/42323a60fa5801d1789139132f908d8204d09dbd) Thanks [@its-everdred](https://github.com/its-everdred)! - Clamp swap slippage validation to finite values in [0, 1) and reuse
+  provider-derived slippage bounds when encoding Uniswap calldata.
+
+- [#530](https://github.com/ethereum-optimism/actions/pull/530) [`ccfe6a2`](https://github.com/ethereum-optimism/actions/commit/ccfe6a2cd89fcd81931fd9b13c1fd160ab501b1a) Thanks [@its-everdred](https://github.com/its-everdred)! - Update SDK test tooling to a patched Vitest release and pin the private Turnkey compatibility matrix while preserving published peer ranges.
+
+- [#500](https://github.com/ethereum-optimism/actions/pull/500) [`3c554c1`](https://github.com/ethereum-optimism/actions/commit/3c554c1a81729ffb1dd307164490ccd6e1c5c9b0) Thanks [@its-everdred](https://github.com/its-everdred)! - Fix Velodrome universal router swaps to encode the requested output recipient and keep allowance checks bound to the executing wallet.
+
+- [#524](https://github.com/ethereum-optimism/actions/pull/524) [`010e5d5`](https://github.com/ethereum-optimism/actions/commit/010e5d57ecebeec9b4627eacad3a2dabce82f64d) Thanks [@its-everdred](https://github.com/its-everdred)! - Fix Uniswap universal router swaps to encode custom output recipients in V4 take actions.
+
 ## 0.7.0
 
 ### Minor Changes

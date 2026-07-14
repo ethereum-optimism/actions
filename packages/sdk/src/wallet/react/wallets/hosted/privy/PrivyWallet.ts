@@ -1,11 +1,13 @@
 import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
+
+interface PrivyWalletCreateOptions extends BaseWalletCreateOptions {
+  connectedWallet: ConnectedWallet
+}
 
 /**
  * Privy wallet implementation
@@ -17,31 +19,18 @@ export class PrivyWallet extends EOAWallet {
 
   private readonly connectedWallet: ConnectedWallet
 
-  private constructor(
-    chainManager: ChainManager,
-    connectedWallet: ConnectedWallet,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
-    this.connectedWallet = connectedWallet
+  private constructor(params: PrivyWalletCreateOptions) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
+    this.connectedWallet = params.connectedWallet
   }
 
-  static async create(params: {
-    chainManager: ChainManager
-    connectedWallet: ConnectedWallet
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    supportedAssets?: Asset[]
-  }): Promise<PrivyWallet> {
-    const wallet = new PrivyWallet(
-      params.chainManager,
-      params.connectedWallet,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-    )
+  static async create(params: PrivyWalletCreateOptions): Promise<PrivyWallet> {
+    const wallet = new PrivyWallet(params)
     await wallet.initialize()
     return wallet
   }

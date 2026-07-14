@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
-import { isAssetSupportedOnChain, parseAssetAmount } from '@/utils/assets.js'
+import {
+  isAssetSupportedOnChain,
+  parseAssetAmount,
+  parseDecimalAmount,
+} from '@/utils/assets.js'
 
 describe('Asset Utilities', () => {
   describe('isAssetSupportedOnChain', () => {
@@ -38,6 +42,13 @@ describe('Asset Utilities', () => {
 
     it('handles fractional amounts', () => {
       expect(parseAssetAmount(MockUSDCAsset, 0.5)).toBe(500000n)
+    })
+  })
+
+  describe('parseDecimalAmount', () => {
+    it('converts a human-readable amount using explicit decimals', () => {
+      expect(parseDecimalAmount(100, 6)).toBe(100000000n)
+      expect(parseDecimalAmount(1, 18)).toBe(1000000000000000000n)
     })
   })
 })

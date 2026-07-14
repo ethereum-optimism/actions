@@ -4,7 +4,13 @@ import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import {
+  Bytes32Schema,
+  ChainIdsStringSchema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
+import * as borrowService from '@/services/borrow.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
 import type { GetWalletResponse } from '@/types/service.js'
@@ -18,11 +24,27 @@ const LendPositionRequestSchema = z.object({
   }),
 })
 
-const DripEthToWalletRequestSchema = z.object({
-  body: z.object({
-    walletAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format'),
+const LendPositionsRequestSchema = z.object({
+  query: z
+    .object({
+      chainId: ChainIdStringSchema.optional(),
+      chainIds: ChainIdsStringSchema.optional(),
+      nonZeroOnly: z.enum(['true', 'false']).optional(),
+    })
+    .refine(
+      ({ chainId, chainIds }) =>
+        chainId === undefined || chainIds === undefined,
+      {
+        message: 'Pass either chainId or chainIds, not both',
+        path: ['chainIds'],
+      },
+    ),
+})
+
+const BorrowPositionRequestSchema = z.object({
+  params: z.object({
+    chainId: ChainIdStringSchema,
+    marketId: Bytes32Schema,
   }),
 })
 
@@ -93,6 +115,62 @@ export class WalletController {
     return c.json({ result: position })
   }
 
+  /** GET - All wallet lend positions with optional chain and balance filters. */
+  async getLendPositions(c: Context) {
+    const validation = await validateRequest(c, LendPositionsRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      query: { chainId, chainIds, nonZeroOnly },
+    } = validation.data
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const positions = await walletService.getLendPositions({
+      wallet,
+      params: {
+        ...(chainIds ? { chainIds } : chainId ? { chainId } : {}),
+        ...(nonZeroOnly === undefined
+          ? {}
+          : { options: { nonZeroOnly: nonZeroOnly === 'true' } }),
+      },
+    })
+    return c.json({ result: positions })
+  }
+
+  /**
+   * GET - Borrow position for a wallet (Morpho variant). SDK errors
+   * propagate to the borrow-scoped `app.onError` handler.
+   */
+  async getBorrowPosition(c: Context) {
+    const validation = await validateRequest(c, BorrowPositionRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      params: { chainId, marketId: marketIdHex },
+    } = validation.data
+    // Resolve kind from the allowlist; it is not trusted from the path.
+    const marketId = borrowService.resolveBorrowMarketId(chainId, marketIdHex)
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const position = await walletService.getBorrowPosition({
+      marketId,
+      walletAddress: wallet.address as Address,
+    })
+    return c.json({ result: position })
+  }
+
   /**
    * POST - Fund a wallet with test tokens (ETH or USDC)
    */
@@ -114,29 +192,49 @@ export class WalletController {
   }
 
   /**
-   * POST - Drip ETH to a wallet from the faucet
+   * POST - Drip ETH from the faucet to the authenticated user's own wallet.
+   *
+   * The recipient is derived from the session (never the request body), so an
+   * authenticated caller can only fund their own wallet. A synchronous
+   * per-recipient reservation is taken before the admin signer runs, so
+   * concurrent requests for one wallet cannot all drip and a swept wallet
+   * cannot re-qualify within the cooldown.
    */
   async dripEthToWallet(c: Context) {
-    const validation = await validateRequest(c, DripEthToWalletRequestSchema)
-    if (!validation.success) return validation.response
-    const {
-      body: { walletAddress },
-    } = validation.data
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
     try {
-      const isWalletEligibleForFaucet =
-        await faucetService.isWalletEligibleForFaucet(walletAddress as Address)
-      if (!isWalletEligibleForFaucet) {
+      const wallet = await walletService.getWallet(authResult.auth.idToken)
+      if (!wallet) {
+        return errorResponse(c, 'Wallet not found', 404)
+      }
+      const recipient = wallet.address as Address
+
+      const eligible = await faucetService.isWalletEligibleForFaucet(recipient)
+      if (!eligible) {
         return errorResponse(c, 'Wallet is not eligible for the faucet', 400)
       }
 
-      const result = await faucetService.dripEthToWallet(
-        walletAddress as Address,
-      )
-      if (!result.success) {
-        return errorResponse(c, 'Failed to drip ETH to wallet', 500)
+      if (!faucetService.reserveDrip(recipient)) {
+        return errorResponse(
+          c,
+          'Faucet already used for this wallet; try again later',
+          429,
+        )
       }
 
-      return c.json({ result: { userOpHash: result.userOpHash } })
+      try {
+        const result = await faucetService.dripEthToWallet(recipient)
+        if (!result.success) {
+          faucetService.releaseDrip(recipient)
+          return errorResponse(c, 'Failed to drip ETH to wallet', 500)
+        }
+        return c.json({ result: { userOpHash: result.userOpHash } })
+      } catch (error) {
+        faucetService.releaseDrip(recipient)
+        return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
+      }
     } catch (error) {
       return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
     }

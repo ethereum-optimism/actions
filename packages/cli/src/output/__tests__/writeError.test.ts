@@ -131,6 +131,19 @@ describe('writeError', () => {
     expect(() => JSON.parse(text)).toThrow()
   })
 
+  it('strips terminal control bytes from the text-mode error line', () => {
+    // C0/C1 bytes can carry ANSI/OSC terminal controls in ENS text.
+    setJsonMode(false)
+    const malicious =
+      'ENS name "evil\u001b[2J\u001b]0;pwned\u0007.eth" is invalid'
+    writeError(new CliError('validation', malicious))
+    const text = String(stderrSpy.mock.calls[0]?.[0])
+    expect(text).not.toContain('\u001b')
+    expect(text).not.toContain('\u0007')
+    expect(text).toContain('evil')
+    expect(text).toContain('.eth')
+  })
+
   it('swallows EPIPE from the stderr write', () => {
     stderrSpy.mockImplementationOnce(() => {
       const e: NodeJS.ErrnoException = new Error('epipe')

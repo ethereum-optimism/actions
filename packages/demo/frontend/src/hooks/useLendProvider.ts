@@ -1,6 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react'
+import {
+  dispatchEarnPositionsChanged,
+  EARN_POSITIONS_CHANGED_EVENT,
+} from '@/utils/earnSync'
 import type { Address } from 'viem'
 import type {
+  BorrowReceipt,
   LendMarket,
   LendMarketId,
   LendMarketPosition,
@@ -15,8 +20,83 @@ import { useMarketData } from '@/hooks/useMarketData'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
-import type { LendExecutePositionParams } from '@/types/api'
+import type {
+  LendExecutePositionParams,
+  LendPositionsParams,
+} from '@/types/api'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
+import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
+import type { MarketInfo } from '@/components/earn/MarketSelector'
+import type { MarketPosition } from '@/types/market'
+
+/** Match a market to its position by chain and case-insensitive address. */
+function findPosition(
+  positions: readonly LendMarketPosition[],
+  marketId: { address: string; chainId: number },
+): LendMarketPosition | undefined {
+  return positions.find(
+    (p) =>
+      p.marketId.address.toLowerCase() === marketId.address.toLowerCase() &&
+      p.marketId.chainId === marketId.chainId,
+  )
+}
+
+function toMarketPosition(
+  market: MarketInfo,
+  position: LendMarketPosition,
+): MarketPosition {
+  return {
+    marketName: market.name,
+    marketLogo: market.logo,
+    networkName: market.networkName,
+    networkLogo: market.networkLogo,
+    asset: market.asset,
+    assetLogo: market.assetLogo,
+    apy: market.apy,
+    depositedAmount: position.balanceFormatted,
+    directDepositedAmount: position.balanceFormatted,
+    depositedShares: position.sharesFormatted,
+    depositedSharesRaw: position.shares,
+    directDepositedShares: position.sharesFormatted,
+    directDepositedSharesRaw: position.shares,
+    pledgedCollateralAmount: null,
+    isLoadingApy: false,
+    isLoadingPosition: false,
+    marketId: market.marketId,
+    provider: market.provider,
+  }
+}
+
+/** Seed the per-market position cache so single-market queries don't re-fetch. */
+function seedPositionCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  positions: readonly LendMarketPosition[],
+): void {
+  for (const position of positions) {
+    queryClient.setQueryData(
+      ['position', position.marketId.address, position.marketId.chainId],
+      position,
+    )
+  }
+}
+
+/** Join configured markets to their positions, keeping only funded markets. */
+function buildFundedPositions(
+  markets: readonly MarketInfo[],
+  positions: readonly LendMarketPosition[],
+): MarketPosition[] {
+  return markets
+    .map((market) => ({
+      market,
+      position: findPosition(positions, market.marketId),
+    }))
+    .filter(
+      (entry): entry is { market: MarketInfo; position: LendMarketPosition } =>
+        entry.position !== undefined && entry.position.balance > 0n,
+    )
+    .map((entry) => toMarketPosition(entry.market, entry.position))
+}
 
 /**
  * Operations interface for wallet interactions
@@ -26,6 +106,7 @@ export interface EarnOperations {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
+  getPositions: (params?: LendPositionsParams) => Promise<LendMarketPosition[]>
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (
     params: LendExecutePositionParams,
@@ -49,6 +130,8 @@ export interface EarnOperations {
 interface UseLendProviderParams {
   operations: EarnOperations
   ready: boolean
+  borrowOperations?: BorrowOperations
+  walletAddress?: Address | null
   logPrefix?: string
 }
 
@@ -59,6 +142,8 @@ interface UseLendProviderParams {
 export function useLendProvider({
   operations,
   ready,
+  borrowOperations,
+  walletAddress,
   logPrefix = '[useLendProvider]',
 }: UseLendProviderParams) {
   const hasLoadedMarkets = useRef(false)
@@ -79,6 +164,26 @@ export function useLendProvider({
   } = useMarketData()
 
   const isReady = useCallback(() => ready, [ready])
+
+  const loadMarketPositions = useCallback(
+    async (marketList: readonly MarketInfo[]) => {
+      const positions = await operations.getPositions()
+      seedPositionCache(queryClient, positions)
+      setMarketPositions(buildFundedPositions(marketList, positions))
+      return positions
+    },
+    [operations, queryClient, setMarketPositions],
+  )
+
+  const refreshAllPositions = useCallback(async () => {
+    if (!ready || markets.length === 0) return
+    // Preserve best-effort refreshes for event-driven callers.
+    try {
+      await loadMarketPositions(markets)
+    } catch (error) {
+      console.error('Error refreshing positions:', error)
+    }
+  }, [loadMarketPositions, markets, ready])
 
   // Fetch available markets on mount
   useEffect(() => {
@@ -103,76 +208,20 @@ export function useLendProvider({
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
-        // Log and fetch positions for all markets in parallel
+        // Log the aggregate position fetch once.
         const positionActivity = logActivity('getPosition')
-        const positionPromises = marketInfoList.map(async (market) => {
-          try {
-            const position = await operations.getPosition({
-              address: market.marketId.address as Address,
-              chainId: market.marketId.chainId as SupportedChainId,
-            })
-            return { market, position }
-          } catch (error) {
-            console.error(
-              `Error fetching position for market ${market.name}:`,
-              error,
-            )
-            return null
-          }
-        })
-
-        const positionResults = await Promise.all(positionPromises)
+        const positions = await loadMarketPositions(marketInfoList)
         positionActivity?.confirm()
-
-        // Seed position cache for each market so useMarketPosition doesn't re-fetch
-        for (const result of positionResults) {
-          if (result) {
-            queryClient.setQueryData(
-              [
-                'position',
-                result.market.marketId.address,
-                result.market.marketId.chainId,
-              ],
-              result.position,
-            )
-          }
-        }
-
-        // Build initial market positions array with all markets that have deposits
-        const initialPositions = positionResults
-          .filter((result) => {
-            if (!result) return false
-            return result.position.balance > 0n
-          })
-          .map((result) => {
-            const { market, position } = result!
-            return {
-              marketName: market.name,
-              marketLogo: market.logo,
-              networkName: market.networkName,
-              networkLogo: market.networkLogo,
-              asset: market.asset,
-              assetLogo: market.assetLogo,
-              apy: market.apy,
-              depositedAmount: position.balanceFormatted,
-              isLoadingApy: false,
-              isLoadingPosition: false,
-              marketId: market.marketId,
-              provider: market.provider,
-            }
-          })
-
-        setMarketPositions(initialPositions)
 
         // Set default selected market (first one, preferably Morpho/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
           const defaultMarket =
             marketInfoList.find((m) => m.name === 'Morpho') || marketInfoList[0]
 
-          // Find if we already fetched position for this market
-          const defaultPosition = positionResults.find(
-            (r) =>
-              r?.market.marketId.address === defaultMarket.marketId.address,
+          // Reuse the position we already fetched for this market
+          const defaultPosition = findPosition(
+            positions,
+            defaultMarket.marketId,
           )
 
           setSelectedMarket({
@@ -183,7 +232,13 @@ export function useLendProvider({
             asset: defaultMarket.asset,
             assetLogo: defaultMarket.assetLogo,
             apy: defaultMarket.apy,
-            depositedAmount: defaultPosition?.position.balanceFormatted || null,
+            depositedAmount: defaultPosition?.balanceFormatted || null,
+            directDepositedAmount: defaultPosition?.balanceFormatted || null,
+            depositedShares: defaultPosition?.sharesFormatted || null,
+            depositedSharesRaw: defaultPosition?.shares || null,
+            directDepositedShares: defaultPosition?.sharesFormatted || null,
+            directDepositedSharesRaw: defaultPosition?.shares || null,
+            pledgedCollateralAmount: null,
             isLoadingApy: false,
             isLoadingPosition: false,
             marketId: defaultMarket.marketId,
@@ -206,9 +261,9 @@ export function useLendProvider({
     operations,
     logPrefix,
     logActivity,
+    loadMarketPositions,
     queryClient,
     setMarkets,
-    setMarketPositions,
     selectedMarket,
     setSelectedMarket,
     setIsLoadingMarkets,
@@ -225,7 +280,9 @@ export function useLendProvider({
     isInitialLoad,
     isLoadingPosition,
     depositedAmount,
-    handleTransaction,
+    depositedShares,
+    depositedSharesRaw,
+    handleTransaction: handleTransactionBase,
   } = useWalletBalance({
     getTokenBalances: operations.getTokenBalances,
     getMarkets: operations.getMarkets,
@@ -259,6 +316,12 @@ export function useLendProvider({
       const updatedMarket = {
         ...selectedMarket,
         depositedAmount,
+        directDepositedAmount: depositedAmount,
+        depositedShares,
+        depositedSharesRaw,
+        directDepositedShares: depositedShares,
+        directDepositedSharesRaw: depositedSharesRaw,
+        pledgedCollateralAmount: null,
         apy,
       }
 
@@ -274,6 +337,8 @@ export function useLendProvider({
         // Only update if the deposited amount or APY actually changed
         if (
           existing.depositedAmount === depositedAmount &&
+          existing.depositedShares === depositedShares &&
+          existing.depositedSharesRaw === depositedSharesRaw &&
           existing.apy === apy
         ) {
           return prev // No change, return same reference to prevent re-render
@@ -295,7 +360,120 @@ export function useLendProvider({
 
       return prev // No change needed
     })
-  }, [selectedMarket, depositedAmount, apy, setMarketPositions])
+  }, [
+    selectedMarket,
+    depositedAmount,
+    depositedShares,
+    depositedSharesRaw,
+    apy,
+    setMarketPositions,
+  ])
+
+  useEffect(() => {
+    const handlePositionsChanged = () => {
+      void refreshAllPositions()
+    }
+    window.addEventListener(
+      EARN_POSITIONS_CHANGED_EVENT,
+      handlePositionsChanged,
+    )
+    return () => {
+      window.removeEventListener(
+        EARN_POSITIONS_CHANGED_EVENT,
+        handlePositionsChanged,
+      )
+    }
+  }, [refreshAllPositions])
+
+  const handleTransaction = useCallback(
+    async (
+      mode: 'lend' | 'withdraw',
+      amount: number,
+      options?: {
+        releaseCollateral?: {
+          marketId: Parameters<
+            BorrowOperations['withdrawCollateral']
+          >[1]['marketId']
+          amountRaw: bigint
+        }
+      },
+    ) => {
+      if (
+        mode !== 'withdraw' ||
+        !options?.releaseCollateral ||
+        !borrowOperations ||
+        !walletAddress
+      ) {
+        return handleTransactionBase(mode, amount)
+      }
+
+      if (!selectedMarket) {
+        throw new Error('No market selected')
+      }
+
+      const activity = logActivity('withdraw', {
+        amount: amount.toString(),
+        assetSymbol: selectedMarket.asset.metadata.symbol,
+        marketName: selectedMarket.marketName,
+        chainId: selectedMarket.marketId.chainId,
+      })
+
+      try {
+        // Two sequential txs; batching into a single sendBatch is tracked in #427.
+        const collateralReceipt: BorrowReceipt =
+          await borrowOperations.withdrawCollateral(walletAddress, {
+            marketId: options.releaseCollateral.marketId,
+            amount: { amountRaw: options.releaseCollateral.amountRaw },
+          })
+        const lendReceipt = await operations.closePosition({
+          marketId: selectedMarket.marketId as LendMarketId,
+          amount,
+          asset: selectedMarket.asset,
+          marketName: selectedMarket.marketName.toLowerCase(),
+        })
+
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['tokenBalances'] }),
+          queryClient.invalidateQueries({
+            queryKey: [
+              'position',
+              selectedMarket.marketId.address,
+              selectedMarket.marketId.chainId,
+            ],
+          }),
+        ])
+        await refreshAllPositions()
+        dispatchEarnPositionsChanged()
+
+        const blockExplorerUrl =
+          getBlockExplorerUrl(selectedMarket.marketId.chainId, lendReceipt) ||
+          getBlockExplorerUrl(
+            options.releaseCollateral.marketId.chainId,
+            collateralReceipt,
+          )
+        activity?.confirm({ blockExplorerUrl })
+
+        const { txHash, userOpHash } = extractHashes(lendReceipt)
+        return {
+          transactionHash: txHash || userOpHash,
+          blockExplorerUrl,
+        }
+      } catch (error) {
+        activity?.error()
+        throw error
+      }
+    },
+    [
+      borrowOperations,
+      handleTransactionBase,
+      logActivity,
+      operations,
+      queryClient,
+      refreshAllPositions,
+      selectedMarket,
+      walletAddress,
+    ],
+  )
 
   return {
     // Market data
@@ -305,6 +483,7 @@ export function useLendProvider({
     handleMarketSelect,
     isLoadingMarkets,
     marketPositions,
+    setMarketPositions,
     // Balance data
     assetBalance,
     isLoadingBalance,

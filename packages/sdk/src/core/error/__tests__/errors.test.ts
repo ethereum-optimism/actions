@@ -18,6 +18,9 @@ import {
   NativeAssetAddressError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
+  QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+  QuoteWalletAddressMissingError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
@@ -115,6 +118,37 @@ describe('ActionsError hierarchy', () => {
     expect(err).toBeInstanceOf(ActionsError)
   })
 
+  it('QuoteRecipientMismatchError', () => {
+    const err = new QuoteRecipientMismatchError({
+      quoteRecipient: '0xaaa',
+      walletAddress: '0xbbb',
+    })
+    expect(err.name).toBe('QuoteRecipientMismatchError')
+    expect(err.quoteRecipient).toBe('0xaaa')
+    expect(err.walletAddress).toBe('0xbbb')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err.shortMessage).toContain('0xaaa')
+    expect(err.shortMessage).toContain('0xbbb')
+    expect(err.shortMessage).not.toContain('SwapQuote')
+    expect(err.shortMessage).not.toContain('wallet.swap')
+  })
+
+  it('QuoteRecipientMissingError', () => {
+    const err = new QuoteRecipientMissingError()
+    expect(err.name).toBe('QuoteRecipientMissingError')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err.shortMessage).not.toContain('SwapQuote')
+    expect(err.shortMessage).toContain('Quote.recipient')
+  })
+
+  it('QuoteWalletAddressMissingError', () => {
+    const err = new QuoteWalletAddressMissingError()
+    expect(err.name).toBe('QuoteWalletAddressMissingError')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err.shortMessage).toContain('Quote.walletAddress')
+    expect(err.shortMessage).toContain('wallet.swap.getQuote')
+  })
+
   it('ExactOutputNotSupportedError', () => {
     const err = new ExactOutputNotSupportedError('Velodrome')
     expect(err.name).toBe('ExactOutputNotSupportedError')
@@ -206,6 +240,12 @@ describe('ActionsError hierarchy', () => {
       new ConflictingAmountsError(),
       new SameAssetError('ETH'),
       new QuoteExpiredError({ expiresAt: 0, currentTime: 1 }),
+      new QuoteRecipientMismatchError({
+        quoteRecipient: '0xaaa',
+        walletAddress: '0xbbb',
+      }),
+      new QuoteRecipientMissingError(),
+      new QuoteWalletAddressMissingError(),
       new ExactOutputNotSupportedError('X'),
       new ZeroAddressError('label'),
       new SlippageOutOfRangeError(1, 0.5),

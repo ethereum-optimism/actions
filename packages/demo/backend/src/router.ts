@@ -1,17 +1,34 @@
 import { readFileSync } from 'fs'
 import { Hono } from 'hono'
+import { rateLimiter } from 'hono-rate-limiter'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
 import * as assetsController from './controllers/assets.js'
+import * as borrowController from './controllers/borrow.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
-import { authMiddleware } from './middleware/auth.js'
+import { type AuthContext, authMiddleware } from './middleware/auth.js'
 
-export const router = new Hono()
+type RouterEnv = {
+  Variables: {
+    auth: AuthContext
+  }
+}
+
+export const router = new Hono<RouterEnv>()
 
 const walletController = new WalletController()
+const FAUCET_RATE_LIMIT_WINDOW_MS = 60_000
+const FAUCET_RATE_LIMIT_MAX = 10
+const faucetRateLimit = () =>
+  rateLimiter<RouterEnv>({
+    windowMs: FAUCET_RATE_LIMIT_WINDOW_MS,
+    limit: FAUCET_RATE_LIMIT_MAX,
+    message: { error: 'Too many requests' },
+    keyGenerator: (c) => c.get('auth').rateLimitKey,
+  })
 
 // Get package.json path relative to this file
 const __filename = fileURLToPath(import.meta.url)
@@ -42,6 +59,11 @@ router.get('/version', (c) => {
 
 router.get('/wallet/balance', authMiddleware, walletController.getBalance)
 router.get(
+  '/wallet/lend/positions',
+  authMiddleware,
+  walletController.getLendPositions,
+)
+router.get(
   '/wallet/lend/:chainId/:marketAddress/position',
   authMiddleware,
   walletController.getLendPosition,
@@ -53,7 +75,12 @@ router.post(
   authMiddleware,
   walletController.mintDemoUsdcToWallet,
 )
-router.post('/wallet/eth', walletController.dripEthToWallet)
+router.post(
+  '/wallet/eth',
+  authMiddleware,
+  faucetRateLimit(),
+  walletController.dripEthToWallet,
+)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)
@@ -63,6 +90,36 @@ router.post(
   authMiddleware,
   lendController.closePosition,
 )
+
+// Borrow endpoints
+router.get('/borrow/markets', borrowController.getMarkets)
+router.post('/borrow/quote', authMiddleware, borrowController.getQuote)
+router.get(
+  '/wallet/borrow/:chainId/:marketId/position',
+  authMiddleware,
+  walletController.getBorrowPosition,
+)
+router.post(
+  '/borrow/position/open',
+  authMiddleware,
+  borrowController.openPosition,
+)
+router.post(
+  '/borrow/position/close',
+  authMiddleware,
+  borrowController.closePosition,
+)
+router.post(
+  '/borrow/position/deposit-collateral',
+  authMiddleware,
+  borrowController.depositCollateral,
+)
+router.post(
+  '/borrow/position/withdraw-collateral',
+  authMiddleware,
+  borrowController.withdrawCollateral,
+)
+router.post('/borrow/position/repay', authMiddleware, borrowController.repay)
 
 // Assets endpoints
 router.get('/assets', assetsController.getAssets)

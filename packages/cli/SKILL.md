@@ -27,16 +27,29 @@ actions --json wallet balance --chain base-sepolia
   asset and/or one chain (no wallet).
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
+- `actions borrow markets [--collateral <symbol>] [--borrow-asset <symbol>]
+[--chain <name> | --chain-id <id>]` - borrow markets across configured
+  providers, optionally filtered (no wallet).
+- `actions borrow market --market <name>` - inspect one borrow market
+  by name (no wallet).
+- `actions borrow position --market <name> --wallet <address>` -
+  read any wallet's borrow position (no `PRIVATE_KEY` required).
 - `actions swap markets [--chain <name>]` - all swap markets across
   configured providers (no wallet).
 - `actions swap market --pool <id> --chain <name>` - inspect one swap
   market by pool id (no wallet).
 - `actions swap quote --in <symbol> --out <symbol>
-  (--amount-in <n> | --amount-out <n>) --chain <name>
-  [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
+(--amount-in <n> | --amount-out <n>) --chain <name>
+[--provider uniswap|velodrome] [--slippage <pct>]` - best quote
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
   quote sorted best price first.
+- `actions ens address <name>` - forward-resolve an ENS name to its
+  address on Ethereum mainnet (no wallet).
+- `actions ens name <address>` - reverse-resolve an address to its
+  primary ENS name, or `name: null` when none is set (no wallet).
+- `actions ens info <input>` - fetch the standard ENS profile text
+  records for a name or address (no wallet).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
@@ -49,9 +62,27 @@ actions --json wallet balance --chain base-sepolia
   withdraw assets. Pass `--max` to withdraw the wallet's full balance in
   the market (the CLI fetches the position first; subject to inflight
   interest accrual).
+- `actions wallet borrow position --market <name>` - the wallet's current
+  collateral, debt, LTV, and health factor in a borrow market.
+- `actions wallet borrow open --market <name> --borrow-amount <n>
+[--collateral-amount <n>] [--approval-mode <exact|max>]` - borrow
+  against existing or newly-deposited collateral. No `--max` (open path
+  only accepts strict amounts).
+- `actions wallet borrow close --market <name> [--borrow-amount <n> |
+--borrow-max] [--collateral-amount <n> | --collateral-max]` - unwind a
+  position. Each leg is independently xor'd; the borrow leg is required.
+  `--*-max` resolves on-chain at dispatch time so interest-accrual dust
+  doesn't strand the position.
+- `actions wallet borrow deposit-collateral --market <name> --amount <n>
+[--approval-mode <exact|max>]` - top up collateral without changing
+  debt.
+- `actions wallet borrow withdraw-collateral --market <name>
+(--amount <n> | --max)` - pull collateral back without touching debt.
+- `actions wallet borrow repay --market <name> (--amount <n> | --max)
+[--approval-mode <exact|max>]` - repay debt without touching collateral.
 - `actions wallet swap execute --in <symbol> --out <symbol>
-  (--amount-in <n> | --amount-out <n>) --chain <name>
-  [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
+(--amount-in <n> | --amount-out <n>) --chain <name>
+[--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
   on the resolved chain.
 
 ## Wallet model
@@ -77,6 +108,12 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   and hyphens are ignored, so `gauntlet-usdc` and `gauntletusdc`
   resolve to the same entry. The market entry carries its own chain
   and asset, so no `--chain` is needed.
+- **Markets (borrow)** - same name-based resolution as lend, plus `/`
+  is stripped (so `Demo dUSDC / OP` and `demo-dusdc-op` collapse to the
+  same key). Borrow market identifiers are discriminated unions (e.g.
+  `{ kind: 'morpho-blue', marketId: '0x...', chainId: ... }`); the CLI
+  forwards the resolved config to the SDK so a future second provider
+  variant adds no CLI work.
 - **Markets (swap)** - addressed pair-wise via `--in/--out/--chain` for
   quotes and execution. `--pool <id>` is only used for direct
   `swap market` lookups; the `poolId` surfaces in `swap markets`.
@@ -183,6 +220,67 @@ NL -> command examples:
 - "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
 - "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
 
+## Borrow semantics
+
+The wallet-scoped write verbs (`open`, `close`, `deposit-collateral`,
+`withdraw-collateral`, `repay`) emit a structured envelope on stdout:
+
+```json
+{
+  "action": "open" | "close" | "depositCollateral" | "withdrawCollateral" | "repay",
+  "market": {
+    "name": "...",
+    "marketId": { "kind": "morpho-blue", "marketId": "0x...", "chainId": ... },
+    "chainId": ...,
+    "provider": "morpho"
+  },
+  "borrowAmount":     <number | "max">,
+  "collateralAmount": <number | "max">,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ],
+  "ltv": <number | null>,
+  "healthFactor": <number | null>,
+  "liquidationPriceFormatted": "<string>"
+}
+```
+
+`borrowAmount` / `collateralAmount` echo what the verb touched (the
+inverse pair is omitted; e.g. `repay` reports only `borrowAmount`). The
+literal string `"max"` means the SDK resolved the full balance at
+dispatch time. `ltv` and `healthFactor` come from the SDK's
+`positionAfter` snapshot and are `null` when the action left no debt
+(divide-by-zero guard); they are omitted when the SDK did not surface a
+`positionAfter`. `transactions` is always an array, normalised the same
+way as lend / swap.
+
+A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
+error envelope on stderr (exit 5).
+
+`actions borrow position --market <name> --wallet <address>` reads any wallet's
+position without needing `PRIVATE_KEY`. `wallet borrow position` uses the
+connected wallet.
+
+`borrow markets` / `borrow market` / both `position` commands return the
+SDK shapes verbatim with bigints stringified. Position fields `ltv` and
+`healthFactor` are `null` when there is no outstanding debt.
+
+NL -> command examples:
+
+- "what borrow markets are available" -> `actions --json borrow markets`
+- "borrow 1 OP against 2 USDC of collateral on the demo market" ->
+  `actions --json wallet borrow open --market demo-dusdc-op --borrow-amount 1 --collateral-amount 2`
+- "close my borrow position completely" ->
+  `actions --json wallet borrow close --market demo-dusdc-op --borrow-max --collateral-max`
+- "repay all my debt on demo dUSDC/OP" ->
+  `actions --json wallet borrow repay --market demo-dusdc-op --max`
+- "withdraw all collateral from demo dUSDC/OP" ->
+  `actions --json wallet borrow withdraw-collateral --market demo-dusdc-op --max`
+- "top up 5 USDC of collateral on demo dUSDC/OP" ->
+  `actions --json wallet borrow deposit-collateral --market demo-dusdc-op --amount 5`
+- "what's the health factor of 0x... on demo dUSDC/OP" ->
+  `actions --json borrow position --market demo-dusdc-op --wallet 0x...`
+- "how am I doing in demo dUSDC/OP" ->
+  `actions --json wallet borrow position --market demo-dusdc-op`
+
 ## Swap semantics
 
 `swap quote` returns the SDK `SwapQuote` shape verbatim: amounts (both
@@ -210,19 +308,60 @@ token-approval + Permit2-approval + swap (up to 3 receipts); smart
 wallets collapse to a single UserOp receipt. A receipt with
 `status: "reverted"` is normalised to `code: "onchain"` exit 5.
 
+`wallet swap execute --recipient <addr|ens>` accepts either a 0x address
+or an ENS name. Pass ENS names through this field when the user wants the
+swap output sent somewhere other than the connected wallet.
+
 NL -> command examples:
 
 - "swap 5 USDC for OP on Unichain" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 5 --chain unichain`
 - "buy 1 OP with USDC" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-out 1 --chain unichain`
+- "swap 1 USDC for OP and send it to vitalik.eth" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 1 --chain unichain --recipient vitalik.eth`
+- "send swap output to 0xd8dA...96045" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 1 --chain unichain --recipient 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
 - "what's the best price for 100 USDC -> OP" -> `actions --json swap quote --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
 - "compare provider quotes" -> `actions --json swap quotes --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
 - "execute on Velodrome with 1% slippage" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain --provider velodrome --slippage 1`
+
+## ENS semantics
+
+Read-only name resolution on Ethereum mainnet (chain ID 1). No
+`PRIVATE_KEY` is required. Setting `MAINNET_RPC_URL` uses an
+operator-configured mainnet RPC; when it is unset, the SDK's public RPC
+fallback is used and the CLI prints a warning to stderr.
+
+- `address` takes an ENS name (must be dot-separated, e.g. `vitalik.eth`)
+  and emits `{ name, address }`. A non-name input (raw address, bare
+  label) exits `validation` (2).
+- `name` takes a `0x` address and emits `{ address, name }`, where
+  `name` is `null` when the address has no primary ENS record. A
+  non-address input exits `validation` (2).
+- `info` takes either a name or an address and emits the SDK `EnsInfo`
+  shape verbatim: the standard ENSIP-5 / ENSIP-18 profile text records
+  (`avatar`, `display`, `description`, `url`, `email`, `keywords`,
+  `twitter`, `github`, `discord`, `reddit`), each `string` or `null`. An
+  all-`null` result is a normal success (the name exists but set no
+  records), not an error.
+
+Setting `MAINNET_RPC_URL` adds mainnet to the CLI's shared chain set, so
+it also becomes a valid `--chain mainnet` / `--chain-id 1` target and is
+included in the default `wallet balance` fan-out. The demo lend/borrow/swap
+markets are testnet-only, so this affects reads (balances), not write targets.
+
+NL -> command examples:
+
+- "what address is vitalik.eth" -> `actions --json ens address vitalik.eth`
+- "resolve vitalik.eth" -> `actions --json ens address vitalik.eth`
+- "what's the ENS name for 0xd8dA...96045" -> `actions --json ens name 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
+- "show vitalik.eth's profile" -> `actions --json ens info vitalik.eth`
+- "get the ENS records for 0xd8dA...96045" -> `actions --json ens info 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`
 
 ## RPC trust
 
 `*_RPC_URL` env vars must point to operator-trusted endpoints. A
 malicious RPC can return fake balance data, which will confuse the
-caller.
+caller. The same trust concern applies to `MAINNET_RPC_URL` for ENS
+reads: a fake RPC can return a wrong address for a name. If it is unset,
+the SDK public mainnet fallback is used and the CLI warns on stderr.
 
 ## Exit codes
 

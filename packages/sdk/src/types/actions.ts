@@ -1,27 +1,34 @@
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
+import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
-import type {
-  LendProviders,
-  SwapProviderName,
-  SwapProviders,
-} from '@/types/providers.js'
+import type { LendProviders, SwapProviderName } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
-export type { LendProviderConfig, SwapProviderConfig }
+export type { BorrowProviderConfig, LendProviderConfig, SwapProviderConfig }
 // Re-export centralized provider maps and constants
 export type {
+  BorrowProviderName,
+  BorrowProviders,
   LendProviderName,
   LendProviders,
   SwapProviderName,
   SwapProviders,
 } from '@/types/providers.js'
-export { LEND_PROVIDER_NAMES, SWAP_PROVIDER_NAMES } from '@/types/providers.js'
+export {
+  BORROW_PROVIDER_NAMES,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -42,7 +49,7 @@ export interface LendSettings {
 }
 
 /**
- * Lending configuration — at least one provider must be configured.
+ * Lending configuration: at least one provider must be configured.
  * Shared settings go in `settings`; per-provider settings go under the provider key.
  */
 export type LendConfig = RequireAtLeastOne<{
@@ -50,6 +57,46 @@ export type LendConfig = RequireAtLeastOne<{
 }> & {
   /** Shared settings applied across all lend providers */
   settings?: LendSettings
+}
+
+/**
+ * Shared borrow settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface BorrowSettings {
+  /**
+   * Default approval-amount strategy for ERC-20 → market approvals.
+   * Per-call params override this; provider-level config overrides it for a
+   * single provider. Defaults to `"exact"` because borrow flows are high-stakes
+   * and infinite allowance should be an explicit opt-in.
+   */
+  approvalMode?: ApprovalMode
+  /**
+   * Quote expiration in seconds from now. Defaults to
+   * `DEFAULT_QUOTE_EXPIRATION_SECONDS`. Conservative window because borrow
+   * quotes depend on two oracle prices and can drift quickly.
+   */
+  quoteExpirationSeconds?: number
+  /**
+   * Default safety buffer applied to a market's liquidation LTV when computing
+   * `safeCeilingLtv`. Defaults to `0.05`. UX recommendation only; the SDK
+   * does not enforce the buffer.
+   */
+  healthBufferPct?: number
+}
+
+/**
+ * Borrow configuration: at least one provider must be configured.
+ * Shared settings go in `settings`; per-provider settings go under the provider key.
+ */
+export type BorrowConfig = RequireAtLeastOne<{
+  /** Morpho Blue borrow provider configuration */
+  morpho?: BorrowProviderConfig
+  /** Aave V3 borrow provider configuration */
+  aave?: BorrowProviderConfig
+}> & {
+  /** Shared settings applied across all borrow providers */
+  settings?: BorrowSettings
 }
 
 /** Routing strategy for selecting a provider when multiple are configured. */
@@ -64,7 +111,7 @@ export interface SwapSettings {
   defaultSlippage?: number
   /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
   maxSlippage?: number
-  /** Quote expiration in seconds from now. Defaults to 60. */
+  /** Quote expiration in seconds from now. Defaults to `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   quoteExpirationSeconds?: number
   /** Permit2 sub-approval expiration in seconds from now. Defaults to 2592000 (30 days). */
   permit2ExpirationSeconds?: number
@@ -85,7 +132,7 @@ export interface SwapSettings {
 }
 
 /**
- * Swap configuration — at least one provider must be configured.
+ * Swap configuration: at least one provider must be configured.
  * Shared settings go in `config`; per-provider settings go under the provider key.
  */
 export type SwapConfig = RequireAtLeastOne<{
@@ -113,7 +160,7 @@ export interface LendNetworkConfig {
  * or define your own Asset objects.
  */
 export interface AssetsConfig {
-  /** Allowlist of assets to support. No default — developers must explicitly configure. */
+  /** Allowlist of assets to support. No default. developers must explicitly configure. */
   allow?: Asset[]
   /** Blocklist of assets to exclude from the allow list. Only effective when allow is also set. For future use with runtime asset fetching. */
   block?: Asset[]
@@ -124,21 +171,19 @@ export interface AssetsConfig {
  * @description Immutable bundle of resolved providers and services that the
  * Actions SDK threads through its internal namespaces. Consumers that need
  * provider references should receive an `ActionsContext` rather than a raw
- * `ActionsConfig` — the providers in the context are already constructed and
+ * `ActionsConfig`. The providers in the context are already constructed and
  * hold their own per-provider configuration (market allowlists, slippage
  * defaults, etc.).
  */
 export interface ActionsContext {
   /** Chain manager wrapping the configured chains */
   chainManager: ChainManager
-  /** Configured lend provider instances (each holds its own config) */
-  lendProviders: LendProviders
-  /** Configured swap provider instances (each holds its own config) */
-  swapProviders: SwapProviders
+  /** Provider instances keyed by action name. */
+  actionProviders: ActionProvidersMap
+  /** Shared settings keyed by action name. */
+  actionSettings: ActionSettingsMap
   /** Resolved supported asset list (allowlist minus blocklist) */
   supportedAssets: Asset[]
-  /** Shared swap settings applied across swap providers */
-  swapSettings?: SwapSettings
 }
 
 /**
@@ -152,7 +197,7 @@ export interface ActionsContext {
  * Permit2's inner allowance. Subsequent operations skip the re-approval
  * round trip until the underlying allowance is consumed or expires.
  *
- * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
+ * Default is `"exact"` for safety. Configs that prefer fewer prompts opt into
  * `"max"` to avoid an extra approval tx per swap or supply.
  */
 export const APPROVAL_MODES = ['exact', 'max'] as const
@@ -180,6 +225,8 @@ export interface ActionsConfig<
   wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
   /** Lending providers configuration (optional) */
   lend?: LendConfig
+  /** Borrow providers configuration (optional) */
+  borrow?: BorrowConfig
   /** Swap providers configuration (optional) */
   swap?: SwapConfig
   /** Assets configuration (optional) */

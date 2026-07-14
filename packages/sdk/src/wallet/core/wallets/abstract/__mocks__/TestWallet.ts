@@ -14,22 +14,30 @@ export class TestWallet extends Wallet {
   public readonly address: Address
   public readonly signer: LocalAccount
 
-  constructor(
-    chainManager: ChainManager,
-    address: Address,
-    signer: LocalAccount,
+  constructor(params: {
+    chainManager: ChainManager
+    address: Address
+    signer: LocalAccount
     lendProviders?: {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
-    },
+    }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    },
-    supportedAssets?: Asset[],
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
-    this.address = address
-    this.signer = signer
+    }
+    supportedAssets?: Asset[]
+  }) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+      },
+      actionSettings: {},
+      supportedAssets: params.supportedAssets,
+    })
+    this.address = params.address
+    this.signer = params.signer
   }
 
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {

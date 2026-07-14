@@ -34,7 +34,7 @@ describe('Wallet (base)', () => {
   })
 
   it('getBalance returns only ETH when no supportedAssets configured', async () => {
-    const wallet = new TestWallet(chainManager, address, signer)
+    const wallet = new TestWallet({ chainManager, address, signer })
 
     const result = await wallet.getBalance()
 
@@ -50,14 +50,12 @@ describe('Wallet (base)', () => {
   })
 
   it('getBalance fetches ERC20 balances for explicitly configured assets', async () => {
-    const wallet = new TestWallet(
+    const wallet = new TestWallet({
       chainManager,
       address,
       signer,
-      undefined,
-      undefined,
-      [ETH, USDC],
-    )
+      supportedAssets: [ETH, USDC],
+    })
 
     const result = await wallet.getBalance()
 
@@ -70,7 +68,7 @@ describe('Wallet (base)', () => {
   it('getBalance propagates errors from underlying fetchers', async () => {
     vi.mocked(fetchETHBalance).mockRejectedValueOnce(new Error('rpc error'))
 
-    const wallet = new TestWallet(chainManager, address, signer)
+    const wallet = new TestWallet({ chainManager, address, signer })
 
     await expect(wallet.getBalance()).rejects.toThrow('rpc error')
   })
@@ -79,14 +77,12 @@ describe('Wallet (base)', () => {
     const multiCm = new MockChainManager({
       supportedChains: [optimism.id, base.id, unichain.id],
     }) as unknown as ChainManager
-    const wallet = new TestWallet(
-      multiCm,
+    const wallet = new TestWallet({
+      chainManager: multiCm,
       address,
       signer,
-      undefined,
-      undefined,
-      [ETH, USDC],
-    )
+      supportedAssets: [ETH, USDC],
+    })
 
     await wallet.getBalance({ chainIds: [base.id] })
 
@@ -100,7 +96,7 @@ describe('Wallet (base)', () => {
   })
 
   it('getBalance throws ChainNotSupportedError for chains outside the manager', async () => {
-    const wallet = new TestWallet(chainManager, address, signer)
+    const wallet = new TestWallet({ chainManager, address, signer })
 
     await expect(
       wallet.getBalance({ chainIds: [base.id] }),
@@ -110,7 +106,7 @@ describe('Wallet (base)', () => {
   })
 
   it('getBalance throws InvalidParamsError when chainIds is empty', async () => {
-    const wallet = new TestWallet(chainManager, address, signer)
+    const wallet = new TestWallet({ chainManager, address, signer })
 
     await expect(wallet.getBalance({ chainIds: [] })).rejects.toBeInstanceOf(
       InvalidParamsError,
@@ -119,7 +115,7 @@ describe('Wallet (base)', () => {
   })
 
   it('has lend namespace available for inheritance', () => {
-    const wallet = new TestWallet(chainManager, address, signer)
+    const wallet = new TestWallet({ chainManager, address, signer })
 
     wallet.lend = {} as WalletLendNamespace
     expect(wallet.lend).toBeDefined()
@@ -128,13 +124,13 @@ describe('Wallet (base)', () => {
 
   describe('has', () => {
     it("returns false for a namespace that wasn't configured", () => {
-      const wallet = new TestWallet(chainManager, address, signer)
+      const wallet = new TestWallet({ chainManager, address, signer })
       expect(wallet.has('lend')).toBe(false)
       expect(wallet.has('swap')).toBe(false)
     })
 
     it('returns true once a namespace has been attached', () => {
-      const wallet = new TestWallet(chainManager, address, signer)
+      const wallet = new TestWallet({ chainManager, address, signer })
       wallet.lend = {} as WalletLendNamespace
       expect(wallet.has('lend')).toBe(true)
       expect(wallet.has('swap')).toBe(false)

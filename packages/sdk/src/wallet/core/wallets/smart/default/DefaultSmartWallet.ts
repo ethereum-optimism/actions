@@ -12,8 +12,11 @@ import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
@@ -52,40 +55,34 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
-  /**
-   * Create a Smart Wallet instance
-   * @param owners - Array of wallet owners (addresses or WebAuthn accounts)
-   * @param signer - Local account for signing transactions
-   * @param chainManager - Network management service
-   * @param lendProviders - Lending operations providers
-   * @param swapProviders - Swap operations providers
-   * @param deploymentAddress - Known wallet address (if already deployed)
-   * @param ownerIndex - Index of signer in owners array
-   * @param nonce - Nonce for address generation
-   */
-  private constructor(
-    signers: Signer[],
-    signer: LocalAccount,
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    deploymentAddress?: Address,
-    nonce?: bigint,
-    attributionSuffix?: Hex,
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+  private constructor(params: {
+    signers: Signer[]
+    signer: LocalAccount
+    chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
+    supportedAssets?: Asset[]
+    deploymentAddress?: Address
+    nonce?: bigint
+    attributionSuffix?: Hex
+  }) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
 
     const { signersWithLocalAccount, signerIndex } =
-      DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
-    this.signer = signer
+      DefaultSmartWallet.ensureLocalAccountSigner(params.signers, params.signer)
+    this.signer = params.signer
     this.signers = signersWithLocalAccount
     this.signerIndex = signerIndex
-    this.deploymentAddress = deploymentAddress
-    this.nonce = nonce
-    if (attributionSuffix) {
-      DefaultSmartWallet.isValidAttributionSuffix(attributionSuffix)
-      this.attributionSuffix = attributionSuffix
+    this.deploymentAddress = params.deploymentAddress
+    this.nonce = params.nonce
+    if (params.attributionSuffix) {
+      DefaultSmartWallet.isValidAttributionSuffix(params.attributionSuffix)
+      this.attributionSuffix = params.attributionSuffix
     }
   }
 
@@ -114,26 +111,26 @@ export class DefaultSmartWallet extends SmartWallet {
   static async create(params: {
     signer: LocalAccount
     chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
     signers?: Signer[]
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
     supportedAssets?: Asset[]
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
   }): Promise<DefaultSmartWallet> {
     const signers = params.signers ?? [params.signer.address]
-    const wallet = new DefaultSmartWallet(
+    const wallet = new DefaultSmartWallet({
       signers,
-      params.signer,
-      params.chainManager,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-      params.deploymentAddress,
-      params.nonce,
-      params.attributionSuffix,
-    )
+      signer: params.signer,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+      deploymentAddress: params.deploymentAddress,
+      nonce: params.nonce,
+      attributionSuffix: params.attributionSuffix,
+    })
     await wallet.initialize()
     return wallet
   }
@@ -215,7 +212,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * and ERC-4337 UserOperation creation automatically.
    * @param transactionData - The transaction data to execute
    * @param chainId - Target blockchain chain ID
-   * @returns Promise resolving to the transaction hash
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async sendBatch(
     transactionData: readonly TransactionData[],
@@ -242,8 +240,18 @@ export class DefaultSmartWallet extends SmartWallet {
           hash,
         })
 
+      if (!userOperationReceipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          userOperationReceipt.receipt,
+        )
+      }
+
       return userOperationReceipt
     } catch (error) {
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -258,8 +266,8 @@ export class DefaultSmartWallet extends SmartWallet {
    * The transaction is sent as a UserOperation through the bundler service.
    * @param transactionData - Transaction details (to, value, data)
    * @param chainId - Target blockchain network ID
-   * @returns Promise resolving to UserOperation hash
-   * @throws Error if transaction fails or validation errors occur
+   * @returns Promise resolving to the UserOperation receipt
+   * @throws {TransactionConfirmedButRevertedError} If the mined UserOperation reverted
    */
   async send(
     transactionData: TransactionData,
@@ -286,8 +294,18 @@ export class DefaultSmartWallet extends SmartWallet {
         hash,
       })
 
+      if (!receipt.success) {
+        throw new TransactionConfirmedButRevertedError(
+          'user operation confirmed but reverted',
+          receipt.receipt,
+        )
+      }
+
       return receipt
     } catch (error) {
+      if (error instanceof TransactionConfirmedButRevertedError) {
+        throw error
+      }
       throw new Error(
         `Failed to send transaction: ${
           error instanceof Error ? error.message : 'Unknown error'
@@ -472,6 +490,9 @@ export class DefaultSmartWallet extends SmartWallet {
       // Call createAccount on the factory to trigger deployment
       // The factory's createAccount is idempotent and will return the existing address if already deployed
       // Using the factory address allows paymasters to configure it in their allowlist once
+      // `sendBatch` now fails closed on a reverted UserOp (throws
+      // TransactionConfirmedButRevertedError), so a returned receipt is always
+      // a successful deployment.
       const receipt = await this.sendBatch(
         [
           {
@@ -486,15 +507,16 @@ export class DefaultSmartWallet extends SmartWallet {
         ],
         chainId,
       )
-      if (!receipt.success) {
+      return { chainId, success: true, receipt }
+    } catch (error) {
+      // Preserve the deployment-specific error type and message for a reverted
+      // deploy now that the revert surfaces as TransactionConfirmedButRevertedError.
+      if (error instanceof TransactionConfirmedButRevertedError) {
         throw new SmartWalletDeploymentError(
           'deployment transaction reverted',
           chainId,
-          receipt,
         )
       }
-      return { chainId, success: true, receipt }
-    } catch (error) {
       throw new SmartWalletDeploymentError(
         `Failed to deploy smart wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
         chainId,

@@ -1,5 +1,12 @@
 import type {
   Asset,
+  BorrowAction,
+  BorrowMarket,
+  BorrowMarketId,
+  BorrowMarketPosition,
+  BorrowProviderName,
+  EnsInfo,
+  EnsName,
   LendAction,
   LendMarket,
   LendMarketPosition,
@@ -13,6 +20,7 @@ import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import { stripControlChars } from '@/output/sanitize.js'
 import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
@@ -29,6 +37,16 @@ export interface AddressDoc {
   address: string
 }
 
+export interface EnsAddressDoc {
+  name: EnsName
+  address: Address
+}
+
+export interface EnsNameLookupDoc {
+  address: Address
+  name: EnsName | null
+}
+
 export interface LendActionDoc {
   action: LendAction
   market: {
@@ -40,6 +58,44 @@ export interface LendActionDoc {
   asset: { symbol: string }
   amount: number
   transactions: readonly WalletTransactionReceipt[]
+}
+
+/**
+ * @description Per-leg amounts embedded in a `BorrowActionDoc`. `'max'` is
+ * surfaced verbatim (the SDK's full-balance path) so agents can tell a
+ * literal 0 borrow from a max-resolve. Both legs are optional because every
+ * verb only touches one or two of them: `repay` reports `borrowAmount`,
+ * `deposit-collateral` reports `collateralAmount`, `open` / `close` report
+ * both.
+ */
+export interface BorrowEnvelopeAmounts {
+  borrowAmount?: number | 'max'
+  collateralAmount?: number | 'max'
+}
+
+/**
+ * @description Output envelope for the wallet-scoped borrow write verbs. The
+ * `market.marketId` field is the full `BorrowMarketId` discriminated union
+ * (not just a hex string) so a future second provider variant (Aave, Comet)
+ * with different discriminator fields surfaces without breaking consumers.
+ * `positionAfter` highlights (`ltv`, `healthFactor`,
+ * `liquidationPriceFormatted`) are decorated onto the envelope so an agent
+ * has health context without a second `getPosition` call; they're optional
+ * because the SDK only surfaces them when the provider produced a
+ * `positionAfter` snapshot.
+ */
+export interface BorrowActionDoc extends BorrowEnvelopeAmounts {
+  action: BorrowAction
+  market: {
+    name: string
+    marketId: BorrowMarketId
+    chainId: SupportedChainId
+    provider: BorrowProviderName
+  }
+  transactions: readonly WalletTransactionReceipt[]
+  ltv?: number | null
+  healthFactor?: number | null
+  liquidationPriceFormatted?: string
 }
 
 export interface SwapExecuteDoc {
@@ -59,11 +115,19 @@ interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
+  ensAddress: EnsAddressDoc
+  ensName: EnsNameLookupDoc
+  ensInfo: EnsInfo
   balance: readonly TokenBalance[]
   lendAction: LendActionDoc
   lendMarkets: readonly LendMarket[]
   lendMarket: LendMarket
   lendPosition: LendMarketPosition
+  lendPositions: readonly LendMarketPosition[]
+  borrowAction: BorrowActionDoc
+  borrowMarkets: readonly BorrowMarket[]
+  borrowMarket: BorrowMarket
+  borrowPosition: BorrowMarketPosition
   swapMarkets: readonly SwapMarket[]
   swapMarket: SwapMarket
   swapQuote: SwapQuote
@@ -95,6 +159,29 @@ function formatChains(rows: Printers['chains']): void {
 
 function formatAddress(doc: Printers['address']): void {
   writeLine(doc.address)
+}
+
+function formatEnsAddress(doc: Printers['ensAddress']): void {
+  writeLine(`${stripControlChars(doc.name)} -> ${doc.address}`)
+}
+
+function formatEnsName(doc: Printers['ensName']): void {
+  writeLine(
+    doc.name
+      ? `${doc.address} -> ${stripControlChars(doc.name)}`
+      : `${doc.address} -> (no primary ENS name)`,
+  )
+}
+
+function formatEnsInfo(info: Printers['ensInfo']): void {
+  const set = Object.entries(info).filter(([, value]) => value != null)
+  if (set.length === 0) {
+    writeLine('(no ENS profile records set)')
+    return
+  }
+  for (const [key, value] of set) {
+    writeLine(`${key.padEnd(12)} ${stripControlChars(String(value))}`)
+  }
 }
 
 function formatBalance(balances: Printers['balance']): void {
@@ -172,6 +259,89 @@ function formatLendPosition(p: LendMarketPosition): void {
   )
 }
 
+function formatLendPositions(positions: readonly LendMarketPosition[]): void {
+  if (positions.length === 0) {
+    writeLine('(no positions)')
+    return
+  }
+  for (const p of positions) formatLendPosition(p)
+}
+
+const BORROW_ACTION_VERBS = {
+  open: 'opened',
+  close: 'closed',
+  depositCollateral: 'deposited collateral on',
+  withdrawCollateral: 'withdrew collateral from',
+  repay: 'repaid',
+} as const satisfies Record<BorrowActionDoc['action'], string>
+
+function fmtAmount(value: number | 'max' | undefined): string | undefined {
+  if (value === undefined) return undefined
+  return value === 'max' ? 'max' : String(value)
+}
+
+function formatBorrowAction(doc: BorrowActionDoc): void {
+  const verb = BORROW_ACTION_VERBS[doc.action]
+  const parts: string[] = []
+  const borrow = fmtAmount(doc.borrowAmount)
+  const collateral = fmtAmount(doc.collateralAmount)
+  if (borrow !== undefined) parts.push(`borrow=${borrow}`)
+  if (collateral !== undefined) parts.push(`collateral=${collateral}`)
+  const amounts = parts.length > 0 ? ` (${parts.join(' ')})` : ''
+  writeLine(
+    `${verb} ${doc.market.name}${amounts} on ${doc.market.provider} (chain ${doc.market.chainId})`,
+  )
+  if (
+    doc.ltv !== undefined ||
+    doc.healthFactor !== undefined ||
+    doc.liquidationPriceFormatted !== undefined
+  ) {
+    const ltv = doc.ltv == null ? 'n/a' : doc.ltv.toFixed(4)
+    const hf = doc.healthFactor == null ? 'n/a' : doc.healthFactor.toFixed(4)
+    const liq = doc.liquidationPriceFormatted ?? 'n/a'
+    writeLine(`  ltv=${ltv} healthFactor=${hf} liquidationPrice=${liq}`)
+  }
+  formatReceiptList(doc.transactions)
+}
+
+function formatBorrowMarket(m: BorrowMarket): void {
+  const collat = m.collateralAsset.metadata.symbol
+  const borrow = m.borrowAsset.metadata.symbol
+  writeLine(
+    `${m.name}  ${collat}/${borrow} chain=${m.marketId.chainId} borrowApy=${(m.borrowApy * 100).toFixed(2)}%`,
+  )
+  writeLine(
+    `  marketId=${m.marketId.marketId} maxLtv=${(m.maxLtv * 100).toFixed(2)}% liquidationBonus=${(m.liquidationBonus * 100).toFixed(2)}%`,
+  )
+  writeLine(
+    `  totalBorrowed=${m.totalBorrowed} totalCollateral=${m.totalCollateral}`,
+  )
+}
+
+function formatBorrowMarkets(markets: readonly BorrowMarket[]): void {
+  if (markets.length === 0) {
+    writeLine('(no markets)')
+    return
+  }
+  for (const m of markets) formatBorrowMarket(m)
+}
+
+function formatBorrowPosition(p: BorrowMarketPosition): void {
+  const collat = p.collateralAsset.metadata.symbol
+  const borrow = p.borrowAsset.metadata.symbol
+  writeLine(
+    `position: collateral=${p.collateralShares} shares (${collat}) debt=${p.borrowAmountFormatted} ${borrow} chain=${p.marketId.chainId}`,
+  )
+  const ltv = p.ltv == null ? 'n/a' : p.ltv.toFixed(4)
+  const hf = p.healthFactor == null ? 'n/a' : p.healthFactor.toFixed(4)
+  writeLine(
+    `  ltv=${ltv} maxLtv=${p.maxLtv.toFixed(4)} healthFactor=${hf} liquidationPrice=${p.liquidationPriceFormatted}`,
+  )
+  writeLine(
+    `  borrowApy=${(p.borrowApy * 100).toFixed(2)}% liquidationBonus=${(p.liquidationBonus * 100).toFixed(2)}%`,
+  )
+}
+
 function formatSwapMarket(m: SwapMarket): void {
   const [a, b] = m.assets
   writeLine(
@@ -218,11 +388,19 @@ const TEXT_FORMATTERS: {
   assets: formatAssets,
   chains: formatChains,
   address: formatAddress,
+  ensAddress: formatEnsAddress,
+  ensName: formatEnsName,
+  ensInfo: formatEnsInfo,
   balance: formatBalance,
   lendAction: formatLendAction,
   lendMarkets: formatLendMarkets,
   lendMarket: formatLendMarket,
   lendPosition: formatLendPosition,
+  lendPositions: formatLendPositions,
+  borrowAction: formatBorrowAction,
+  borrowMarkets: formatBorrowMarkets,
+  borrowMarket: formatBorrowMarket,
+  borrowPosition: formatBorrowPosition,
   swapMarkets: formatSwapMarkets,
   swapMarket: formatSwapMarket,
   swapQuote: formatSwapQuote,

@@ -230,6 +230,40 @@ describe('actions CLI (built binary)', () => {
       expect(body.error).toMatch(/not both/)
     })
 
+    it('ens address validates input before public RPC fallback', async () => {
+      const { stdout, stderr, code } = await run(
+        ['--json', 'ens', 'address', 'notaname'],
+        { MAINNET_RPC_URL: '' },
+      )
+      expect(code).toBe(2)
+      expect(stdout).toBe('')
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid ENS name/)
+    })
+
+    it('ens address with a non-name input -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        ['--json', 'ens', 'address', 'notaname'],
+        { MAINNET_RPC_URL: 'http://127.0.0.1:1' },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid ENS name/)
+    })
+
+    it('ens name with a non-address input -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        ['--json', 'ens', 'name', 'not-an-address'],
+        { MAINNET_RPC_URL: 'http://127.0.0.1:1' },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid address/)
+    })
+
     it('swap quote with unknown --provider -> stderr JSON code:validation exit 2', async () => {
       const { stderr, code } = await run([
         '--json',

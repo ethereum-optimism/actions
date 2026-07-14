@@ -3,17 +3,18 @@ pragma solidity ^0.8.21;
 
 import {Script, console} from "forge-std/Script.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
-import {IMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {IMorpho, IMetaMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
 import {MorphoConstants} from "../src/MorphoConstants.sol";
 import {MorphoChainlinkOracleV2} from "morpho-blue-oracles/morpho-chainlink/MorphoChainlinkOracleV2.sol";
 import {IERC4626} from "morpho-blue-oracles/morpho-chainlink/interfaces/IERC4626.sol";
 import {AggregatorV3Interface} from "morpho-blue-oracles/morpho-chainlink/interfaces/AggregatorV3Interface.sol";
 
-/// @dev Minimal interface for the local DemoOP token. We avoid importing the
-///      DemoOP contract directly so this script can compile under solc 0.8.21
-///      (Morpho's pinned version) without requiring the rest of the package to
-///      do the same.
-interface IDemoOP {
+/// @dev Minimal interface for the local DemoOP / DemoUSDC tokens. We avoid
+///      importing the concrete contracts so this script can compile under
+///      solc 0.8.21 (Morpho's pinned version) without requiring the rest of
+///      the package to do the same. Also covers the dUSDC vault's
+///      ERC20 approve() needed for supplyCollateral.
+interface IMintableToken {
     function mint(address to, uint256 amount) external;
     function approve(address spender, uint256 amount) external returns (bool);
 }
@@ -58,6 +59,12 @@ contract DeployMorphoBorrowMarket is Script {
     uint256 constant QUOTE_TOKEN_DECIMALS = 18;
 
     uint256 constant BORROWABLE_OP = 100_000e18;
+
+    /// @dev Seed amounts for the self-collateralized opening borrow.
+    ///      20k USDC of collateral at ~40% LTV, 80k OP borrowed = 80%
+    ///      utilization of the 100k OP pool.
+    uint256 constant SEED_USDC_DEPOSIT = 20_000e6;
+    uint256 constant SEED_OP_BORROW = 80_000e18;
 
     function run() public returns (bytes32 marketId, address oracleAddr, address mockFeedAddr) {
         address vaultAddr = vm.envAddress("DEMO_VAULT_ADDRESS");
@@ -129,10 +136,33 @@ contract DeployMorphoBorrowMarket is Script {
         console.log("BorrowMarketId:");
         console.logBytes32(marketId);
 
+        // Emit each MarketParams field so deploy-demo.sh can persist them to
+        // state/deployments.json without re-deriving constants. Consumers
+        // (SDK MorphoBorrowProvider, demo backend) read these to encode
+        // supplyCollateral/borrow/repay calldata without an extra RPC.
+        console.log("BorrowMarketParamsLoanToken:", marketParams.loanToken);
+        console.log("BorrowMarketParamsCollateralToken:", marketParams.collateralToken);
+        console.log("BorrowMarketParamsOracle:", marketParams.oracle);
+        console.log("BorrowMarketParamsIrm:", marketParams.irm);
+        console.log("BorrowMarketParamsLltv:", marketParams.lltv);
+
         // Seed borrowable OP liquidity.
-        IDemoOP(opAddr).mint(msg.sender, BORROWABLE_OP);
-        IDemoOP(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
+        IMintableToken(opAddr).mint(msg.sender, BORROWABLE_OP);
+        IMintableToken(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
         IMorpho(MorphoConstants.MORPHO).supply(marketParams, BORROWABLE_OP, 0, msg.sender, "");
+
+        // Open a self-collateralized borrow so the market starts at
+        // non-zero utilization: mint USDC, deposit to the vault for
+        // dUSDC shares, supply as collateral, borrow OP.
+        address usdcAddr = IVaultAsset(vaultAddr).asset();
+        IMintableToken(usdcAddr).mint(msg.sender, SEED_USDC_DEPOSIT);
+        IMintableToken(usdcAddr).approve(vaultAddr, SEED_USDC_DEPOSIT);
+        uint256 seedShares = IMetaMorpho(vaultAddr).deposit(SEED_USDC_DEPOSIT, msg.sender);
+        IMintableToken(vaultAddr).approve(MorphoConstants.MORPHO, seedShares);
+        IMorpho(MorphoConstants.MORPHO).supplyCollateral(marketParams, seedShares, msg.sender, "");
+        IMorpho(MorphoConstants.MORPHO).borrow(marketParams, SEED_OP_BORROW, 0, msg.sender, msg.sender);
+        console.log("BorrowMarketSeededWith dUSDC shares:", seedShares);
+        console.log("BorrowMarketSeededWith OP debt:", SEED_OP_BORROW);
 
         vm.stopBroadcast();
 

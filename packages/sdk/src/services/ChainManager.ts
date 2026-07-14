@@ -1,4 +1,3 @@
-import { chainById } from '@eth-optimism/viem/chains'
 import type { SmartAccountClient } from 'permissionless/clients'
 import { createSmartAccountClient } from 'permissionless/clients'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
@@ -13,7 +12,10 @@ import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
 import { mainnet, sepolia } from 'viem/chains'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  getSupportedChain,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
 
@@ -158,9 +160,14 @@ export class ChainManager {
    * Get chain information for a specific chain ID
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
+   * @throws {ChainNotSupportedError} When no chain registry knows `chainId`.
    */
   getChain(chainId: SupportedChainId): Chain {
-    return chainById[chainId]
+    const chain = getSupportedChain(chainId)
+    if (!chain) {
+      throw new ChainNotSupportedError({ chainId })
+    }
+    return chain
   }
 
   /**
@@ -196,7 +203,7 @@ export class ChainManager {
     const clients = new Map<SupportedChainId, PublicClient>()
 
     for (const chainConfig of chains) {
-      const chain = chainById[chainConfig.chainId]
+      const chain = getSupportedChain(chainConfig.chainId)
       if (!chain) {
         throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }

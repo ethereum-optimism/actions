@@ -4,9 +4,23 @@
 
 import type { ChildProcess } from 'child_process'
 import { spawn } from 'child_process'
-import type { Chain, PublicClient } from 'viem'
-import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
+import type { PublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+
+// Imported separately for internal use by `setupSupersimTest` below.
+import type { FundWalletConfig } from '@/test/network/index.js'
+import { fundWallet } from '@/test/network/index.js'
+
+// Re-export the consolidated fork harness for backward compatibility.
+export {
+  type AnvilFork,
+  createForkChainManager,
+  fundWallet,
+  type FundWalletConfig,
+  startAnvilFork,
+  stopAnvilFork,
+} from '@/test/network/index.js'
 
 /**
  * Standard anvil/foundry test accounts with predictable private keys
@@ -197,140 +211,6 @@ export async function stopSupersim(
     })
   }
   console.log('Supersim stopped')
-}
-
-/**
- * Configuration for wallet funding
- */
-export interface FundWalletConfig {
-  /** RPC URL for the chain */
-  rpcUrl: string
-  /** Chain configuration */
-  chain: Chain
-  /** Target wallet address to fund */
-  targetAddress: `0x${string}`
-  /** Amount to fund in ETH (default: '10') */
-  amount?: string
-  /** Funder private key (default: ANVIL_ACCOUNTS.ACCOUNT_1) */
-  funderPrivateKey?: `0x${string}`
-  /** Whether to also fund with USDC (default: false) */
-  fundUsdc?: boolean
-  /** Amount of USDC to fund (default: '1000') */
-  usdcAmount?: string
-}
-
-/**
- * Fund a wallet with ETH and optionally USDC using a funder account
- * @param config - Wallet funding configuration
- * @returns Promise that resolves when funding is complete
- */
-export async function fundWallet(config: FundWalletConfig): Promise<void> {
-  const {
-    rpcUrl,
-    chain,
-    targetAddress,
-    amount = '10',
-    funderPrivateKey = ANVIL_ACCOUNTS.ACCOUNT_1, // Use anvil account #1 as default funder
-    fundUsdc = false,
-    usdcAmount = '1000',
-  } = config
-
-  console.log('Funding test wallet...')
-
-  // Create public client for waiting for transaction receipt
-  const publicClient = createPublicClient({
-    chain,
-    transport: http(rpcUrl),
-  })
-
-  // Create funder account and wallet client
-  const funderAccount = privateKeyToAccount(funderPrivateKey)
-  const funderClient = createWalletClient({
-    account: funderAccount,
-    chain,
-    transport: http(rpcUrl),
-  }) as any // Type assertion to avoid viem version compatibility issue
-
-  // Send ETH funding transaction
-  const fundingTx = await funderClient.sendTransaction({
-    to: targetAddress,
-    value: parseEther(amount),
-  })
-
-  // Wait for transaction confirmation
-  await publicClient.waitForTransactionReceipt({ hash: fundingTx })
-  console.log(`Test wallet funded with ${amount} ETH at ${targetAddress}`)
-
-  // Fund with USDC if requested using whale impersonation
-  if (fundUsdc) {
-    try {
-      console.log(
-        `Attempting to fund ${usdcAmount} USDC using whale impersonation...`,
-      )
-
-      // USDC whale address with large balance
-      const usdcWhale = '0x5752e57DcfA070e3822d69498185B706c293C792'
-
-      // Impersonate the whale account
-      console.log(`Impersonating whale account: ${usdcWhale}`)
-      await publicClient.request({
-        method: 'anvil_impersonateAccount' as any,
-        params: [usdcWhale],
-      })
-
-      // USDC contract address on Unichain (from vault config)
-      const usdcAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6'
-
-      // Create whale wallet client (for impersonated account, we use the address directly)
-      const whaleClient = createWalletClient({
-        account: usdcWhale as `0x${string}`,
-        chain,
-        transport: http(rpcUrl),
-      })
-
-      // Transfer USDC from whale to target
-      const usdcAmountWei = BigInt(parseFloat(usdcAmount) * 1e6) // USDC has 6 decimals
-
-      console.log(
-        `Transferring ${usdcAmount} USDC (${usdcAmountWei} units) from whale to ${targetAddress}`,
-      )
-
-      const transferTx = await whaleClient.writeContract({
-        address: usdcAddress as `0x${string}`,
-        abi: [
-          {
-            name: 'transfer',
-            type: 'function',
-            stateMutability: 'nonpayable',
-            inputs: [
-              { name: 'to', type: 'address' },
-              { name: 'amount', type: 'uint256' },
-            ],
-            outputs: [{ name: '', type: 'bool' }],
-          },
-        ],
-        functionName: 'transfer',
-        args: [targetAddress, usdcAmountWei],
-      })
-
-      // Wait for transaction confirmation
-      await publicClient.waitForTransactionReceipt({ hash: transferTx })
-      console.log(
-        `✅ Successfully funded ${usdcAmount} USDC to ${targetAddress}`,
-      )
-
-      // Stop impersonating the account
-      await publicClient.request({
-        method: 'anvil_stopImpersonatingAccount' as any,
-        params: [usdcWhale],
-      })
-    } catch (error) {
-      console.log(
-        `❌ Failed to fund USDC: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
-      console.log(`   This may cause lending tests to fail if USDC is required`)
-    }
-  }
 }
 
 /**
