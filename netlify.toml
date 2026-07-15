@@ -6,7 +6,7 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
 
-# Security headers for moving the Privy app to production.
+# Security headers needed for Privy in Prod mode
 [[headers]]
   for = "/*"
   [headers.values]
