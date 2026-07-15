@@ -6,11 +6,7 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
 
-# Security headers required to move the Privy app to production.
-# X-Frame-Options and the other headers are enforced; the CSP ships as
-# report-only first so any missed origin (e.g. env-configured chain RPCs) is
-# reported rather than blocked. Promote to `Content-Security-Policy` once the
-# live site reports no violations.
+# Security headers to move the Privy app to production; the CSP is report-only for now and should be promoted to an enforced Content-Security-Policy once the live site reports no violations.
 [[headers]]
   for = "/*"
   [headers.values]
