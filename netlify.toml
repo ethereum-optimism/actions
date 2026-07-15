@@ -6,11 +6,7 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
 
-# Security headers for moving the Privy app to production. The CSP is allow-by-default
-# so every third-party origin the demo uses (Privy, Dynamic, Turnkey, WalletConnect,
-# fonts, analytics, RPCs) keeps working without enumeration; it only locks what matters:
-# nothing can iframe the wallet (frame-ancestors), no plugins, no <base> hijacking.
-# Trade-off: 'unsafe-inline'/'unsafe-eval' mean this is not XSS-hardened.
+# Security headers for moving the Privy app to production.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -18,4 +14,9 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    # Allow-by-default: every origin the demo uses (Privy, Dynamic, Turnkey,
+    # WalletConnect, fonts, analytics, RPCs) works without enumeration, and only the
+    # dangerous things are locked: nothing can iframe the wallet (frame-ancestors),
+    # no plugins (object-src), no <base> hijacking. Trade-off: 'unsafe-inline' and
+    # 'unsafe-eval' mean it is not XSS-hardened.
     Content-Security-Policy = "default-src 'self' https: wss: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
