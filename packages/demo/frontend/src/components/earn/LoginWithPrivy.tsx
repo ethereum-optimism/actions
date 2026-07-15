@@ -3,12 +3,6 @@ import { useLogin, usePrivy, type PrivyErrorCode } from '@privy-io/react-auth'
 import { ROUTES } from '@/constants/routes'
 import { CtaButton } from './CtaButton'
 
-// Friendly copy for the Privy error codes worth explaining to the user.
-const ERROR_MESSAGES: Record<string, string> = {
-  max_accounts_reached:
-    "This demo has reached its Privy user limit, so new accounts can't sign in right now. Try another wallet provider.",
-}
-
 const FALLBACK_ERROR_MESSAGE =
   'Something went wrong signing in with Privy. Please try again or choose another wallet provider.'
 
@@ -17,12 +11,12 @@ const FALLBACK_ERROR_MESSAGE =
  * Automatically triggers the Privy login modal on mount
  */
 export function LoginWithPrivy() {
-  const [loginError, setLoginError] = useState<PrivyErrorCode | null>(null)
+  const [hasError, setHasError] = useState(false)
 
   // Log and surface login failures instead of silently redirecting away.
   const handleError = useCallback((error: PrivyErrorCode) => {
     console.error('[LoginWithPrivy] Privy login failed:', error)
-    setLoginError(error)
+    setHasError(true)
   }, [])
 
   const { login } = useLogin({ onError: handleError })
@@ -44,18 +38,18 @@ export function LoginWithPrivy() {
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      {loginError && (
+      {hasError && (
         <div className="shadow-none rounded-3xl inline-flex flex-col items-center py-8 px-6 gap-5 border border-[#E0E2EB] w-[361px] text-center">
           <div className="text-2xl font-semibold leading-8 text-black">
             Unable to sign in
           </div>
           <div className="text-base font-normal leading-6 text-[#404454]">
-            {ERROR_MESSAGES[loginError] ?? FALLBACK_ERROR_MESSAGE}
+            {FALLBACK_ERROR_MESSAGE}
           </div>
           <div className="flex flex-col gap-3 w-full">
             <CtaButton
               onClick={() => {
-                setLoginError(null)
+                setHasError(false)
                 login()
               }}
             >

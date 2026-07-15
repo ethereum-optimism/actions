@@ -19,14 +19,14 @@ describe('LoginWithPrivy', () => {
     capturedOnError = undefined
   })
 
-  it('logs and surfaces a known Privy error instead of swallowing it', () => {
+  it('logs the error code and surfaces the fallback message instead of swallowing it', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     render(<LoginWithPrivy />)
 
     act(() => capturedOnError?.('max_accounts_reached'))
 
     expect(
-      screen.getByText(/reached its Privy user limit/i),
+      screen.getByText(/Something went wrong signing in with Privy/i),
     ).toBeInTheDocument()
     expect(errorSpy).toHaveBeenCalledWith(
       '[LoginWithPrivy] Privy login failed:',
@@ -35,11 +35,11 @@ describe('LoginWithPrivy', () => {
     errorSpy.mockRestore()
   })
 
-  it('shows a fallback message for unmapped error codes', () => {
+  it('surfaces the fallback message for any error code', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     render(<LoginWithPrivy />)
 
-    act(() => capturedOnError?.('unknown_auth_error'))
+    act(() => capturedOnError?.('exited_auth_flow'))
 
     expect(
       screen.getByText(/Something went wrong signing in with Privy/i),
