@@ -6,7 +6,11 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
 
-# Security headers for moving the Privy app to production; connect-src origins are grouped by service.
+# Security headers for moving the Privy app to production. The CSP is allow-by-default
+# so every third-party origin the demo uses (Privy, Dynamic, Turnkey, WalletConnect,
+# fonts, analytics, RPCs) keeps working without enumeration; it only locks what matters:
+# nothing can iframe the wallet (frame-ancestors), no plugins, no <base> hijacking.
+# Trade-off: 'unsafe-inline'/'unsafe-eval' mean this is not XSS-hardened.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -14,29 +18,4 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    # Temporary report-only: blocks nothing while we collect the browser's CSP violation
-    # reports for origins we missed (e.g. env-configured chain RPCs), then rename to
-    # Content-Security-Policy to enforce.
-    Content-Security-Policy-Report-Only = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.googletagmanager.com; \
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
-      font-src 'self' https://fonts.gstatic.com; \
-      img-src 'self' data: blob: https:; \
-      connect-src 'self' \
-        https://dev-verbs-service.optimism.io \
-        https://auth.privy.io https://*.privy.io https://*.rpc.privy.systems \
-        https://explorer-api.walletconnect.com https://*.walletconnect.com https://*.walletconnect.org wss://relay.walletconnect.com wss://relay.walletconnect.org wss://www.walletlink.org \
-        https://*.dynamicauth.com https://*.dynamic.xyz \
-        https://*.turnkey.com \
-        https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com \
-        https://api.mixpanel.com https://api-js.mixpanel.com; \
-      frame-src 'self' https://auth.privy.io https://challenges.cloudflare.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.dynamicauth.com https://*.turnkey.com; \
-      child-src 'self' https://auth.privy.io https://*.dynamicauth.com https://*.turnkey.com; \
-      worker-src 'self' blob:; \
-      manifest-src 'self'; \
-      object-src 'none'; \
-      base-uri 'self'; \
-      form-action 'self'; \
-      frame-ancestors 'none'\
-      """
+    Content-Security-Policy = "default-src 'self' https: wss: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
