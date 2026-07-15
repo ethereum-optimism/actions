@@ -6,10 +6,7 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
 
-# Security headers for moving the Privy app to production. Everything is enforced
-# except the CSP, which is report-only for now (it reports violations but blocks
-# nothing); once the allowlist is confirmed against real traffic, drop the
-# `-Report-Only` suffix to enforce it. connect-src origins are grouped by service.
+# Security headers for moving the Privy app to production; connect-src origins are grouped by service.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -17,6 +14,9 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    # Temporary report-only: blocks nothing while we collect the browser's CSP violation
+    # reports for origins we missed (e.g. env-configured chain RPCs), then rename to
+    # Content-Security-Policy to enforce.
     Content-Security-Policy-Report-Only = """\
       default-src 'self'; \
       script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.googletagmanager.com; \
