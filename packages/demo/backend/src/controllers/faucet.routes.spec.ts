@@ -3,16 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/app.js'
 import * as faucetService from '@/services/faucet.js'
 
-import { successfulFaucetDrip } from './routeTestUtils.js'
-
-vi.mock('@/services/faucet.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof faucetService>()
-  return {
-    ...actual,
-    isWalletEligibleForFaucet: vi.fn(),
-    dripEthToWallet: vi.fn(),
-  }
-})
+vi.mock('@/services/faucet.js', () => ({
+  executeFaucetDrip: vi.fn(),
+}))
 
 vi.mock('@/config/actions.js', () => ({
   initializeActions: vi.fn(),
@@ -47,10 +40,10 @@ function requestDrip(body: unknown, remoteAddress: string) {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
-  vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(
-    successfulFaucetDrip,
-  )
+  vi.mocked(faucetService.executeFaucetDrip).mockResolvedValue({
+    status: 'success',
+    userOpHash: `0x${'d'.repeat(64)}`,
+  })
 })
 
 describe('POST /wallet/eth', () => {
@@ -61,10 +54,7 @@ describe('POST /wallet/eth', () => {
     const response = await requestDrip({ walletAddress }, 'public-drip')
 
     expect(response.status).toBe(200)
-    expect(faucetService.isWalletEligibleForFaucet).toHaveBeenCalledWith(
-      normalizedAddress,
-    )
-    expect(faucetService.dripEthToWallet).toHaveBeenCalledWith(
+    expect(faucetService.executeFaucetDrip).toHaveBeenCalledWith(
       normalizedAddress,
     )
   })
@@ -83,60 +73,53 @@ describe('POST /wallet/eth', () => {
     const response = await requestDrip(body, 'invalid-input')
 
     expect(response.status).toBe(400)
-    expect(faucetService.isWalletEligibleForFaucet).not.toHaveBeenCalled()
-    expect(faucetService.dripEthToWallet).not.toHaveBeenCalled()
+    expect(faucetService.executeFaucetDrip).not.toHaveBeenCalled()
   })
 
   it('rejects a wallet that already has ETH', async () => {
     const walletAddress = `0x${'D'.repeat(40)}`
-    vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(false)
+    vi.mocked(faucetService.executeFaucetDrip).mockResolvedValue({
+      status: 'ineligible',
+    })
 
     const response = await requestDrip({ walletAddress }, 'funded-wallet')
 
     expect(response.status).toBe(400)
-    expect(faucetService.dripEthToWallet).not.toHaveBeenCalled()
+    expect(await response.json()).toEqual({
+      error: 'Wallet is not eligible for the faucet',
+    })
   })
 
-  it('drips once under concurrent requests for one wallet', async () => {
-    const walletAddress = `0x${'C'.repeat(40)}`
-    const responses = await Promise.all(
-      Array.from({ length: 6 }, () =>
-        requestDrip({ walletAddress }, 'concurrent-drip'),
-      ),
+  it('rejects a wallet within the faucet cooldown', async () => {
+    vi.mocked(faucetService.executeFaucetDrip).mockResolvedValue({
+      status: 'cooldown',
+    })
+
+    const response = await requestDrip(
+      { walletAddress: `0x${'7'.repeat(40)}` },
+      'cooldown',
     )
 
-    const statuses = responses.map(({ status }) => status)
-    expect(statuses.filter((status) => status === 200)).toHaveLength(1)
-    expect(statuses.filter((status) => status === 429)).toHaveLength(5)
-    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(1)
+    expect(response.status).toBe(429)
+    expect(await response.json()).toEqual({
+      error: 'Faucet already used for this wallet; try again later',
+    })
   })
 
-  it('releases a reservation after an unsuccessful submission', async () => {
-    const walletAddress = `0x${'7'.repeat(40)}`
-    vi.mocked(faucetService.dripEthToWallet)
-      .mockResolvedValueOnce({ ...successfulFaucetDrip, success: false })
-      .mockResolvedValueOnce(successfulFaucetDrip)
+  it('returns a generic error when the faucet workflow fails', async () => {
+    vi.mocked(faucetService.executeFaucetDrip).mockResolvedValue({
+      status: 'failed',
+    })
 
-    const failed = await requestDrip({ walletAddress }, 'unsuccessful-drip')
-    const retried = await requestDrip({ walletAddress }, 'unsuccessful-drip')
+    const response = await requestDrip(
+      { walletAddress: `0x${'8'.repeat(40)}` },
+      'failed-drip',
+    )
 
-    expect(failed.status).toBe(500)
-    expect(retried.status).toBe(200)
-    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(2)
-  })
-
-  it('releases a reservation after a rejected submission', async () => {
-    const walletAddress = `0x${'8'.repeat(40)}`
-    vi.mocked(faucetService.dripEthToWallet)
-      .mockRejectedValueOnce(new Error('bundler down'))
-      .mockResolvedValueOnce(successfulFaucetDrip)
-
-    const failed = await requestDrip({ walletAddress }, 'rejected-drip')
-    const retried = await requestDrip({ walletAddress }, 'rejected-drip')
-
-    expect(failed.status).toBe(500)
-    expect(retried.status).toBe(200)
-    expect(faucetService.dripEthToWallet).toHaveBeenCalledTimes(2)
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({
+      error: 'Failed to drip ETH to wallet',
+    })
   })
 
   it('rate-limits one connection without affecting another', async () => {

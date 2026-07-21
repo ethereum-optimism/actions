@@ -1,34 +1,21 @@
-import { randomBytes } from 'node:crypto'
-
-import type { Address, Hash, Hex, TypedDataDomain } from 'viem'
-import {
-  createPublicClient,
-  createWalletClient,
-  encodeFunctionData,
-  http,
-  keccak256,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import type { Address, Hash } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 
-import { faucetAbi } from '@/abis/ethFaucet.js'
-import { getActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
+import { submitFaucetUserOperation } from '@/services/faucetSubmission.js'
 
-type DripParams = {
-  recipient: Address
-  nonce: Hash
-  data: Hash
-  gasLimit?: number
-}
+export type FaucetDripOutcome =
+  | { status: 'success'; userOpHash: Hash }
+  | { status: 'ineligible' }
+  | { status: 'cooldown' }
+  | { status: 'failed'; error?: unknown }
 
-type AuthParams = {
-  module: Address
-  id: Hash
-  proof: Hash
-}
-
-/** Best-effort zero-balance pre-check; `reserveDrip` is the real cooldown gate. */
+/**
+ * @description Performs a best-effort zero-balance pre-check before reservation.
+ * @param walletAddress - Validated faucet recipient.
+ * @returns Whether the wallet currently has no native ETH.
+ */
 export async function isWalletEligibleForFaucet(
   walletAddress: Address,
 ): Promise<boolean> {
@@ -46,7 +33,12 @@ export const MAX_TRACKED_DRIP_RECIPIENTS = 10_000
 
 const lastDripAtByRecipient = new Map<string, number>()
 
-/** Synchronously claim a drip slot so concurrent requests for one wallet cannot all pass. */
+/**
+ * @description Claims a cooldown slot before submitting a faucet drip.
+ * @param walletAddress - Validated faucet recipient.
+ * @param now - Current timestamp used for deterministic accounting.
+ * @returns Whether the recipient acquired a drip reservation.
+ */
 export function reserveDrip(
   walletAddress: Address,
   now: number = Date.now(),
@@ -67,7 +59,11 @@ export function reserveDrip(
   return true
 }
 
-/** Release a reservation after submission failure so the wallet can retry. */
+/**
+ * @description Releases a failed drip reservation so the recipient can retry.
+ * @param walletAddress - Validated faucet recipient.
+ * @returns Nothing.
+ */
 export function releaseDrip(walletAddress: Address): void {
   lastDripAtByRecipient.delete(walletAddress.toLowerCase())
 }
@@ -81,113 +77,35 @@ function sweepExpiredDripReservations(now: number): void {
 }
 
 /**
- * @description Submits an ETH faucet drip authorized by the backend signer.
- * @param walletAddress - Validated faucet recipient.
- * @returns The submission status and user operation hash.
- * @throws When wallet construction or submission fails.
+ * @description Executes faucet eligibility, reservation, submission, and rollback.
+ * @param recipient - Validated faucet recipient.
+ * @returns A typed outcome for HTTP response mapping.
  */
-export async function dripEthToWallet(
-  walletAddress: Address,
-): Promise<{ success: boolean; userOpHash: Hash }> {
-  const id = keccak256(walletAddress)
-  const faucetAuthModuleAddress = env.AUTH_MODULE_ADDRESS as Address
-  const domain = {
-    name: 'OffChainAuthModule',
-    version: '1',
-    chainId: optimismSepolia.id,
-    verifyingContract: faucetAuthModuleAddress,
-  }
-  const nonce = generateNonce()
-
-  const dripParams = createDripParams(walletAddress, nonce)
-  const authParams = await createAuthParams(
-    walletAddress,
-    faucetAuthModuleAddress,
-    id,
-    nonce,
-    domain,
-  )
-
-  const dripCallData = encodeFunctionData({
-    abi: faucetAbi,
-    functionName: 'drip',
-    args: [dripParams, authParams],
-  })
-  const transactionData = [
-    {
-      to: env.OP_SEPOLIA_FAUCET_ADDRESS as Address,
-      data: dripCallData,
-      value: 0n,
-    },
-  ]
-
-  const actions = getActions()
-  const adminSigner = privateKeyToAccount(
-    env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
-  )
-  const adminSmartWallet = await actions.wallet.getSmartWallet({
-    signer: adminSigner,
-    deploymentSigners: [adminSigner],
-  })
-
-  const receipt = await adminSmartWallet.sendBatch(
-    transactionData,
-    optimismSepolia.id,
-  )
-  return receipt
-}
-
-function createDripParams(recipientAddress: Address, nonce: Hash): DripParams {
-  return {
-    recipient: recipientAddress,
-    nonce,
-    data: '0x',
+export async function executeFaucetDrip(
+  recipient: Address,
+): Promise<FaucetDripOutcome> {
+  try {
+    const eligible = await isWalletEligibleForFaucet(recipient)
+    if (!eligible) return { status: 'ineligible' }
+    if (!reserveDrip(recipient)) return { status: 'cooldown' }
+    return sendReservedDrip(recipient)
+  } catch (error) {
+    return { status: 'failed', error }
   }
 }
 
-function generateNonce(): `0x${string}` {
-  return `0x${randomBytes(32).toString('hex')}` // 256-bit CSPRNG
-}
-
-async function createAuthParams(
-  recipientAddress: Address,
-  moduleAddress: Address,
-  dripId: Hex,
-  nonce: Hash,
-  domain: TypedDataDomain,
-): Promise<AuthParams> {
-  const proof = {
-    recipient: recipientAddress,
-    nonce,
-    id: dripId,
-  }
-
-  const adminWalletClient = createWalletClient({
-    chain: optimismSepolia,
-    transport: env.OP_SEPOLIA_RPC_URL ? http(env.OP_SEPOLIA_RPC_URL) : http(),
-    account: privateKeyToAccount(
-      env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
-    ),
-  })
-
-  const types = {
-    Proof: [
-      { name: 'recipient', type: 'address' },
-      { name: 'nonce', type: 'bytes32' },
-      { name: 'id', type: 'bytes32' },
-    ],
-  }
-  const signature = await adminWalletClient.signTypedData({
-    domain,
-    types,
-    primaryType: 'Proof',
-    message: proof,
-    account: adminWalletClient.account,
-  })
-
-  return {
-    module: moduleAddress,
-    id: dripId,
-    proof: signature,
+async function sendReservedDrip(
+  recipient: Address,
+): Promise<FaucetDripOutcome> {
+  try {
+    const result = await submitFaucetUserOperation(recipient)
+    if (result.success) {
+      return { status: 'success', userOpHash: result.userOpHash }
+    }
+    releaseDrip(recipient)
+    return { status: 'failed' }
+  } catch (error) {
+    releaseDrip(recipient)
+    return { status: 'failed', error }
   }
 }
