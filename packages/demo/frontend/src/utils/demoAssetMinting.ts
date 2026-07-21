@@ -1,5 +1,4 @@
 import { encodeFunctionData, type Address } from 'viem'
-import { optimismSepolia } from 'viem/chains'
 import type {
   Asset,
   SupportedChainId,
@@ -12,26 +11,6 @@ import { actionsApi } from '@/api/actionsApi'
 
 export type FrontendMintWallet = Pick<Wallet, 'address'> & {
   sendBatch: Wallet['sendBatch']
-  signer: Pick<Wallet['signer'], 'address' | 'signMessage'>
-}
-
-async function requestFrontendEth(wallet: FrontendMintWallet) {
-  const issuedAt = Date.now()
-  const ownerAddress = wallet.signer.address
-  const message = [
-    'actions-demo:eth-faucet:v1',
-    `chainId=${optimismSepolia.id}`,
-    `owner=${ownerAddress.toLowerCase()}`,
-    `wallet=${wallet.address.toLowerCase()}`,
-    `issuedAt=${issuedAt}`,
-  ].join('\n')
-  const signature = await wallet.signer.signMessage({ message })
-  return actionsApi.dripEthToFrontendWallet({
-    issuedAt,
-    ownerAddress,
-    signature,
-    walletAddress: wallet.address,
-  })
 }
 
 function resolveAssetChainId(asset: Asset): SupportedChainId {
@@ -64,7 +43,7 @@ export async function mintDemoAsset(
   const chainId = resolveAssetChainId(asset)
 
   if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
-    await requestFrontendEth(wallet)
+    await actionsApi.dripEthToWallet(wallet.address)
     return
   }
 

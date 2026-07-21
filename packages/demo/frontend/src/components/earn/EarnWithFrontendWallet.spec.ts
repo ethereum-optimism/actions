@@ -18,7 +18,6 @@ import { MorphoUSDCBorrowOPDemo } from '@/constants/markets'
 const CHAIN_ID = 84532 as SupportedChainId
 const TOKEN_IN = '0x1111111111111111111111111111111111111111' as Address
 const TOKEN_OUT = '0x2222222222222222222222222222222222222222' as Address
-const signer = { address: TOKEN_IN, signMessage: vi.fn() }
 
 const assetIn: Asset = {
   type: 'erc20',
@@ -80,7 +79,6 @@ describe('buildFrontendWalletOperations', () => {
       address: walletQuote.walletAddress,
       getBalance: vi.fn(),
       sendBatch: vi.fn<() => Promise<TransactionReturnType>>(),
-      signer,
       lend: {
         getPosition: vi.fn(),
         openPosition: vi.fn(),

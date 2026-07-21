@@ -1,13 +1,15 @@
 import type { Context } from 'hono'
 import type { Address } from 'viem'
+import { z } from 'zod'
 
-import { errorResponse, requireAuth } from '@/helpers/errors.js'
-import {
-  type FrontendWalletProofEnv,
-  getFrontendWalletAuth,
-} from '@/middleware/frontendWalletProof.js'
+import { errorResponse } from '@/helpers/errors.js'
+import { AddressSchema } from '@/helpers/schemas.js'
+import { validateRequest } from '@/helpers/validation.js'
 import * as faucetService from '@/services/faucet.js'
-import * as walletService from '@/services/wallet.js'
+
+const DripEthRequestSchema = z.object({
+  body: z.strictObject({ walletAddress: AddressSchema }),
+})
 
 async function submitReservedDrip(c: Context, recipient: Address) {
   try {
@@ -24,9 +26,9 @@ async function submitReservedDrip(c: Context, recipient: Address) {
 }
 
 /**
- * @description Applies faucet eligibility, cooldown, and submission to a verified recipient.
+ * @description Applies faucet eligibility, cooldown, and submission to a recipient.
  * @param c - Hono request context.
- * @param recipient - Recipient established by an authentication boundary.
+ * @param recipient - Validated faucet recipient.
  * @returns The faucet response.
  */
 async function dripEthToRecipient(c: Context, recipient: Address) {
@@ -49,32 +51,12 @@ async function dripEthToRecipient(c: Context, recipient: Address) {
 }
 
 /**
- * @description Drips ETH to the smart wallet resolved from a Privy session.
+ * @description Drips ETH to the requested wallet without provider-specific authentication.
  * @param c - Hono request context.
  * @returns The faucet response.
  */
-export async function dripEthToSessionWallet(c: Context) {
-  const authResult = requireAuth(c)
-  if ('error' in authResult) return authResult.error
-
-  try {
-    const wallet = await walletService.getWallet(authResult.auth.idToken)
-    if (!wallet) return errorResponse(c, 'Wallet not found', 404)
-    return dripEthToRecipient(c, wallet.address)
-  } catch (error) {
-    return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
-  }
-}
-
-/**
- * @description Drips ETH to the smart wallet authenticated by owner proof middleware.
- * @param c - Hono request context.
- * @returns The faucet response.
- */
-export async function dripEthToFrontendWallet(
-  c: Context<FrontendWalletProofEnv>,
-) {
-  const auth = getFrontendWalletAuth(c)
-  if (!auth) return errorResponse(c, 'Unauthorized', 401)
-  return dripEthToRecipient(c, auth.recipient)
+export async function dripEthToWallet(c: Context) {
+  const validation = await validateRequest(c, DripEthRequestSchema)
+  if (!validation.success) return validation.response
+  return dripEthToRecipient(c, validation.data.body.walletAddress)
 }

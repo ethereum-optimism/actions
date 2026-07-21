@@ -8,7 +8,7 @@ import type {
   LendMarket,
   LendTransactionReceipt,
 } from '@eth-optimism/actions-sdk/react'
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 
 import type {
   LendExecutePositionParams,
@@ -23,14 +23,6 @@ import {
 
 interface GetWalletResponse {
   address: Address
-}
-
-/** A short-lived owner signature binding an ETH drip to its smart wallet. */
-export interface FrontendWalletProof {
-  issuedAt: number
-  ownerAddress: Address
-  signature: Hex
-  walletAddress: Address
 }
 
 class ActionsApiClient extends BaseApiClient {
@@ -177,38 +169,19 @@ class ActionsApiClient extends BaseApiClient {
   }
 
   /**
-   * @description Requests ETH for the wallet resolved from a server session.
-   * @param headers - Authentication headers for the hosted wallet session.
+   * @description Requests demo ETH for a wallet address.
+   * @param walletAddress - Wallet that receives the faucet drip.
    * @returns The submitted faucet operation hash.
-   * @throws ActionsApiError when authentication or faucet submission fails.
+   * @throws ActionsApiError when validation or faucet submission fails.
    */
   async dripEthToWallet(
-    headers: HeadersInit = {},
+    walletAddress: Address,
   ): Promise<{ userOpHash: string }> {
     const { result } = await this.request<{
       result: { userOpHash: string }
     }>('/wallet/eth', {
       method: 'POST',
-      headers,
-      timeoutMs: MUTATION_TIMEOUT_MS,
-    })
-    return result
-  }
-
-  /**
-   * @description Requests ETH for a smart wallet bound to its frontend owner.
-   * @param proof - Short-lived owner signature and derived wallet address.
-   * @returns The submitted faucet operation hash.
-   * @throws ActionsApiError when proof verification or faucet submission fails.
-   */
-  async dripEthToFrontendWallet(
-    proof: FrontendWalletProof,
-  ): Promise<{ userOpHash: string }> {
-    const { result } = await this.request<{
-      result: { userOpHash: string }
-    }>('/wallet/eth/frontend', {
-      method: 'POST',
-      body: JSON.stringify(proof),
+      body: JSON.stringify({ walletAddress }),
       timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return result

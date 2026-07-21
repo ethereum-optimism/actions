@@ -102,12 +102,9 @@ describe('buildSwapOperations', () => {
 })
 
 describe('buildMintOperation', () => {
-  it('authenticates the server-wallet ETH faucet request', async () => {
-    const headers = {
-      Authorization: 'Bearer test-token',
-      'privy-id-token': 'test-id-token',
-    }
-    const mintAsset = buildMintOperation(async () => headers, WALLET)
+  it('requests ETH without fetching provider authentication', async () => {
+    const getAuthHeaders = vi.fn()
+    const mintAsset = buildMintOperation(getAuthHeaders, WALLET)
     const eth: Asset = {
       type: 'native',
       address: { [CHAIN_ID]: 'native' },
@@ -116,23 +113,7 @@ describe('buildMintOperation', () => {
 
     await mintAsset(eth)
 
-    expect(actionsApi.dripEthToWallet).toHaveBeenCalledWith(headers)
-  })
-
-  it('does not call the faucet without a Privy identity token', async () => {
-    const mintAsset = buildMintOperation(
-      async () => ({ Authorization: 'Bearer test-token' }),
-      WALLET,
-    )
-    const eth: Asset = {
-      type: 'native',
-      address: { [CHAIN_ID]: 'native' },
-      metadata: { decimals: 18, name: 'Ether', symbol: 'ETH' },
-    }
-
-    await expect(mintAsset(eth)).rejects.toThrow(
-      'Privy authentication headers are not available',
-    )
-    expect(actionsApi.dripEthToWallet).not.toHaveBeenCalled()
+    expect(actionsApi.dripEthToWallet).toHaveBeenCalledWith(WALLET)
+    expect(getAuthHeaders).not.toHaveBeenCalled()
   })
 })

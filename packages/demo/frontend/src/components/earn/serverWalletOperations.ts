@@ -13,22 +13,6 @@ import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 
 export type AuthHeaders = { Authorization: string } | undefined
 
-type PrivyAuthHeaders = {
-  Authorization: string
-  'privy-id-token': string
-}
-
-function requirePrivyAuthHeaders(headers: AuthHeaders): PrivyAuthHeaders {
-  if (
-    !headers ||
-    !('privy-id-token' in headers) ||
-    typeof headers['privy-id-token'] !== 'string'
-  ) {
-    throw new Error('Privy authentication headers are not available')
-  }
-  return headers
-}
-
 export function buildLendOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): Pick<
@@ -102,8 +86,7 @@ export function buildMintOperation(
   return async (asset: Asset) => {
     if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
       if (!walletAddress) throw new Error('Wallet address not available')
-      const headers = requirePrivyAuthHeaders(await getAuthHeaders())
-      await actionsApi.dripEthToWallet(headers)
+      await actionsApi.dripEthToWallet(walletAddress)
       return
     }
     return actionsApi.mintDemoUsdcToWallet(await getAuthHeaders())

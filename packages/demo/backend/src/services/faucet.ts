@@ -81,8 +81,8 @@ function sweepExpiredDripReservations(now: number): void {
 }
 
 /**
- * @description Submits an authenticated ETH faucet drip.
- * @param walletAddress - Verified smart-wallet recipient.
+ * @description Submits an ETH faucet drip authorized by the backend signer.
+ * @param walletAddress - Validated faucet recipient.
  * @returns The submission status and user operation hash.
  * @throws When wallet construction or submission fails.
  */
