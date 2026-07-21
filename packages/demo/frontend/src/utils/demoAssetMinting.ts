@@ -9,7 +9,7 @@ import type {
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
 import { actionsApi } from '@/api/actionsApi'
 
-export type FrontendMintWallet = Pick<Wallet, 'address'> & {
+type FrontendMintWallet = Pick<Wallet, 'address'> & {
   sendBatch: Wallet['sendBatch']
 }
 

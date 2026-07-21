@@ -10,6 +10,10 @@ import type {
 } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
+interface GetWalletResponse {
+  address: Address
+}
+
 import type {
   LendExecutePositionParams,
   LendPositionsParams,
@@ -20,10 +24,6 @@ import {
   BaseApiClient,
   MUTATION_TIMEOUT_MS,
 } from './apiClient.js'
-
-interface GetWalletResponse {
-  address: Address
-}
 
 class ActionsApiClient extends BaseApiClient {
   async getWallet(headers: HeadersInit = {}): Promise<GetWalletResponse> {
@@ -168,12 +168,6 @@ class ActionsApiClient extends BaseApiClient {
     return this.lendMutation('close', params, headers)
   }
 
-  /**
-   * @description Requests demo ETH for a wallet address.
-   * @param walletAddress - Wallet that receives the faucet drip.
-   * @returns The submitted faucet operation hash.
-   * @throws ActionsApiError when validation or faucet submission fails.
-   */
   async dripEthToWallet(
     walletAddress: Address,
   ): Promise<{ userOpHash: string }> {
@@ -181,7 +175,9 @@ class ActionsApiClient extends BaseApiClient {
       result: { userOpHash: string }
     }>('/wallet/eth', {
       method: 'POST',
-      body: JSON.stringify({ walletAddress }),
+      body: JSON.stringify({
+        walletAddress,
+      }),
       timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return result
