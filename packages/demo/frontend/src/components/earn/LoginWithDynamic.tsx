@@ -44,8 +44,8 @@ export function LoginWithDynamic() {
                 zIndex: 1000,
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
-                maxWidth: '500px',
-                width: '90%',
+                maxWidth: '90%',
+                width: 'fit-content',
                 maxHeight: '90vh',
                 overflow: 'auto',
                 boxShadow:
