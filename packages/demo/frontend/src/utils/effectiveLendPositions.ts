@@ -6,6 +6,8 @@
 
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { BorrowPosition, MarketPosition } from '@/types/market'
+import { isEthSymbol } from '@/utils/assetUtils'
+import { floorToFixed } from '@/utils/tokenDisplay'
 
 function toAmount(value: string | null | undefined): number {
   if (!value) return 0
@@ -57,14 +59,12 @@ export function buildEffectiveLendPositions(
             directPosition?.pledgedCollateralAmount ??
             null)
           : null
-      // Floor (not round) to 2 dp: the displayed deposit doubles as withdraw Max, so rounding up could exceed actual collateral.
-      const totalDepositedAmount = (
-        Math.floor(
-          (toAmount(directDepositedAmount) +
-            toAmount(pledgedCollateralAmount)) *
-            100,
-        ) / 100
-      ).toFixed(2)
+      // Keep ETH's four-decimal display precision without rounding up withdraw Max.
+      const displayPrecision = isEthSymbol(market.asset.metadata.symbol) ? 4 : 2
+      const totalDepositedAmount = floorToFixed(
+        toAmount(directDepositedAmount) + toAmount(pledgedCollateralAmount),
+        displayPrecision,
+      )
 
       if (toAmount(totalDepositedAmount) <= 0) return null
 
