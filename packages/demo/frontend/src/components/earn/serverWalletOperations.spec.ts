@@ -4,14 +4,18 @@ import type {
   SwapQuote,
 } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { actionsApi } from '@/api/actionsApi'
 
-import { buildSwapOperations } from './serverWalletOperations'
+import {
+  buildMintOperation,
+  buildSwapOperations,
+} from './serverWalletOperations'
 
 vi.mock('@/api/actionsApi', () => ({
   actionsApi: {
+    dripEthToWallet: vi.fn(),
     executeSwap: vi.fn(),
     getAssets: vi.fn(),
     getSwapMarkets: vi.fn(),
@@ -22,6 +26,7 @@ vi.mock('@/api/actionsApi', () => ({
 const CHAIN_ID = 84532 as SupportedChainId
 const TOKEN_IN = '0x1111111111111111111111111111111111111111' as Address
 const TOKEN_OUT = '0x2222222222222222222222222222222222222222' as Address
+const WALLET = '0x3333333333333333333333333333333333333333' as Address
 
 const assetIn: Asset = {
   type: 'erc20',
@@ -34,6 +39,10 @@ const assetOut: Asset = {
   address: { [CHAIN_ID]: TOKEN_OUT },
   metadata: { decimals: 18, name: 'Optimism', symbol: 'OP' },
 }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('buildSwapOperations', () => {
   it('executes server-wallet swaps from quote params, not the preview quote', async () => {
@@ -89,5 +98,41 @@ describe('buildSwapOperations', () => {
       },
       { Authorization: 'Bearer test-token' },
     )
+  })
+})
+
+describe('buildMintOperation', () => {
+  it('authenticates the server-wallet ETH faucet request', async () => {
+    const headers = {
+      Authorization: 'Bearer test-token',
+      'privy-id-token': 'test-id-token',
+    }
+    const mintAsset = buildMintOperation(async () => headers, WALLET)
+    const eth: Asset = {
+      type: 'native',
+      address: { [CHAIN_ID]: 'native' },
+      metadata: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+    }
+
+    await mintAsset(eth)
+
+    expect(actionsApi.dripEthToWallet).toHaveBeenCalledWith(headers)
+  })
+
+  it('does not call the faucet without a Privy identity token', async () => {
+    const mintAsset = buildMintOperation(
+      async () => ({ Authorization: 'Bearer test-token' }),
+      WALLET,
+    )
+    const eth: Asset = {
+      type: 'native',
+      address: { [CHAIN_ID]: 'native' },
+      metadata: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+    }
+
+    await expect(mintAsset(eth)).rejects.toThrow(
+      'Privy authentication headers are not available',
+    )
+    expect(actionsApi.dripEthToWallet).not.toHaveBeenCalled()
   })
 })

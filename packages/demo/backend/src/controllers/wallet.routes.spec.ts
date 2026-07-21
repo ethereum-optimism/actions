@@ -4,7 +4,11 @@ import { createApp } from '@/app.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
 
-import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+import {
+  authHeaders,
+  mockVerifiedUser,
+  successfulFaucetDrip,
+} from './routeTestUtils.js'
 
 vi.mock('@/services/wallet.js', () => ({
   getWallet: vi.fn(),
@@ -42,8 +46,6 @@ vi.mock('@/middleware/actions.js', () => ({
     await next()
   },
 }))
-
-const okDrip = { success: true, userOpHash: '0x' + 'd'.repeat(64) }
 
 beforeEach(async () => {
   vi.resetAllMocks()
@@ -107,7 +109,9 @@ describe('POST /wallet/eth (faucet drip)', () => {
       address: sessionWallet,
     } as never)
     vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
-    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(okDrip as never)
+    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(
+      successfulFaucetDrip,
+    )
 
     const res = await createApp().request('/wallet/eth', {
       method: 'POST',
@@ -137,7 +141,9 @@ describe('POST /wallet/eth (faucet drip)', () => {
       address: freshWallet,
     } as never)
     vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
-    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(okDrip as never)
+    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(
+      successfulFaucetDrip,
+    )
 
     const app = createApp()
     const responses = await Promise.all(
@@ -164,8 +170,8 @@ describe('POST /wallet/eth (faucet drip)', () => {
     } as never)
     vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
     vi.mocked(faucetService.dripEthToWallet)
-      .mockResolvedValueOnce({ success: false } as never)
-      .mockResolvedValueOnce(okDrip as never)
+      .mockResolvedValueOnce({ ...successfulFaucetDrip, success: false })
+      .mockResolvedValueOnce(successfulFaucetDrip)
 
     const app = createApp()
     const failed = await app.request('/wallet/eth', {
@@ -193,7 +199,7 @@ describe('POST /wallet/eth (faucet drip)', () => {
     vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
     vi.mocked(faucetService.dripEthToWallet)
       .mockRejectedValueOnce(new Error('bundler down'))
-      .mockResolvedValueOnce(okDrip as never)
+      .mockResolvedValueOnce(successfulFaucetDrip)
 
     const app = createApp()
     const failed = await app.request('/wallet/eth', {
@@ -222,7 +228,9 @@ describe('POST /wallet/eth (faucet drip)', () => {
       } as never
     })
     vi.mocked(faucetService.isWalletEligibleForFaucet).mockResolvedValue(true)
-    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(okDrip as never)
+    vi.mocked(faucetService.dripEthToWallet).mockResolvedValue(
+      successfulFaucetDrip,
+    )
 
     const app = createApp()
     const statuses: number[] = []

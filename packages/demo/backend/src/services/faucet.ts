@@ -80,7 +80,15 @@ function sweepExpiredDripReservations(now: number): void {
   }
 }
 
-export async function dripEthToWallet(walletAddress: Address) {
+/**
+ * @description Submits an authenticated ETH faucet drip.
+ * @param walletAddress - Verified smart-wallet recipient.
+ * @returns The submission status and user operation hash.
+ * @throws When wallet construction or submission fails.
+ */
+export async function dripEthToWallet(
+  walletAddress: Address,
+): Promise<{ success: boolean; userOpHash: Hash }> {
   const id = keccak256(walletAddress)
   const faucetAuthModuleAddress = env.AUTH_MODULE_ADDRESS as Address
   const domain = {

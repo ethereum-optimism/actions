@@ -8,11 +8,7 @@ import type {
   LendMarket,
   LendTransactionReceipt,
 } from '@eth-optimism/actions-sdk/react'
-import type { Address } from 'viem'
-
-interface GetWalletResponse {
-  address: Address
-}
+import type { Address, Hex } from 'viem'
 
 import type {
   LendExecutePositionParams,
@@ -24,6 +20,18 @@ import {
   BaseApiClient,
   MUTATION_TIMEOUT_MS,
 } from './apiClient.js'
+
+interface GetWalletResponse {
+  address: Address
+}
+
+/** A short-lived owner signature binding an ETH drip to its smart wallet. */
+export interface FrontendWalletProof {
+  issuedAt: number
+  ownerAddress: Address
+  signature: Hex
+  walletAddress: Address
+}
 
 class ActionsApiClient extends BaseApiClient {
   async getWallet(headers: HeadersInit = {}): Promise<GetWalletResponse> {
@@ -168,16 +176,39 @@ class ActionsApiClient extends BaseApiClient {
     return this.lendMutation('close', params, headers)
   }
 
+  /**
+   * @description Requests ETH for the wallet resolved from a server session.
+   * @param headers - Authentication headers for the hosted wallet session.
+   * @returns The submitted faucet operation hash.
+   * @throws ActionsApiError when authentication or faucet submission fails.
+   */
   async dripEthToWallet(
-    walletAddress: Address,
+    headers: HeadersInit = {},
   ): Promise<{ userOpHash: string }> {
     const { result } = await this.request<{
       result: { userOpHash: string }
     }>('/wallet/eth', {
       method: 'POST',
-      body: JSON.stringify({
-        walletAddress,
-      }),
+      headers,
+      timeoutMs: MUTATION_TIMEOUT_MS,
+    })
+    return result
+  }
+
+  /**
+   * @description Requests ETH for a smart wallet bound to its frontend owner.
+   * @param proof - Short-lived owner signature and derived wallet address.
+   * @returns The submitted faucet operation hash.
+   * @throws ActionsApiError when proof verification or faucet submission fails.
+   */
+  async dripEthToFrontendWallet(
+    proof: FrontendWalletProof,
+  ): Promise<{ userOpHash: string }> {
+    const { result } = await this.request<{
+      result: { userOpHash: string }
+    }>('/wallet/eth/frontend', {
+      method: 'POST',
+      body: JSON.stringify(proof),
       timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return result

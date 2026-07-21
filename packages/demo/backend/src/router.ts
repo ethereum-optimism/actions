@@ -1,4 +1,6 @@
+import { getConnInfo } from '@hono/node-server/conninfo'
 import { readFileSync } from 'fs'
+import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { rateLimiter } from 'hono-rate-limiter'
 import { dirname, join } from 'path'
@@ -6,14 +8,23 @@ import { fileURLToPath } from 'url'
 
 import * as assetsController from './controllers/assets.js'
 import * as borrowController from './controllers/borrow.js'
+import {
+  dripEthToFrontendWallet,
+  dripEthToSessionWallet,
+} from './controllers/faucet.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
 import { type AuthContext, authMiddleware } from './middleware/auth.js'
+import {
+  type FrontendWalletAuthContext,
+  frontendWalletProofMiddleware,
+} from './middleware/frontendWalletProof.js'
 
 type RouterEnv = {
   Variables: {
     auth: AuthContext
+    frontendWalletAuth: FrontendWalletAuthContext
   }
 }
 
@@ -22,12 +33,16 @@ export const router = new Hono<RouterEnv>()
 const walletController = new WalletController()
 const FAUCET_RATE_LIMIT_WINDOW_MS = 60_000
 const FAUCET_RATE_LIMIT_MAX = 10
-const faucetRateLimit = () =>
+const FRONTEND_PROOF_RATE_LIMIT_MAX = 60
+const faucetRateLimit = (
+  limit: number,
+  keyGenerator: (c: Context<RouterEnv>) => string,
+) =>
   rateLimiter<RouterEnv>({
     windowMs: FAUCET_RATE_LIMIT_WINDOW_MS,
-    limit: FAUCET_RATE_LIMIT_MAX,
+    limit,
     message: { error: 'Too many requests' },
-    keyGenerator: (c) => c.get('auth').rateLimitKey,
+    keyGenerator,
   })
 
 // Get package.json path relative to this file
@@ -78,8 +93,21 @@ router.post(
 router.post(
   '/wallet/eth',
   authMiddleware,
-  faucetRateLimit(),
-  walletController.dripEthToWallet,
+  faucetRateLimit(FAUCET_RATE_LIMIT_MAX, (c) => c.get('auth').rateLimitKey),
+  dripEthToSessionWallet,
+)
+router.post(
+  '/wallet/eth/frontend',
+  faucetRateLimit(FRONTEND_PROOF_RATE_LIMIT_MAX, (c) => {
+    const address = getConnInfo(c).remote.address ?? 'unknown'
+    return `frontend-connection:${address}`
+  }),
+  frontendWalletProofMiddleware,
+  faucetRateLimit(
+    FAUCET_RATE_LIMIT_MAX,
+    (c) => c.get('frontendWalletAuth').rateLimitKey,
+  ),
+  dripEthToFrontendWallet,
 )
 
 // Lend endpoints

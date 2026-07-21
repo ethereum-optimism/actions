@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { actionsApi, ActionsApiError } from './actionsApi'
+import {
+  actionsApi,
+  ActionsApiError,
+  type FrontendWalletProof,
+} from './actionsApi'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -69,6 +73,29 @@ describe('ActionsApiClient', () => {
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.test.com/wallet/lend/positions?chainIds=84532%2C11155420&nonZeroOnly=true',
       expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('posts signed frontend wallet proofs to the faucet route', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: { userOpHash: '0xabc' } }),
+    })
+    const proof: FrontendWalletProof = {
+      issuedAt: 1_800_000_000_000,
+      ownerAddress: '0x1111111111111111111111111111111111111111',
+      signature: `0x${'2'.repeat(130)}`,
+      walletAddress: '0x2222222222222222222222222222222222222222',
+    }
+
+    await actionsApi.dripEthToFrontendWallet(proof)
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/wallet/eth/frontend',
+      expect.objectContaining({
+        body: JSON.stringify(proof),
+        method: 'POST',
+      }),
     )
   })
 })
