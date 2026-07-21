@@ -1,21 +1,36 @@
-import type { Address, Hash } from 'viem'
-import { createPublicClient, http } from 'viem'
+import { randomBytes } from 'node:crypto'
+
+import type { Address, Hash, Hex, TypedDataDomain } from 'viem'
+import {
+  BaseError,
+  createPublicClient,
+  encodeFunctionData,
+  getAddress,
+  http,
+  isHex,
+  keccak256,
+} from 'viem'
+import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 
+import { faucetAbi } from '@/abis/ethFaucet.js'
+import { getActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
-import { submitFaucetUserOperation } from '@/services/faucetSubmission.js'
 
-export type FaucetDripOutcome =
+type FaucetDripOutcome =
   | { status: 'success'; userOpHash: Hash }
   | { status: 'ineligible' }
   | { status: 'cooldown' }
   | { status: 'failed'; error?: unknown }
 
-/**
- * @description Performs a best-effort zero-balance pre-check before reservation.
- * @param walletAddress - Validated faucet recipient.
- * @returns Whether the wallet currently has no native ETH.
- */
+class FaucetConfigurationError extends BaseError {
+  override name = 'FaucetConfigurationError' as const
+  constructor(field: string) {
+    super(`Invalid faucet configuration: ${field}`)
+  }
+}
+
+/** Best-effort zero-balance pre-check; `reserveDrip` is the real cooldown gate. */
 export async function isWalletEligibleForFaucet(
   walletAddress: Address,
 ): Promise<boolean> {
@@ -33,12 +48,7 @@ export const MAX_TRACKED_DRIP_RECIPIENTS = 10_000
 
 const lastDripAtByRecipient = new Map<string, number>()
 
-/**
- * @description Claims a cooldown slot before submitting a faucet drip.
- * @param walletAddress - Validated faucet recipient.
- * @param now - Current timestamp used for deterministic accounting.
- * @returns Whether the recipient acquired a drip reservation.
- */
+/** Synchronously claim a drip slot so concurrent requests for one wallet cannot all pass. */
 export function reserveDrip(
   walletAddress: Address,
   now: number = Date.now(),
@@ -59,11 +69,7 @@ export function reserveDrip(
   return true
 }
 
-/**
- * @description Releases a failed drip reservation so the recipient can retry.
- * @param walletAddress - Validated faucet recipient.
- * @returns Nothing.
- */
+/** Release a reservation after submission failure so the wallet can retry. */
 export function releaseDrip(walletAddress: Address): void {
   lastDripAtByRecipient.delete(walletAddress.toLowerCase())
 }
@@ -77,24 +83,26 @@ function sweepExpiredDripReservations(now: number): void {
 }
 
 /**
- * @description Executes faucet eligibility, reservation, submission, and rollback.
+ * @description Runs the complete ETH faucet workflow for a recipient.
  * @param recipient - Validated faucet recipient.
- * @returns A typed outcome for HTTP response mapping.
+ * @returns A typed outcome for the HTTP controller.
+ * @throws Never; expected failures are represented by the returned outcome.
  */
 export async function executeFaucetDrip(
   recipient: Address,
 ): Promise<FaucetDripOutcome> {
   try {
-    const eligible = await isWalletEligibleForFaucet(recipient)
-    if (!eligible) return { status: 'ineligible' }
+    if (!(await isWalletEligibleForFaucet(recipient))) {
+      return { status: 'ineligible' }
+    }
     if (!reserveDrip(recipient)) return { status: 'cooldown' }
-    return sendReservedDrip(recipient)
+    return submitReservedDrip(recipient)
   } catch (error) {
     return { status: 'failed', error }
   }
 }
 
-async function sendReservedDrip(
+async function submitReservedDrip(
   recipient: Address,
 ): Promise<FaucetDripOutcome> {
   try {
@@ -102,10 +110,91 @@ async function sendReservedDrip(
     if (result.success) {
       return { status: 'success', userOpHash: result.userOpHash }
     }
-    releaseDrip(recipient)
-    return { status: 'failed' }
   } catch (error) {
     releaseDrip(recipient)
     return { status: 'failed', error }
+  }
+  releaseDrip(recipient)
+  return { status: 'failed' }
+}
+
+async function submitFaucetUserOperation(walletAddress: Address) {
+  const id = keccak256(walletAddress)
+  const faucetAuthModuleAddress = getAddress(env.AUTH_MODULE_ADDRESS)
+  const adminSigner = getAdminSigner()
+  const domain = {
+    name: 'OffChainAuthModule',
+    version: '1',
+    chainId: optimismSepolia.id,
+    verifyingContract: faucetAuthModuleAddress,
+  }
+  const nonce = generateNonce()
+  const dripParams = { recipient: walletAddress, nonce, data: '0x' } as const
+  const authParams = await createAuthParams(
+    walletAddress,
+    faucetAuthModuleAddress,
+    id,
+    nonce,
+    domain,
+    adminSigner,
+  )
+
+  const dripCallData = encodeFunctionData({
+    abi: faucetAbi,
+    functionName: 'drip',
+    args: [dripParams, authParams],
+  })
+  const transactionData = [
+    {
+      to: getAddress(env.OP_SEPOLIA_FAUCET_ADDRESS),
+      data: dripCallData,
+      value: 0n,
+    },
+  ]
+  const adminSmartWallet = await getActions().wallet.getSmartWallet({
+    signer: adminSigner,
+    deploymentSigners: [adminSigner],
+  })
+
+  return adminSmartWallet.sendBatch(transactionData, optimismSepolia.id)
+}
+
+function generateNonce(): `0x${string}` {
+  return `0x${randomBytes(32).toString('hex')}` // 256-bit CSPRNG
+}
+
+function getAdminSigner() {
+  const privateKey = env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY
+  if (!isHex(privateKey)) {
+    throw new FaucetConfigurationError('FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY')
+  }
+  return privateKeyToAccount(privateKey)
+}
+
+async function createAuthParams(
+  recipientAddress: Address,
+  moduleAddress: Address,
+  dripId: Hex,
+  nonce: Hash,
+  domain: TypedDataDomain,
+  adminSigner: PrivateKeyAccount,
+) {
+  const proof = await adminSigner.signTypedData({
+    domain,
+    types: {
+      Proof: [
+        { name: 'recipient', type: 'address' },
+        { name: 'nonce', type: 'bytes32' },
+        { name: 'id', type: 'bytes32' },
+      ],
+    },
+    primaryType: 'Proof',
+    message: { recipient: recipientAddress, nonce, id: dripId },
+  })
+
+  return {
+    module: moduleAddress,
+    id: dripId,
+    proof,
   }
 }
