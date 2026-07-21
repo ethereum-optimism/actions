@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { WALLET_PROVIDERS } from '@/constants/walletProviders'
 import { WelcomeWalletPicker } from '@/components/earn/WelcomeWalletPicker'
+import { WalletLoadingScreen } from '@/components/earn/WalletLoadingScreen'
 
 // Lazy load wallet providers to reduce bundle size and build memory
 const PrivyProvider = lazy(() =>
@@ -75,7 +76,7 @@ export function EarnPage() {
 
   if (walletProvider === WALLET_PROVIDERS.TURNKEY) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
+      <Suspense fallback={<WalletLoadingScreen />}>
         <TurnkeyProvider>
           <EarnWithTurnkeyWallet />
         </TurnkeyProvider>
