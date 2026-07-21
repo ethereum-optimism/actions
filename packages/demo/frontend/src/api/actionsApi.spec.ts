@@ -71,4 +71,22 @@ describe('ActionsApiClient', () => {
       expect.objectContaining({ method: 'GET' }),
     )
   })
+
+  it('posts a wallet address to the provider-neutral faucet route', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: { userOpHash: '0xabc' } }),
+    })
+    const walletAddress = '0x2222222222222222222222222222222222222222'
+
+    await actionsApi.dripEthToWallet(walletAddress)
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/wallet/eth',
+      expect.objectContaining({
+        body: JSON.stringify({ walletAddress }),
+        method: 'POST',
+      }),
+    )
+  })
 })

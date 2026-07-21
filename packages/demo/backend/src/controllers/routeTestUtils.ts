@@ -1,5 +1,12 @@
 import { vi } from 'vitest'
 
+import type { dripEthToWallet } from '@/services/faucet.js'
+
+export const successfulFaucetDrip = {
+  success: true,
+  userOpHash: `0x${'d'.repeat(64)}`,
+} satisfies Awaited<ReturnType<typeof dripEthToWallet>>
+
 export function authHeaders(): Record<string, string> {
   return {
     Authorization: 'Bearer fake-access-token',

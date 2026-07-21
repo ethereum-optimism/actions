@@ -24,17 +24,26 @@ import {
   AaveETHBorrowUSDCDemo,
   MorphoUSDCBorrowOPDemo,
 } from '@/constants/markets'
-import { mintDemoAsset } from '@/utils/demoAssetMinting'
+import {
+  mintDemoAsset,
+  type FrontendMintWallet,
+} from '@/utils/demoAssetMinting'
 import { mirrorBorrowReceipt } from '@/demoMagic'
 
 export type FrontendWalletOperationsWallet = Pick<
   Wallet,
   'address' | 'getBalance'
+> &
+  FrontendMintWallet & {
+    lend: NonNullable<Wallet['lend']>
+    swap: NonNullable<Wallet['swap']>
+  }
+
+export type FrontendBorrowOperationsWallet = Pick<
+  Wallet,
+  'address' | 'getBalance'
 > & {
-  sendBatch: Wallet['sendBatch']
-  lend: NonNullable<Wallet['lend']>
   borrow: NonNullable<Wallet['borrow']>
-  swap: NonNullable<Wallet['swap']>
 }
 
 export type FrontendWalletOperationsActions = Pick<
@@ -127,7 +136,7 @@ export function buildFrontendWalletOperations(
 }
 
 export function buildFrontendBorrowOperations(
-  wallet: FrontendWalletOperationsWallet,
+  wallet: FrontendBorrowOperationsWallet,
   actions: FrontendWalletOperationsActions,
 ): BorrowOperations {
   const withParams = (
