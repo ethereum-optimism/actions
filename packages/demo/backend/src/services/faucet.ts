@@ -96,15 +96,10 @@ export async function executeFaucetDrip(
       return { status: 'ineligible' }
     }
     if (!reserveDrip(recipient)) return { status: 'cooldown' }
-    return submitReservedDrip(recipient)
   } catch (error) {
     return { status: 'failed', error }
   }
-}
 
-async function submitReservedDrip(
-  recipient: Address,
-): Promise<FaucetDripOutcome> {
   try {
     const result = await submitFaucetUserOperation(recipient)
     if (result.success) {
