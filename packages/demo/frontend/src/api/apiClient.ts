@@ -1,6 +1,6 @@
 /**
  * Shared HTTP foundation for the demo's API clients. `BaseApiClient.request`
- * is a `fetch` wrapper that adds the JSON content-type, applies a per-call
+ * is a `fetch` wrapper that marks request bodies as JSON, applies a per-call
  * timeout, and raises `ActionsApiError` on non-2xx.
  */
 
@@ -34,10 +34,11 @@ export class BaseApiClient {
     const combinedSignal = signal
       ? AbortSignal.any([signal, timeoutSignal])
       : timeoutSignal
+    const hasBody = rest.body !== undefined && rest.body !== null
 
     const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
       },
       ...rest,
