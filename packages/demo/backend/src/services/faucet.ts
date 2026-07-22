@@ -2,30 +2,32 @@ import { randomBytes } from 'node:crypto'
 
 import type { Address, Hash, Hex, TypedDataDomain } from 'viem'
 import {
+  BaseError,
   createPublicClient,
-  createWalletClient,
   encodeFunctionData,
+  getAddress,
   http,
+  isHex,
   keccak256,
 } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 
 import { faucetAbi } from '@/abis/ethFaucet.js'
 import { getActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
 
-type DripParams = {
-  recipient: Address
-  nonce: Hash
-  data: Hash
-  gasLimit?: number
-}
+type FaucetDripOutcome =
+  | { status: 'success'; userOpHash: Hash }
+  | { status: 'ineligible' }
+  | { status: 'cooldown' }
+  | { status: 'failed'; error?: unknown }
 
-type AuthParams = {
-  module: Address
-  id: Hash
-  proof: Hash
+class FaucetConfigurationError extends BaseError {
+  override name = 'FaucetConfigurationError' as const
+  constructor(field: string) {
+    super(`Invalid faucet configuration: ${field}`)
+  }
 }
 
 /** Best-effort zero-balance pre-check; `reserveDrip` is the real cooldown gate. */
@@ -80,9 +82,41 @@ function sweepExpiredDripReservations(now: number): void {
   }
 }
 
-export async function dripEthToWallet(walletAddress: Address) {
+/**
+ * @description Runs the complete ETH faucet workflow for a recipient.
+ * @param recipient - Validated faucet recipient.
+ * @returns A typed outcome for the HTTP controller.
+ * @throws Never; expected failures are represented by the returned outcome.
+ */
+export async function executeFaucetDrip(
+  recipient: Address,
+): Promise<FaucetDripOutcome> {
+  try {
+    if (!(await isWalletEligibleForFaucet(recipient))) {
+      return { status: 'ineligible' }
+    }
+    if (!reserveDrip(recipient)) return { status: 'cooldown' }
+  } catch (error) {
+    return { status: 'failed', error }
+  }
+
+  try {
+    const result = await submitFaucetUserOperation(recipient)
+    if (result.success) {
+      return { status: 'success', userOpHash: result.userOpHash }
+    }
+  } catch (error) {
+    releaseDrip(recipient)
+    return { status: 'failed', error }
+  }
+  releaseDrip(recipient)
+  return { status: 'failed' }
+}
+
+async function submitFaucetUserOperation(walletAddress: Address) {
   const id = keccak256(walletAddress)
-  const faucetAuthModuleAddress = env.AUTH_MODULE_ADDRESS as Address
+  const faucetAuthModuleAddress = getAddress(env.AUTH_MODULE_ADDRESS)
+  const adminSigner = getAdminSigner()
   const domain = {
     name: 'OffChainAuthModule',
     version: '1',
@@ -90,14 +124,14 @@ export async function dripEthToWallet(walletAddress: Address) {
     verifyingContract: faucetAuthModuleAddress,
   }
   const nonce = generateNonce()
-
-  const dripParams = createDripParams(walletAddress, nonce)
+  const dripParams = { recipient: walletAddress, nonce, data: '0x' } as const
   const authParams = await createAuthParams(
     walletAddress,
     faucetAuthModuleAddress,
     id,
     nonce,
     domain,
+    adminSigner,
   )
 
   const dripCallData = encodeFunctionData({
@@ -107,38 +141,29 @@ export async function dripEthToWallet(walletAddress: Address) {
   })
   const transactionData = [
     {
-      to: env.OP_SEPOLIA_FAUCET_ADDRESS as Address,
+      to: getAddress(env.OP_SEPOLIA_FAUCET_ADDRESS),
       data: dripCallData,
       value: 0n,
     },
   ]
-
-  const actions = getActions()
-  const adminSigner = privateKeyToAccount(
-    env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
-  )
-  const adminSmartWallet = await actions.wallet.getSmartWallet({
+  const adminSmartWallet = await getActions().wallet.getSmartWallet({
     signer: adminSigner,
     deploymentSigners: [adminSigner],
   })
 
-  const receipt = await adminSmartWallet.sendBatch(
-    transactionData,
-    optimismSepolia.id,
-  )
-  return receipt
-}
-
-function createDripParams(recipientAddress: Address, nonce: Hash): DripParams {
-  return {
-    recipient: recipientAddress,
-    nonce,
-    data: '0x',
-  }
+  return adminSmartWallet.sendBatch(transactionData, optimismSepolia.id)
 }
 
 function generateNonce(): `0x${string}` {
   return `0x${randomBytes(32).toString('hex')}` // 256-bit CSPRNG
+}
+
+function getAdminSigner() {
+  const privateKey = env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY
+  if (!isHex(privateKey)) {
+    throw new FaucetConfigurationError('FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY')
+  }
+  return privateKeyToAccount(privateKey)
 }
 
 async function createAuthParams(
@@ -147,39 +172,24 @@ async function createAuthParams(
   dripId: Hex,
   nonce: Hash,
   domain: TypedDataDomain,
-): Promise<AuthParams> {
-  const proof = {
-    recipient: recipientAddress,
-    nonce,
-    id: dripId,
-  }
-
-  const adminWalletClient = createWalletClient({
-    chain: optimismSepolia,
-    transport: env.OP_SEPOLIA_RPC_URL ? http(env.OP_SEPOLIA_RPC_URL) : http(),
-    account: privateKeyToAccount(
-      env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
-    ),
-  })
-
-  const types = {
-    Proof: [
-      { name: 'recipient', type: 'address' },
-      { name: 'nonce', type: 'bytes32' },
-      { name: 'id', type: 'bytes32' },
-    ],
-  }
-  const signature = await adminWalletClient.signTypedData({
+  adminSigner: PrivateKeyAccount,
+) {
+  const proof = await adminSigner.signTypedData({
     domain,
-    types,
+    types: {
+      Proof: [
+        { name: 'recipient', type: 'address' },
+        { name: 'nonce', type: 'bytes32' },
+        { name: 'id', type: 'bytes32' },
+      ],
+    },
     primaryType: 'Proof',
-    message: proof,
-    account: adminWalletClient.account,
+    message: { recipient: recipientAddress, nonce, id: dripId },
   })
 
   return {
     module: moduleAddress,
     id: dripId,
-    proof: signature,
+    proof,
   }
 }
