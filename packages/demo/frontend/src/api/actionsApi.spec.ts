@@ -89,4 +89,27 @@ describe('ActionsApiClient', () => {
       }),
     )
   })
+
+  it('omits the JSON content type from authenticated GET requests', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: [] }),
+    })
+
+    await actionsApi.getPositions(undefined, {
+      Authorization: 'Bearer access-token',
+      'privy-id-token': 'identity-token',
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/wallet/lend/positions',
+      expect.objectContaining({
+        headers: {
+          Authorization: 'Bearer access-token',
+          'privy-id-token': 'identity-token',
+        },
+        method: 'GET',
+      }),
+    )
+  })
 })
