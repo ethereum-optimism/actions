@@ -1,20 +1,11 @@
-import { UiPoolDataProvider } from '@aave/contract-helpers'
-import { formatReserves } from '@aave/math-utils'
-import { providers } from 'ethers'
-import type { Address } from 'viem'
+import { type Address, formatUnits } from 'viem'
 
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
-import { POOL_GET_RESERVE_DATA_ABI } from '@/actions/shared/aave/abis/pool.js'
-import {
-  getAaveAddresses,
-  getPoolAddress,
-} from '@/actions/shared/aave/addresses.js'
+import { requireAavePoolAddress } from '@/actions/shared/aave/addresses.js'
+import { readAaveReserveData } from '@/actions/shared/aave/reserve.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import {
-  ChainNotSupportedError,
-  MarketNotAllowedError,
-} from '@/core/error/errors.js'
+import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
@@ -23,250 +14,151 @@ import type {
   LendMarketConfig,
   LendMarketId,
 } from '@/types/lend/index.js'
-import { getAssetAddress } from '@/utils/assets.js'
+import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
+import { SECONDS_PER_YEAR } from '@/utils/constants.js'
+import { validateNotZeroAddress } from '@/utils/validation.js'
 
-/**
- * Parameters for getReserve function
- */
+import {
+  type AaveLendReserveState,
+  fetchAaveLendReserveState,
+} from './state.js'
+
+const SECONDS_PER_YEAR_NUMBER = Number(SECONDS_PER_YEAR)
+
 interface GetReserveParams {
-  /** Market identifier (asset address and chainId) */
   marketId: LendMarketId
-  /** Chain manager instance */
   chainManager: ChainManager
-  /** Lend configuration containing market allowlist */
   lendConfig?: LendProviderConfig
 }
 
-/**
- * Parameters for getReserves function
- */
 interface GetReservesParams {
   chainManager: ChainManager
   lendConfig: LendProviderConfig
   markets: LendMarketConfig[]
 }
 
-/**
- * Calculate APY breakdown from reserve data
- * @param reserve - Formatted reserve data from Aave
- * @returns APY breakdown with native APY and rewards
- */
-export function calculateApyBreakdown(reserve: {
-  formattedReserve?: any
-}): ApyBreakdown {
-  // Get supply APY from formatted reserve data
-  const supplyApy = reserve.formattedReserve?.supplyAPY
-    ? parseFloat(reserve.formattedReserve.supplyAPY)
-    : 0
+interface BuildMarketParams {
+  marketId: LendMarketId
+  config: LendMarketConfig
+  pool: Address
+  state: AaveLendReserveState
+}
 
-  // Aave doesn't have vault-style performance fees
-  // Total APY = Supply APY + any rewards (to be added later)
+function requireMarketConfig(params: GetReserveParams): LendMarketConfig {
+  const config = findMarketInAllowlist(
+    params.lendConfig?.marketAllowlist,
+    params.marketId,
+  )
+  if (config) return config
+  throw new MarketNotAllowedError({
+    address: params.marketId.address,
+    chainId: params.marketId.chainId,
+    reason: 'Market not found in allowlist',
+  })
+}
+
+function resolveReserveAsset(config: LendMarketConfig): Address {
+  return isNativeAsset(config.asset)
+    ? getAssetAddress(WETH, config.chainId)
+    : getAssetAddress(config.asset, config.chainId)
+}
+
+/**
+ * @description Converts an Aave liquidity rate from ray units to compounded APY.
+ * @param liquidityRateRay - Annualized supply rate scaled by 1e27.
+ * @returns Native, reward, fee, and total APY components as decimal fractions.
+ */
+export function calculateApyBreakdown(liquidityRateRay: bigint): ApyBreakdown {
+  const annualRate = Number(formatUnits(liquidityRateRay, 27))
+  const supplyApy = Math.expm1(
+    SECONDS_PER_YEAR_NUMBER * Math.log1p(annualRate / SECONDS_PER_YEAR_NUMBER),
+  )
   return {
     total: supplyApy,
     native: supplyApy,
-    totalRewards: 0, // TODO: Fetch from incentives data provider if needed
-    performanceFee: 0, // Aave doesn't have performance fees
+    totalRewards: 0,
+    performanceFee: 0,
+  }
+}
+
+function buildMarket(params: BuildMarketParams): LendMarket {
+  const lastUpdate = Math.floor(Date.now() / 1000)
+  return {
+    marketId: params.marketId,
+    name: params.config.name,
+    asset: params.config.asset,
+    supply: {
+      totalAssets: params.state.availableLiquidity,
+      totalShares: params.state.totalSupply,
+    },
+    apy: calculateApyBreakdown(params.state.liquidityRateRay),
+    metadata: {
+      owner: params.pool,
+      curator: params.pool,
+      fee: 0,
+      lastUpdate,
+    },
   }
 }
 
 /**
- * Get detailed reserve (market) information from Aave
- * @param params - Named parameters object
- * @returns Promise resolving to detailed market information
+ * @description Gets one configured Aave lend market from onchain reserve state.
+ * @param params - Market identifier, chain manager, and lend configuration.
+ * @returns Detailed market liquidity, shares, APY, and metadata.
+ * @throws MarketNotAllowedError when the market is absent from the allowlist.
+ * @throws ChainNotSupportedError when Aave is not configured for the chain.
  */
 export async function getReserve(
   params: GetReserveParams,
 ): Promise<LendMarket> {
-  // Find market configuration in allowlist for metadata
-  const marketConfig = params.lendConfig?.marketAllowlist
-    ? findMarketInAllowlist(params.lendConfig.marketAllowlist, params.marketId)
-    : undefined
-
-  if (!marketConfig) {
-    throw new MarketNotAllowedError({
-      address: params.marketId.address,
-      chainId: params.marketId.chainId,
-      reason: 'Market not found in allowlist',
-    })
-  }
-
-  const addresses = getAaveAddresses(params.marketId.chainId)
-  if (!addresses) {
-    throw new ChainNotSupportedError({ chainId: params.marketId.chainId })
-  }
-
-  const poolAddress = addresses.pool
-  const uiPoolDataProviderAddress = addresses.uiPoolDataProvider
-  const poolAddressesProvider = addresses.poolAddressesProvider
-
-  try {
-    // Get viem public client for this chain
-    const publicClient = params.chainManager.getPublicClient(
-      params.marketId.chainId,
-    )
-
-    // Create ethers provider from viem's RPC URL
-    // Aave SDK requires ethers provider, not viem
-    const rpcUrl =
-      publicClient.chain?.rpcUrls.default.http[0] ||
-      publicClient.chain?.rpcUrls.public?.http[0]
-    if (!rpcUrl) {
-      throw new Error(
-        `No RPC URL available for chain ${params.marketId.chainId}`,
-      )
-    }
-    const ethersProvider = new providers.JsonRpcProvider(rpcUrl)
-
-    // Create UiPoolDataProvider instance
-    const uiPoolDataProvider = new UiPoolDataProvider({
-      uiPoolDataProviderAddress,
-      provider: ethersProvider,
-      chainId: params.marketId.chainId,
-    })
-
-    // Fetch reserve data
-    const reservesData = await uiPoolDataProvider.getReservesHumanized({
-      lendingPoolAddressProvider: poolAddressesProvider,
-    })
-
-    // Find the specific reserve for this asset
-    // For native ETH assets, use WETH address since Aave uses WETH internally
-    const assetAddress =
-      marketConfig.asset.type === 'native'
-        ? getAssetAddress(WETH, params.marketId.chainId)
-        : getAssetAddress(marketConfig.asset, params.marketId.chainId)
-
-    const reserve = reservesData.reservesData.find(
-      (r) => r.underlyingAsset.toLowerCase() === assetAddress.toLowerCase(),
-    )
-
-    if (!reserve) {
-      throw new Error(
-        `Reserve not found for asset ${assetAddress} on chain ${params.marketId.chainId}`,
-      )
-    }
-
-    // Format reserves using Aave math-utils
-    const currentTimestamp = Math.floor(Date.now() / 1000)
-    const formattedReserves = formatReserves({
-      reserves: [reserve],
-      currentTimestamp,
-      marketReferenceCurrencyDecimals:
-        reservesData.baseCurrencyData.marketReferenceCurrencyDecimals,
-      marketReferencePriceInUsd:
-        reservesData.baseCurrencyData.marketReferenceCurrencyPriceInUsd,
-    })
-
-    const formattedReserve = formattedReserves[0]
-
-    // Calculate APY breakdown
-    const apy = calculateApyBreakdown({
-      ...reserve,
-      formattedReserve,
-    })
-
-    // Return market information in our standard format
-    return {
-      marketId: params.marketId,
-      name: marketConfig.name,
-      asset: marketConfig.asset,
-      supply: {
-        totalAssets: BigInt(reserve.availableLiquidity),
-        totalShares: BigInt(reserve.totalScaledVariableDebt || '0'),
-      },
-      apy,
-      metadata: {
-        owner: poolAddress, // Use Pool as owner
-        curator: poolAddress, // No curator in Aave
-        fee: 0, // No performance fee in Aave
-        lastUpdate: currentTimestamp,
-      },
-    }
-  } catch (error) {
-    throw new Error(
-      `Failed to get reserve info for ${params.marketId.address}: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-    )
-  }
+  const config = requireMarketConfig(params)
+  const pool = requireAavePoolAddress(params.marketId.chainId)
+  const asset = resolveReserveAsset(config)
+  const client = params.chainManager.getPublicClient(params.marketId.chainId)
+  const state = await fetchAaveLendReserveState(client, pool, asset)
+  return buildMarket({ marketId: params.marketId, config, pool, state })
 }
 
 /**
- * Get multiple reserves (markets)
- * @param params - Parameters including markets to fetch
- * @returns Promise resolving to array of market information
+ * @description Gets all configured Aave lend markets concurrently.
+ * @param params - Markets, chain manager, and lend configuration.
+ * @returns Detailed market information in input order.
+ * @throws MarketNotAllowedError when a market is absent from the allowlist.
+ * @throws ChainNotSupportedError when Aave is not configured for a chain.
  */
 export async function getReserves(
   params: GetReservesParams,
 ): Promise<LendMarket[]> {
-  try {
-    const reservePromises = params.markets.map((marketConfig) => {
-      return getReserve({
-        marketId: {
-          address: marketConfig.address,
-          chainId: marketConfig.chainId,
-        },
+  return Promise.all(
+    params.markets.map((market) =>
+      getReserve({
+        marketId: { address: market.address, chainId: market.chainId },
         chainManager: params.chainManager,
         lendConfig: params.lendConfig,
-      })
-    })
-
-    return await Promise.all(reservePromises)
-  } catch (error) {
-    throw new Error(
-      `Failed to get reserves: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-    )
-  }
+      }),
+    ),
+  )
 }
 
 /**
- * Get aToken address for a given underlying asset
- * @param params - Parameters including asset address, chain ID, and chain manager
- * @returns Promise resolving to aToken address
- * @description Queries the Aave Pool to get the aToken address for the underlying asset
+ * @description Resolves an Aave reserve's aToken directly from the Pool.
+ * @param params - Underlying asset, chain ID, and chain manager.
+ * @returns The interest-bearing aToken address.
+ * @throws ChainNotSupportedError when Aave is not configured for the chain.
+ * @throws ZeroAddressError when the Pool has no reserve for the asset.
  */
 export async function getATokenAddress(params: {
   underlyingAsset: Address
   chainId: SupportedChainId
   chainManager: ChainManager
 }): Promise<Address> {
-  const poolAddress = getPoolAddress(params.chainId)
-  if (!poolAddress) {
-    throw new ChainNotSupportedError({ chainId: params.chainId })
-  }
-
-  try {
-    // Get viem public client for this chain
-    const publicClient = params.chainManager.getPublicClient(params.chainId)
-
-    // Query the Pool contract directly for reserve data
-    const reserveData = await publicClient.readContract({
-      address: poolAddress,
-      abi: POOL_GET_RESERVE_DATA_ABI,
-      functionName: 'getReserveData',
-      args: [params.underlyingAsset],
-    })
-
-    // The return is a tuple where index 8 is aTokenAddress
-    const aTokenAddress = reserveData[8]
-
-    if (
-      !aTokenAddress ||
-      aTokenAddress === '0x0000000000000000000000000000000000000000'
-    ) {
-      throw new Error(
-        `No aToken found for asset ${params.underlyingAsset} on chain ${params.chainId}`,
-      )
-    }
-
-    return aTokenAddress
-  } catch (error) {
-    throw new Error(
-      `Failed to get aToken address for ${params.underlyingAsset}: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-    )
-  }
+  const pool = requireAavePoolAddress(params.chainId)
+  const client = params.chainManager.getPublicClient(params.chainId)
+  const reserve = await readAaveReserveData(
+    client,
+    pool,
+    params.underlyingAsset,
+  )
+  validateNotZeroAddress(reserve.aToken, 'Aave aToken')
+  return reserve.aToken
 }
