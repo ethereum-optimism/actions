@@ -8,7 +8,7 @@ import {
   type AssembleAaveQuoteArgs,
   projectAavePositionState,
 } from '@/actions/borrow/providers/aave/presentation.js'
-import { fetchAaveStateAndPrices } from '@/actions/borrow/providers/aave/state.js'
+import { fetchAaveStateAndPrices } from '@/actions/borrow/providers/aave/prices.js'
 import {
   buildAaveCollateralDeposit,
   buildAaveCollateralWithdraw,
