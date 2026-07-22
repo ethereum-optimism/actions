@@ -58,7 +58,6 @@ export function useReconcileMorphoCollateral(
         },
         amount: { max: true },
       }).catch((error) => {
-        reconciledRef.current.delete(key)
         setMarketPositions((prev) =>
           prev.map((p) =>
             sameVault(p, position)

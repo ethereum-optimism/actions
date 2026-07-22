@@ -62,8 +62,9 @@ vi.mock('@/middleware/actions.js', () => ({
 const MARKET_ID = {
   kind: 'morpho-blue' as const,
   chainId: 84532,
-  marketId: '0x' + 'a'.repeat(64),
-}
+  marketId:
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+} as const
 const WALLET = '0xaabbccddeeff00112233445566778899aabbccdd'
 
 beforeEach(async () => {
@@ -164,6 +165,36 @@ describe('borrow routes', () => {
         body: JSON.stringify({ nothing: 'here' }),
       })
       expect(res.status).toBe(400)
+    })
+  })
+
+  describe('POST /borrow/position/deposit-collateral', () => {
+    it('forwards max deposits to the borrow service', async () => {
+      vi.mocked(borrowService.depositCollateral).mockResolvedValue({
+        action: 'depositCollateral',
+        blockExplorerUrls: [],
+        marketId: MARKET_ID,
+        receipt: [],
+      })
+
+      const res = await createApp().request(
+        '/borrow/position/deposit-collateral',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            marketId: MARKET_ID,
+            amount: { max: true },
+          }),
+        },
+      )
+
+      expect(res.status).toBe(200)
+      expect(borrowService.depositCollateral).toHaveBeenCalledWith({
+        idToken: 'fake-id-token',
+        marketId: MARKET_ID,
+        amount: { max: true },
+      })
     })
   })
 

@@ -128,7 +128,7 @@ export async function closePosition(c: Context) {
 
 const DepositCollateralParamsBody = z.strictObject({
   marketId: BorrowMarketIdSchema,
-  amount: AmountExactSchema,
+  amount: AmountWithMaxSchema,
 })
 
 const DepositCollateralRequestSchema = z.object({
