@@ -3,6 +3,7 @@ import {
   usePrivy,
   useSessionSigners,
   useUser,
+  useWallets,
   type WalletWithMetadata,
   useIdentityToken,
 } from '@privy-io/react-auth'
@@ -19,6 +20,7 @@ export function EarnWithPrivyServerWallet() {
   const { logout } = useLogout()
   const { user } = useUser()
   const { addSessionSigners } = useSessionSigners()
+  const { ready: walletsReady } = useWallets()
 
   // Track wallets that have signers added or are in progress
   const processedWallets = useRef(new Set<string>())
@@ -82,13 +84,15 @@ export function EarnWithPrivyServerWallet() {
 
   // Add session signers for undelegated wallets
   useEffect(() => {
+    if (!walletsReady) return
+
     const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(
       (wallet) => wallet.delegated !== true,
     )
     undelegatedEthereumEmbeddedWallets.forEach((wallet) => {
       addSessionSigner(wallet.address)
     })
-  }, [ethereumEmbeddedWallets, addSessionSigner])
+  }, [walletsReady, ethereumEmbeddedWallets, addSessionSigner])
 
   // Track successful login
   useEffect(() => {
