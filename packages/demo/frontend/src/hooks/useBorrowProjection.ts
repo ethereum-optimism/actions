@@ -6,7 +6,7 @@
 
 import { useMemo } from 'react'
 import type { Asset, BorrowMarket } from '@eth-optimism/actions-sdk'
-import { computeProjection } from '@/utils/borrowMath'
+import { computeHealthFactor, computeProjection } from '@/utils/borrowMath'
 
 export function useBorrowProjection({
   activeMarket,
@@ -69,7 +69,7 @@ export function useBorrowProjection({
   const projectedHealthFactor =
     localProjection && localProjection.kind === 'projected'
       ? localProjection.healthFactor
-      : Number.POSITIVE_INFINITY
+      : computeHealthFactor(currentCollUsd, maxLtv, currentBorrUsd)
 
   return { currentLtv, projectedLtv, wouldLiquidate, projectedHealthFactor }
 }
