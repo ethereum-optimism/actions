@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLogin, usePrivy, type PrivyErrorCode } from '@privy-io/react-auth'
 import { ROUTES } from '@/constants/routes'
 import { CtaButton } from './CtaButton'
@@ -12,12 +13,21 @@ const FALLBACK_ERROR_MESSAGE =
  */
 export function LoginWithPrivy() {
   const [hasError, setHasError] = useState(false)
+  const navigate = useNavigate()
 
-  // Log and surface login failures instead of silently redirecting away.
-  const handleError = useCallback((error: PrivyErrorCode) => {
-    console.error('[LoginWithPrivy] Privy login failed:', error)
-    setHasError(true)
-  }, [])
+  // Surface login failures instead of silently redirecting away.
+  const handleError = useCallback(
+    (error: PrivyErrorCode) => {
+      if (error === 'exited_auth_flow') {
+        navigate(ROUTES.EARN, { replace: true })
+        return
+      }
+
+      console.error('[LoginWithPrivy] Privy login failed:', error)
+      setHasError(true)
+    },
+    [navigate],
+  )
 
   const { login } = useLogin({ onError: handleError })
   const { ready } = usePrivy()
