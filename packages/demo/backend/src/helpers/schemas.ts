@@ -73,7 +73,7 @@ export const AmountExactSchema = z
 
 /**
  * AmountWithMax: AmountExact plus the `{ max: true }` sentinel for
- * operations targeting an existing balance (close / withdraw / repay).
+ * operations that accept the full available amount.
  */
 export const AmountWithMaxSchema = z
   .union([AmountByHuman, AmountByRaw, AmountByMax])
