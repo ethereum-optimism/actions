@@ -23,12 +23,22 @@ export function isMirrorMarket(marketId: BorrowMarketId): boolean {
   return sameMarketId(marketId, AaveETHBorrowUSDCDemo)
 }
 
-/** Returns USDC_DEMO for the mirror market (user holds USDC_DEMO, not the real borrowed USDC); otherwise returns the real borrow asset. */
-export function repayGateAsset(
+/**
+ * Resolve the balance used to gate a repayment.
+ * @description Uses the Base USDC_DEMO mirror for the Aave demo and the
+ * market-chain debt asset for ordinary markets.
+ * @param market - Active borrow market
+ * @param borrowAsset - Debt asset shown by the active position
+ * @returns Asset and chain containing the spendable gate balance
+ */
+export function resolveRepayBalanceSource(
   market: BorrowMarket | null,
   borrowAsset: Asset | null,
-): Asset | null {
-  return market && isMirrorMarket(market.marketId) ? USDC_DEMO : borrowAsset
+) {
+  if (market && isMirrorMarket(market.marketId)) {
+    return { asset: USDC_DEMO, chainId: baseSepolia.id }
+  }
+  return { asset: borrowAsset, chainId: market?.marketId.chainId }
 }
 
 /** Fires the USDC_DEMO mint (borrow) or remove (repay) for in-browser wallets. No-op for non-mirror markets or zero amounts. */
