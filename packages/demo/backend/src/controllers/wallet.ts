@@ -11,7 +11,6 @@ import {
 } from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
-import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
 import type { GetWalletResponse } from '@/types/service.js'
 
@@ -188,55 +187,6 @@ export class WalletController {
       return c.json(result)
     } catch (error) {
       return errorResponse(c, 'Failed to fund wallet', 500, error)
-    }
-  }
-
-  /**
-   * POST - Drip ETH from the faucet to the authenticated user's own wallet.
-   *
-   * The recipient is derived from the session (never the request body), so an
-   * authenticated caller can only fund their own wallet. A synchronous
-   * per-recipient reservation is taken before the admin signer runs, so
-   * concurrent requests for one wallet cannot all drip and a swept wallet
-   * cannot re-qualify within the cooldown.
-   */
-  async dripEthToWallet(c: Context) {
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
-
-    try {
-      const wallet = await walletService.getWallet(authResult.auth.idToken)
-      if (!wallet) {
-        return errorResponse(c, 'Wallet not found', 404)
-      }
-      const recipient = wallet.address as Address
-
-      const eligible = await faucetService.isWalletEligibleForFaucet(recipient)
-      if (!eligible) {
-        return errorResponse(c, 'Wallet is not eligible for the faucet', 400)
-      }
-
-      if (!faucetService.reserveDrip(recipient)) {
-        return errorResponse(
-          c,
-          'Faucet already used for this wallet; try again later',
-          429,
-        )
-      }
-
-      try {
-        const result = await faucetService.dripEthToWallet(recipient)
-        if (!result.success) {
-          faucetService.releaseDrip(recipient)
-          return errorResponse(c, 'Failed to drip ETH to wallet', 500)
-        }
-        return c.json({ result: { userOpHash: result.userOpHash } })
-      } catch (error) {
-        faucetService.releaseDrip(recipient)
-        return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
-      }
-    } catch (error) {
-      return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
     }
   }
 }
