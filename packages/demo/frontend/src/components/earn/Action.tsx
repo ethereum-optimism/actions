@@ -315,7 +315,7 @@ export function Action({
           <AmountInput
             value={effectiveAmount}
             onChange={handleAmountChange}
-            disabled={isLockedWithdrawAmount}
+            disabled={isLockedWithdrawAmount || needsMint}
             displaySymbol={displaySymbol}
           />
 
