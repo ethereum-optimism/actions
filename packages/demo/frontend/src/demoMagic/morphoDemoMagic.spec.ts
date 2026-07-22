@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
@@ -114,5 +114,24 @@ describe('useReconcileMorphoCollateral', () => {
     )
     expect(handleTransaction).not.toHaveBeenCalled()
     expect(setMarketPositions).not.toHaveBeenCalled()
+  })
+
+  it('does not retry failed reconciliation after a rerender', async () => {
+    const setMarketPositions = vi.fn()
+    const handleTransaction = vi.fn().mockRejectedValue(new Error('failed'))
+    const { rerender } = renderHook(
+      ({ marketPositions }) =>
+        useReconcileMorphoCollateral(
+          marketPositions,
+          handleTransaction,
+          setMarketPositions,
+        ),
+      { initialProps: { marketPositions: [lentPosition] } },
+    )
+
+    await waitFor(() => expect(setMarketPositions).toHaveBeenCalledTimes(2))
+    rerender({ marketPositions: [{ ...lentPosition }] })
+
+    expect(handleTransaction).toHaveBeenCalledTimes(1)
   })
 })
