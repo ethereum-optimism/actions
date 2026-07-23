@@ -46,10 +46,13 @@ describe('useBorrowProjection (stub-priced)', () => {
     expect(result.current.projectedLtv).toBeLessThan(result.current.currentLtv)
   })
 
-  it('falls back to the current LTV when no amount is entered', () => {
+  it('falls back to the current health readings when no amount is entered', () => {
     const { result } = renderHook(() =>
       useBorrowProjection({ ...base, amountNum: 0, amountUsd: 0 }),
     )
     expect(result.current.projectedLtv).toBe(result.current.currentLtv)
+    expect(result.current.projectedHealthFactor).toBeCloseTo(
+      (base.currentCollUsd * base.maxLtv) / base.currentBorrUsd,
+    )
   })
 })
