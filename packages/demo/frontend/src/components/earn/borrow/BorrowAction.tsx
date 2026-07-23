@@ -18,7 +18,7 @@ import {
 } from '@/utils/borrowMath'
 import { lendPositionUsd, positionUsd } from '@/utils/borrowValuation'
 import { assetBalanceAmount } from '@/utils/balanceMatching'
-import { repayGateAsset, ReacquireDebtNotice } from '@/demoMagic'
+import { resolveRepayBalanceSource, ReacquireDebtNotice } from '@/demoMagic'
 import { DEBT_DUST_THRESHOLD } from '@/constants/borrow'
 import { sameMarketId } from '@/utils/marketId'
 import { displaySymbol } from '@/utils/tokenDisplay'
@@ -105,8 +105,10 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
-  // Gate the repay on the asset the user holds (USDC_DEMO for the mirror market).
-  const repayBalanceAsset = repayGateAsset(activeMarket, activeAsset)
+  // The Aave mirror gates on USDC_DEMO on Base; ordinary markets gate on
+  // their debt asset on the market chain.
+  const { asset: repayBalanceAsset, chainId: repayBalanceChainId } =
+    resolveRepayBalanceSource(activeMarket, activeAsset)
 
   // Cap the repay at min(held balance, outstanding debt); the balance gates the CTA.
   const rawOutstandingDebt = activePosition
@@ -114,11 +116,11 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const outstandingDebt =
     rawOutstandingDebt >= DEBT_DUST_THRESHOLD ? rawOutstandingDebt : 0
-  // Repay uses market-chain spendable balance.
+  // Repay uses the balance on the chain where its gate asset is spendable.
   const debtBalance = assetBalanceAmount(
     tokenBalances,
     repayBalanceAsset,
-    activeMarket?.marketId.chainId,
+    repayBalanceChainId,
   )
   const maxRepayable = Math.min(debtBalance, outstandingDebt)
   const isRepay = mode === 'repay'

@@ -18,17 +18,30 @@ import { sameMarketId } from '@/utils/marketId'
 
 type MirrorWallet = Pick<Wallet, 'address'> & { sendBatch: Wallet['sendBatch'] }
 
+/** The mirrored Aave demo market's USDC_DEMO balance lives on Base Sepolia. */
+const mirrorMarketChainId = baseSepolia.id
+
 /** True only for the one mirrored market; matches full identity to avoid false-positives on future non-mirrored Aave markets. */
 export function isMirrorMarket(marketId: BorrowMarketId): boolean {
   return sameMarketId(marketId, AaveETHBorrowUSDCDemo)
 }
 
-/** Returns USDC_DEMO for the mirror market (user holds USDC_DEMO, not the real borrowed USDC); otherwise returns the real borrow asset. */
-export function repayGateAsset(
+/**
+ * Resolve the balance used to gate a repayment.
+ * @description Uses the Base USDC_DEMO mirror for the Aave demo and the
+ * market-chain debt asset for ordinary markets.
+ * @param market - Active borrow market
+ * @param borrowAsset - Debt asset shown by the active position
+ * @returns Asset and chain containing the spendable gate balance
+ */
+export function resolveRepayBalanceSource(
   market: BorrowMarket | null,
   borrowAsset: Asset | null,
-): Asset | null {
-  return market && isMirrorMarket(market.marketId) ? USDC_DEMO : borrowAsset
+) {
+  if (market && isMirrorMarket(market.marketId)) {
+    return { asset: USDC_DEMO, chainId: mirrorMarketChainId }
+  }
+  return { asset: borrowAsset, chainId: market?.marketId.chainId }
 }
 
 /** Fires the USDC_DEMO mint (borrow) or remove (repay) for in-browser wallets. No-op for non-mirror markets or zero amounts. */
@@ -56,7 +69,7 @@ async function sendMirrorTx(
   amountWei: bigint,
 ): Promise<void> {
   try {
-    const usdcDemo = getAssetAddress(USDC_DEMO, baseSepolia.id)
+    const usdcDemo = getAssetAddress(USDC_DEMO, mirrorMarketChainId)
     const data =
       action === 'mint'
         ? encodeFunctionData({
@@ -69,7 +82,10 @@ async function sendMirrorTx(
             functionName: 'transfer',
             args: [MIRROR_SINK_ADDRESS, amountWei],
           })
-    await wallet.sendBatch([{ to: usdcDemo, data, value: 0n }], baseSepolia.id)
+    await wallet.sendBatch(
+      [{ to: usdcDemo, data, value: 0n }],
+      mirrorMarketChainId,
+    )
     console.info('[mirror] settled', {
       scope: 'aave-borrow-mirror',
       action,

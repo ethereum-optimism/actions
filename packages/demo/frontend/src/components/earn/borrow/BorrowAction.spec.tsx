@@ -51,6 +51,7 @@ beforeEach(() => {
 })
 
 const OPS = 11155420 as SupportedChainId
+const BASE = 84532 as SupportedChainId
 const ETH: Asset = {
   type: 'native',
   address: { [OPS]: '0x4200000000000000000000000000000000000006' },
@@ -151,7 +152,7 @@ function usdcDemoBalance(amount: number): TokenBalance {
     asset: USDC_DEMO,
     totalBalance: amount,
     totalBalanceRaw: raw,
-    chains: { [OPS]: { balance: amount, balanceRaw: raw } },
+    chains: { [BASE]: { balance: amount, balanceRaw: raw } },
   } as unknown as TokenBalance
 }
 
@@ -180,22 +181,16 @@ describe('BorrowAction repay gating on debt-asset balance', () => {
     return buttons[buttons.length - 1]
   }
 
-  it('blocks repay when the USDC balance lives only on the non-borrow chain', () => {
-    const raw = 50_000000n
-    const crossChainOnly = {
-      asset: USDC_DEMO,
-      totalBalance: 50,
-      totalBalanceRaw: raw,
-      chains: { 84532: { balance: 50, balanceRaw: raw } },
-    } as unknown as TokenBalance
+  it('allows Aave repayment from the Base mirror balance', () => {
     renderRepay({
       borrowPositions: [aaveDebtPosition],
-      tokenBalances: [crossChainOnly],
+      tokenBalances: [usdcDemoBalance(50)],
     })
-    expect(
-      screen.getByText(/need USDC to repay this loan/i),
-    ).toBeInTheDocument()
-    expect(repayCta()).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('0'), {
+      target: { value: '2' },
+    })
+    expect(screen.queryByText(/need USDC to repay this loan/i)).toBeNull()
+    expect(repayCta()).not.toBeDisabled()
   })
 
   it('blocks repay with a re-acquire notice when the USDC balance is zero', () => {
