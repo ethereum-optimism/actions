@@ -113,7 +113,7 @@
     "@turnkey/react-wallet-kit": "1.6.3",
     "@turnkey/sdk-server": "4.12.1",
     "@turnkey/viem": "0.14.18",
-    "@types/node": "22.14.0",
+    "@types/node": "26.1.1",
     "dotenv": "^16.4.5",
     "eslint": "^9.31.0",
     "prettier": "~3.7.4",
