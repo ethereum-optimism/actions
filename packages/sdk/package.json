@@ -57,7 +57,7 @@
   "license": "MIT",
   "dependencies": {
     "@eth-optimism/viem": "^0.4.13",
-    "@morpho-org/blue-sdk": ">=4.13.1 <4.14.0",
+    "@morpho-org/blue-sdk": ">=4.13.1 <6.5.0",
     "@morpho-org/blue-sdk-viem": ">=3.2.0 <3.3.0",
     "@morpho-org/morpho-ts": ">=2.4.6 <2.5.0",
     "permissionless": ">=0.2.57 <0.3.0"
