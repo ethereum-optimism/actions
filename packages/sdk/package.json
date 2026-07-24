@@ -114,7 +114,7 @@
     "@turnkey/sdk-server": "4.12.1",
     "@turnkey/viem": "0.14.18",
     "@types/node": "22.14.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^17.4.2",
     "eslint": "^9.31.0",
     "prettier": "~3.7.4",
     "tsx": "^4.7.1",
