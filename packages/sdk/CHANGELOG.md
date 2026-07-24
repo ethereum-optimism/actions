@@ -1,5 +1,11 @@
 # @eth-optimism/actions-sdk
 
+## 0.8.1
+
+### Patch Changes
+
+- [#552](https://github.com/ethereum-optimism/actions/pull/552) [`fbdaa6c`](https://github.com/ethereum-optimism/actions/commit/fbdaa6ccdaf1ff16ddb556f6fdb5fa4b63e6f503) Thanks [@its-everdred](https://github.com/its-everdred)! - Read Aave lend reserves directly with viem to avoid UI data-provider ABI mismatches.
+
 ## 0.8.0
 
 ### Minor Changes
