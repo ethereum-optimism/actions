@@ -5,6 +5,8 @@ import { createApp } from '@/app.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import * as lendService from '@/services/lend.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@/services/lend.js', () => ({
   getMarkets: vi.fn(),
   getMarket: vi.fn(),
@@ -29,21 +31,9 @@ const MARKET = {
   chainId: 130,
 }
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 beforeEach(async () => {
   vi.resetAllMocks()
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
-    }),
-  } as never)
+  await mockVerifiedUser('user-a')
 })
 
 describe('lend routes error mapping via global onError', () => {
