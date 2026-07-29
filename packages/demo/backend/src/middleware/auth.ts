@@ -9,19 +9,26 @@ export interface AuthContext {
   rateLimitKey: string
 }
 
+/**
+ * Matches the `Bearer` scheme and captures the token after it.
+ * @description Case-insensitive because RFC 9110 defines the auth scheme as
+ * case-insensitive. Capturing in the same pattern that guards the header keeps
+ * the guard and the extraction from disagreeing on what a valid header is.
+ */
+const BEARER_SCHEME = /^Bearer\s+(\S+)\s*$/i
+
 export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
   const idToken = c.req.header('privy-id-token')
+  const accessToken = authHeader?.match(BEARER_SCHEME)?.[1]
 
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (!accessToken) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
   if (!idToken) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
-
-  const accessToken = parseAuthorizationHeader(authHeader)
 
   try {
     const privy = getPrivyClient()
@@ -40,10 +47,6 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   await next()
-}
-
-const parseAuthorizationHeader = (value: string) => {
-  return value.replace('Bearer', '').trim()
 }
 
 function verifiedUserRateLimitKey(
