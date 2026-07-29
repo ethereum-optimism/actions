@@ -153,3 +153,97 @@ describe('authMiddleware authorization scheme', () => {
     expect(handlerRan).toBe(false)
   })
 })
+
+describe('authMiddleware credential binding', () => {
+  const headers = {
+    Authorization: `Bearer ${ACCESS_TOKEN}`,
+    'privy-id-token': ID_TOKEN,
+  }
+
+  it('rejects an identity token issued to a different user', async () => {
+    await mockPrivy({ subject: USER, identitySubject: 'did:privy:user-b' })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(401)
+    expect(handlerRan).toBe(false)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).not.toContain('user-a')
+    expect(body.error).not.toContain('user-b')
+  })
+
+  it('does not distinguish a mismatch from an invalid access token', async () => {
+    await mockPrivy({ subject: USER, identitySubject: 'did:privy:user-b' })
+    const mismatch = await request(headers)
+
+    await mockPrivy({ subject: USER, accessRejects: true })
+    const invalid = await request(headers)
+
+    expect(mismatch.res.status).toBe(invalid.res.status)
+    expect(await mismatch.res.text()).toBe(await invalid.res.text())
+  })
+
+  it('accepts an identity token issued to the same user', async () => {
+    await mockPrivy({ subject: USER })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(200)
+    expect(handlerRan).toBe(true)
+  })
+
+  it('rejects an identity token that fails verification', async () => {
+    await mockPrivy({ subject: USER, identityRejects: true })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(401)
+    expect(handlerRan).toBe(false)
+  })
+
+  it('rejects an access token that fails verification', async () => {
+    await mockPrivy({ subject: USER, accessRejects: true })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(401)
+    expect(handlerRan).toBe(false)
+  })
+
+  it('rejects a verified access token carrying no user id', async () => {
+    await mockPrivy({ subject: undefined, identitySubject: 'did:privy:user-b' })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(401)
+    expect(handlerRan).toBe(false)
+  })
+
+  it('rejects when neither token carries a subject', async () => {
+    // A bare equality check would treat two absent subjects as a match, so
+    // this is the case that must fail closed on its own.
+    await mockPrivy({ subject: undefined })
+
+    const { res, handlerRan } = await request(headers)
+
+    expect(res.status).toBe(401)
+    expect(handlerRan).toBe(false)
+  })
+
+  it('keys rate limiting on the verified user', async () => {
+    await mockPrivy({ subject: USER })
+
+    const { res } = await request(headers)
+
+    const body = (await res.json()) as { rateLimitKey: string }
+    expect(body.rateLimitKey).toBe(`user:${USER}`)
+  })
+
+  it('verifies the identity token it was given', async () => {
+    const privy = await mockPrivy({ subject: USER })
+
+    await request(headers)
+
+    expect(privy.verifyIdentityToken).toBeCalledWith(ID_TOKEN)
+  })
+})
