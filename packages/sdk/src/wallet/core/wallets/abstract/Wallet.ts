@@ -8,9 +8,10 @@ import type {
   ActionModuleDeps,
 } from '@/actions/shared/ActionModule.js'
 import type { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
+import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
+import { fetchBalances } from '@/services/tokenBalance.js'
 import type {
   ActionModules,
   ActionName,
@@ -120,12 +121,12 @@ export abstract class Wallet {
    */
   async getBalance(options?: BalanceFetchOptions): Promise<TokenBalance[]> {
     validateBalanceFetchOptions(options, this.chainManager)
-    return Promise.all([
-      fetchETHBalance(this.chainManager, this.address, options),
-      ...this.supportedAssets.map((asset) =>
-        fetchERC20Balance(this.chainManager, this.address, asset, options),
-      ),
-    ])
+    return fetchBalances(
+      this.chainManager,
+      this.address,
+      [ETH, ...this.supportedAssets],
+      options,
+    )
   }
 
   /**

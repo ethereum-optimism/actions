@@ -37,8 +37,8 @@ export interface TokenBalance {
 }
 
 /**
- * Options accepted by the SDK's balance fetch surface (`Wallet.getBalance` and the underlying `fetchETHBalance` / `fetchERC20Balance` helpers).
- * @property chainIds - Subset of supported chain ids to query. When omitted, all supported chains are queried. `Wallet.getBalance` validates this list via `validateChainIds`; the service helpers themselves trust their input.
+ * Options accepted by the SDK's balance fetch surface (`Wallet.getBalance` and the underlying `fetchBalances` helper).
+ * @property chainIds - Subset of supported chain ids to query. When omitted, all supported chains are queried. `Wallet.getBalance` validates this list via `validateChainIds`; the service helper itself trusts its input.
  */
 export interface BalanceFetchOptions {
   chainIds?: readonly SupportedChainId[]
