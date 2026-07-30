@@ -36,6 +36,23 @@ beforeEach(async () => {
   await mockVerifiedUser('user-a')
 })
 
+describe('lend routes credential binding', () => {
+  it('rejects a cross-user credential pair before reaching the service', async () => {
+    // Proves the binding through the real createApp() stack, not just the
+    // middleware in isolation, so the fix cannot be silently unwired.
+    await mockVerifiedUser('user-a', 'user-b')
+
+    const res = await createApp().request('/lend/position/open', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketId: MARKET, amount: 1 }),
+    })
+
+    expect(res.status).toBe(401)
+    expect(lendService.openPosition).not.toBeCalled()
+  })
+})
+
 describe('lend routes error mapping via global onError', () => {
   it('maps a thrown SDK error from GET /lend/markets to its status', async () => {
     vi.mocked(lendService.getMarkets).mockRejectedValue(
