@@ -12,8 +12,10 @@ export interface AuthContext {
  * @description Case-insensitive because RFC 9110 defines the auth scheme as
  * case-insensitive. Capturing in the same pattern that guards the header keeps
  * the guard and the extraction from disagreeing on what a valid header is.
+ * The delimiter is SP and HTAB rather than `\s`, which would also admit vertical
+ * tab, form feed, and non-breaking space that RFC 9110 does not allow.
  */
-const BEARER_SCHEME = /^Bearer\s+(\S+)\s*$/i
+const BEARER_SCHEME = /^Bearer[ \t]+(\S+)[ \t]*$/i
 
 /**
  * Thrown when the identity token resolves to a different user than the access
@@ -29,6 +31,32 @@ class CredentialSubjectMismatchError extends Error {
   }
 }
 
+/**
+ * Reports whether both verified credentials describe the same Privy user.
+ * @description Both arguments are the `sub` claim of their respective Privy JWT,
+ * so a direct comparison is correct. The explicit access-subject check is load
+ * bearing: comparison alone would treat two absent subjects as equal, and the
+ * SDK assigns the identity subject without a string guard, so a non-string can
+ * reach here.
+ * @param accessSubject - Subject of the verified access token.
+ * @param identitySubject - Subject of the verified identity token.
+ * @returns True when both are present and identical.
+ */
+function subjectsMatch(accessSubject: string, identitySubject: string) {
+  return Boolean(accessSubject) && accessSubject === identitySubject
+}
+
+/**
+ * Authenticates a request from its Privy access token and identity token.
+ * @description Requires an `Authorization: Bearer` access token and a
+ * `privy-id-token` identity token, verifies both, and requires that they were
+ * issued to the same Privy user. Binding them matters because the identity token
+ * is what resolves the acting wallet downstream, so an unbound pair would let a
+ * caller act on another user's wallet. Populates the `auth` context on success.
+ * @param c - Hono request context.
+ * @param next - Downstream handler, invoked only when both credentials agree.
+ * @returns A 401 JSON response, or nothing when authentication succeeds.
+ */
 export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
   const idToken = c.req.header('privy-id-token')
@@ -42,6 +70,14 @@ export async function authMiddleware(c: Context, next: Next) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
+  // One token cannot satisfy both slots. Access-token verification demands a
+  // `sid` claim that identity tokens are not documented to carry, so a replay
+  // would most likely fail anyway, but rejecting it outright keeps a single
+  // stolen credential from ever standing in for the pair.
+  if (idToken === accessToken) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
   try {
     const privyAuth = getPrivyClient().utils().auth()
     // Both credentials are verified here so the identity that resolves the
@@ -51,10 +87,7 @@ export async function authMiddleware(c: Context, next: Next) {
       privyAuth.verifyIdentityToken(idToken),
     ])
 
-    if (
-      !verifiedAuthToken.user_id ||
-      identityUser.id !== verifiedAuthToken.user_id
-    ) {
+    if (!subjectsMatch(verifiedAuthToken.user_id, identityUser.id)) {
       throw new CredentialSubjectMismatchError()
     }
 
