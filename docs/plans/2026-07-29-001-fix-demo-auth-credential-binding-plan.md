@@ -1,7 +1,7 @@
 ---
 date: 2026-07-29
 type: fix
-status: active
+status: completed
 origin: docs/brainstorms/demo-auth-credential-binding-requirements.md
 ---
 
@@ -21,6 +21,8 @@ Verified against the installed `@privy-io/node` 0.3.0 rather than assumed:
 
 - Access-token verification derives its user id as `throwIfNotString(verifiedToken.payload.sub)`. Identity-token parsing derives its user id as `payload.sub`. **Both are the `sub` claim of their respective Privy JWT, so they are the same Privy DID and a direct string comparison is the correct binding check.** This was the main correctness risk in the change and it is resolved.
 - The users-by-identity-token call is a thin wrapper over identity-token verification (signature checked against the app JWKS), not a REST fetch. The app JWKS is a `jose` remote JWKS, which caches. **The boundary check therefore adds no network request per call**, resolving the latency question the origin doc deferred to planning.
+
+  Corrected during code review: the caching half of that claim was wrong. `getPrivyClient()` returns a new `PrivyClient` on every call, so the JWKS cache is per-instance and does not survive a request, and every authenticated request already paid a JWKS fetch before this change. The incremental claim still holds, because both verifications share one resolved client and `jose` dedupes concurrent key lookups into a single fetch. Tracked as a follow-up.
 - Access-token verification's response type declares `user_id` as always present, so a missing one indicates something is wrong rather than a supported state.
 
 Blast radius on tests, which is the only non-obvious part of this change:
