@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 
+import { buildPrivyClientMock } from '@/utils/testUtils.js'
+
 export function authHeaders(): Record<string, string> {
   return {
     Authorization: 'Bearer fake-access-token',
@@ -21,12 +23,9 @@ export async function mockVerifiedUser(
   identityUserId: string = userId,
 ): Promise<void> {
   const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({
-        verifyAuthToken: vi.fn().mockResolvedValue({ user_id: userId }),
-        verifyIdentityToken: vi.fn().mockResolvedValue({ id: identityUserId }),
-      }),
-    }),
-  } as never)
+  const { client } = buildPrivyClientMock({
+    accessSubject: userId,
+    identitySubject: identityUserId,
+  })
+  vi.mocked(getPrivyClient).mockReturnValue(client)
 }
