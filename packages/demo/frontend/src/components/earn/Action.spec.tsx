@@ -91,6 +91,17 @@ describe('Action', () => {
     expect(screen.getByRole('button', { name: 'Get USDC' })).toBeInTheDocument()
   })
 
+  it('disables the amount input while the Get button shows for a zero balance', () => {
+    render(<Action {...defaultProps} />)
+    expect(screen.getByRole('button', { name: 'Get USDC' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toBeDisabled()
+  })
+
+  it('enables the amount input once a balance is available to lend', () => {
+    render(<Action {...defaultProps} assetBalance="100.00" />)
+    expect(screen.getByRole('textbox')).toBeEnabled()
+  })
+
   it('shows a success toast after the mint resolves', async () => {
     const onMintAsset = vi.fn().mockResolvedValue(undefined)
     render(<Action {...defaultProps} onMintAsset={onMintAsset} />)
