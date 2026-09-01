@@ -7,6 +7,8 @@
 # CI / CD pipelines
 .github/workflows/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 .circleci/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+/renovate.json @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+/.github/dependency-review-config.yml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 
 # Container definitions
 Dockerfile @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
