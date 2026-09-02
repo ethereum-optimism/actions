@@ -42,7 +42,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^15.0.0",
     "mprocs": "^0.7.2",
-    "nx": "^21.3.2",
+    "nx": "^22.0.0",
     "prettier": "~3.7.4",
     "resolve-tspaths": "^0.8.18",
     "tsx": "^4.0.0"
