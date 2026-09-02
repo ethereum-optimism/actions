@@ -1,0 +1,29 @@
+package:
+  name: ecosystem-verbs-backend
+  version: "0.0.0"
+  epoch: 0
+  description: ecosystem-verbs-backend — Node service running the Actions SDK
+  copyright:
+    - license: MIT
+
+environment:
+  contents:
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    repositories:
+      - https://packages.wolfi.dev/os
+    packages:
+      - busybox
+      - ca-certificates-bundle
+      - nodejs-22
+      - corepack
+      - python-3
+      - build-base
+
+pipeline:
+  - uses: pnpm/build
+    with:
+      nx-package: "@eth-optimism/actions-service"
+      deploy-filter: "@eth-optimism/actions-service"
+      output: ecosystem-verbs-backend
+      pnpm-version: "9.0.0"
