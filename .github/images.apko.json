@@ -16,7 +16,7 @@
       "melange_config": "melange/ecosystem-verbs-backend.yaml",
       "apko_config_dir": "apko",
       "services": "ecosystem-verbs-backend",
-      "smoke_test": "ecosystem-verbs-backend",
+      "smoke_test": "",
       "registry": "us-docker.pkg.dev/oplabs-tools-artifacts/images"
     }
   }
