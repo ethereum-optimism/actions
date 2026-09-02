@@ -72,7 +72,8 @@
       "js-yaml@>=4.0.0 <4.3.1": "4.3.1",
       "js-yaml@>=3.0.0 <3.15.1": "3.15.1",
       "brace-expansion@>=1.0.0 <1.1.18": "1.1.18",
-      "brace-expansion@>=2.0.0 <2.1.4": "2.1.4"
+      "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
+      "bigint-buffer": "npm:@exodus/bigint-buffer@1.1.5-exodus.1"
     },
     "peerDependencyRules": {
       "allowedVersions": {
