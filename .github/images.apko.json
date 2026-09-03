@@ -1,0 +1,23 @@
+{
+  "shared_paths": [
+    ".github/images.apko.json",
+    ".github/workflows/build-images.apko.yaml",
+    "apko/**",
+    "melange/**",
+    "pipelines/pnpm/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "nx.json",
+    "tsconfig.base.json"
+  ],
+  "apko_images": {
+    "ecosystem-verbs-backend": {
+      "melange_config": "melange/ecosystem-verbs-backend.yaml",
+      "apko_config_dir": "apko",
+      "services": "ecosystem-verbs-backend",
+      "smoke_test": "",
+      "registry": "us-docker.pkg.dev/oplabs-tools-artifacts/images"
+    }
+  }
+}
