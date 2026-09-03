@@ -1,0 +1,90 @@
+name: build-images.apko
+
+on:
+  push:
+    branches: ['main']
+    tags: ['*/v*', 'v*']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix_json: ${{ steps.plan.outputs.matrix_json }}
+      has_builds: ${{ steps.plan.outputs.has_builds }}
+      apko_tag: ${{ steps.tag.outputs.apko_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+        with:
+          fetch-depth: 0
+
+      - name: Plan apko groups
+        id: plan
+        env:
+          CONFIG: .github/images.apko.json
+        run: |
+          set -euo pipefail
+          MATRIX=$(jq -c '[.apko_images | to_entries[] | .value + {group: .key}]' "$CONFIG")
+          COUNT=$(echo "$MATRIX" | jq 'length')
+          HAS_BUILDS=$( [[ "$COUNT" -gt 0 ]] && echo true || echo false )
+          {
+            echo "matrix_json=$MATRIX"
+            echo "has_builds=$HAS_BUILDS"
+          } >> "$GITHUB_OUTPUT"
+          echo "matrix_json=$MATRIX"
+
+      - name: Compute apko tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            if [[ "$REF_NAME" == */* ]]; then
+              DOCKER_TAG="${REF_NAME#*/}"
+            else
+              DOCKER_TAG="$REF_NAME"
+            fi
+          elif [[ "$EVENT_NAME" == "push" && "$REF" == "refs/heads/main" ]]; then
+            DOCKER_TAG="latest"
+          else
+            DOCKER_TAG="$REF_NAME"
+          fi
+          echo "apko_tag=${DOCKER_TAG}" >> "$GITHUB_OUTPUT"
+          echo "apko_tag=${DOCKER_TAG}"
+
+  build:
+    needs: [plan]
+    if: needs.plan.outputs.has_builds == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.matrix_json) }}
+    uses: ethereum-optimism/factory/.github/workflows/apko.yaml@c09fe439772f9391c9782aa051786f79c78cb7f6
+    with:
+      name: ${{ matrix.group }}
+      melange_config: ${{ matrix.melange_config }}
+      services: ${{ matrix.services }}
+      apko_config_dir: ${{ matrix.apko_config_dir }}
+      smoke_test: ${{ matrix.smoke_test || '' }}
+      registry: ${{ matrix.registry }}
+      tag: ${{ needs.plan.outputs.apko_tag }}
+      tag_prefix: apko-
+      gcp_project_id: ${{ vars.GCP_PROJECT_ID_OPLABS_TOOLS_ARTIFACTS }}
+      skip_arm64: false
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
