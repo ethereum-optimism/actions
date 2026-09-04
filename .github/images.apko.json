@@ -4,20 +4,47 @@
     ".github/workflows/build-images.apko.yaml",
     "apko/**",
     "melange/**",
-    "pipelines/pnpm/**",
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "nx.json",
     "tsconfig.base.json"
   ],
-  "apko_images": {
+  "melange_archs": [
+    "x86_64",
+    "aarch64"
+  ],
+  "apko_archs": "amd64,arm64",
+  "release": {
+    "tag_regex": "^(ecosystem-verbs-backend/)?(v.+)$",
+    "service_match": 2,
+    "version_match": 2,
+    "service": "ecosystem-verbs-backend",
+    "publish_tag": "${version}",
+    "source_ref": "${ref_name}"
+  },
+  "default_runners": {
+    "x86_64": "ubuntu-24.04",
+    "aarch64": "ubuntu-24.04-arm"
+  },
+  "melange": {
+    "ecosystem-verbs-backend": {}
+  },
+  "images": {
     "ecosystem-verbs-backend": {
-      "melange_config": "melange/ecosystem-verbs-backend.yaml",
-      "apko_config_dir": "apko",
-      "services": "ecosystem-verbs-backend",
-      "smoke_test": "",
-      "registry": "us-docker.pkg.dev/oplabs-tools-artifacts/images"
+      "needs_melange": [
+        "ecosystem-verbs-backend"
+      ],
+      "paths": [
+        "packages/**"
+      ],
+      "nexus_paths": [
+        "melange/ecosystem-verbs-backend.yaml",
+        "apko/ecosystem-verbs-backend.yaml"
+      ],
+      "archs": "amd64,arm64",
+      "verify_version": false,
+      "smoke_test": "node --version"
     }
   }
 }
