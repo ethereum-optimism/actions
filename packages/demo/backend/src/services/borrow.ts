@@ -27,7 +27,6 @@ import {
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { mintMirrorUsdc, removeMirrorUsdc } from '@/services/mirror.js'
 import { getWallet } from '@/services/wallet.js'
-import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 // Only aave-v3 markets trigger USDC_DEMO mirroring (see services/mirror.ts).
 function isAaveMirrorMarket(market: BorrowMarketConfig): boolean {
@@ -39,25 +38,8 @@ const BORROW_MARKETS: BorrowMarketConfig[] = [
   AaveETHBorrowUSDCDemo,
 ]
 
-export type BorrowReceiptWithUrls = BorrowReceipt & {
-  blockExplorerUrls: string[]
-}
-
 type BorrowEnabledWallet = SmartWallet & {
   borrow: NonNullable<SmartWallet['borrow']>
-}
-
-function decorateReceipt(
-  receipt: BorrowReceipt,
-  chainId: SupportedChainId,
-): BorrowReceiptWithUrls {
-  const blockExplorerUrls = getBlockExplorerUrls({
-    chainId,
-    userOpHash: receipt.userOpHash,
-    transactionHash: receipt.transactionHash,
-    transactionHashes: receipt.transactionHashes,
-  })
-  return { ...receipt, blockExplorerUrls }
 }
 
 // Resolves a request-body `BorrowMarketId` to the full `BorrowMarketConfig`
@@ -199,7 +181,7 @@ export type BorrowOpenServiceInput = { idToken: string } & Omit<
 
 export async function openPosition(
   input: BorrowOpenServiceInput,
-): Promise<BorrowReceiptWithUrls> {
+): Promise<BorrowReceipt> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
@@ -209,7 +191,7 @@ export async function openPosition(
   if (isAaveMirrorMarket(market) && minted !== undefined && minted > 0n) {
     void mintMirrorUsdc(wallet, minted, receipt.transactionHash)
   }
-  return decorateReceipt(receipt, market.chainId)
+  return receipt
 }
 
 export type BorrowCloseServiceInput = { idToken: string } & Omit<
@@ -221,7 +203,7 @@ export type BorrowCloseServiceInput = { idToken: string } & Omit<
 
 export async function closePosition(
   input: BorrowCloseServiceInput,
-): Promise<BorrowReceiptWithUrls> {
+): Promise<BorrowReceipt> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
@@ -231,7 +213,7 @@ export async function closePosition(
   if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
     void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
   }
-  return decorateReceipt(receipt, market.chainId)
+  return receipt
 }
 
 export type BorrowDepositCollateralServiceInput = { idToken: string } & Omit<
@@ -243,12 +225,12 @@ export type BorrowDepositCollateralServiceInput = { idToken: string } & Omit<
 
 export async function depositCollateral(
   input: BorrowDepositCollateralServiceInput,
-): Promise<BorrowReceiptWithUrls> {
+): Promise<BorrowReceipt> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.depositCollateral({ ...rest, market })
-  return decorateReceipt(receipt, market.chainId)
+  return receipt
 }
 
 export type BorrowWithdrawCollateralServiceInput = { idToken: string } & Omit<
@@ -260,12 +242,12 @@ export type BorrowWithdrawCollateralServiceInput = { idToken: string } & Omit<
 
 export async function withdrawCollateral(
   input: BorrowWithdrawCollateralServiceInput,
-): Promise<BorrowReceiptWithUrls> {
+): Promise<BorrowReceipt> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
   const receipt = await wallet.borrow.withdrawCollateral({ ...rest, market })
-  return decorateReceipt(receipt, market.chainId)
+  return receipt
 }
 
 export type BorrowRepayServiceInput = { idToken: string } & Omit<
@@ -277,7 +259,7 @@ export type BorrowRepayServiceInput = { idToken: string } & Omit<
 
 export async function repay(
   input: BorrowRepayServiceInput,
-): Promise<BorrowReceiptWithUrls> {
+): Promise<BorrowReceipt> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   const { idToken: _ignored, marketId, ...rest } = input
   const market = resolveMarketConfig(marketId)
@@ -287,5 +269,5 @@ export async function repay(
   if (isAaveMirrorMarket(market) && removed !== undefined && removed > 0n) {
     void removeMirrorUsdc(wallet, removed, receipt.transactionHash)
   }
-  return decorateReceipt(receipt, market.chainId)
+  return receipt
 }
