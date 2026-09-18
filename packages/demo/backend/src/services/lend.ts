@@ -4,13 +4,13 @@ import type {
   LendTransactionReceipt,
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
+import { getBlockExplorerUrls } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import type { PositionParams } from '@/types/index.js'
 import { resolveAsset } from '@/utils/assets.js'
-import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 type LendTransactionReceiptWithUrls = LendTransactionReceipt & {
   blockExplorerUrls: string[]
@@ -46,14 +46,9 @@ async function executePosition(
       ? await wallet.lend!.openPosition(positionParams)
       : await wallet.lend!.closePosition(positionParams)
 
-  const blockExplorerUrls = getBlockExplorerUrls({
-    chainId: marketId.chainId,
-    ...result,
-  })
-
   return {
     ...result,
-    blockExplorerUrls,
+    blockExplorerUrls: getBlockExplorerUrls(result, marketId.chainId),
   } as LendTransactionReceiptWithUrls
 }
 

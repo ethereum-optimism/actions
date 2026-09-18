@@ -19,10 +19,6 @@ vi.mock('./mirror.js', () => ({
   removeMirrorUsdc: vi.fn(),
 }))
 
-vi.mock('../utils/explorers.js', () => ({
-  getBlockExplorerUrls: vi.fn(() => []),
-}))
-
 vi.mock('../config/markets.js', () => ({
   MorphoUSDCBorrowOPDemo: {
     kind: 'morpho-blue' as const,
@@ -91,8 +87,6 @@ describe('Borrow Service', () => {
     vi.resetAllMocks()
     const { getActions } = await import('../config/actions.js')
     vi.mocked(getActions).mockReturnValue(mockActions as never)
-    const { getBlockExplorerUrls } = await import('../utils/explorers.js')
-    vi.mocked(getBlockExplorerUrls).mockReturnValue([])
   })
 
   describe('getMarkets', () => {
@@ -244,7 +238,7 @@ describe('Borrow Service', () => {
           collateralAmount: { amount: 100 },
         }),
       )
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
+      expect(result).toEqual(receipt)
     })
 
     it('throws WalletNotFoundError when the wallet cannot be resolved', async () => {
@@ -276,26 +270,16 @@ describe('Borrow Service', () => {
       )
     })
 
-    it('decorates the receipt with block-explorer URLs from the chain', async () => {
-      const { getBlockExplorerUrls } = await import('../utils/explorers.js')
-      vi.mocked(getBlockExplorerUrls).mockReturnValue([
-        'https://sepolia.basescan.org/tx/0xabc',
-      ])
+    it("passes through the SDK receipt's block-explorer URLs", async () => {
       const receipt = {
         userOpHash: '0xuserop',
         transactionHash: '0xtx',
+        blockExplorerUrls: ['https://sepolia.basescan.org/tx/0xabc'],
       } as unknown as BorrowReceipt
       mockWalletBorrow.openPosition.mockResolvedValue(receipt)
 
       const result = await borrowService.openPosition(fullParams)
 
-      expect(getBlockExplorerUrls).toHaveBeenCalledWith(
-        expect.objectContaining({
-          chainId: 84532,
-          userOpHash: '0xuserop',
-          transactionHash: '0xtx',
-        }),
-      )
       expect(result.blockExplorerUrls).toEqual([
         'https://sepolia.basescan.org/tx/0xabc',
       ])
@@ -324,7 +308,7 @@ describe('Borrow Service', () => {
           collateralAmount: { max: true },
         }),
       )
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
+      expect(result).toEqual(receipt)
     })
   })
 
@@ -348,7 +332,7 @@ describe('Borrow Service', () => {
           amount: { amount: 50 },
         }),
       )
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
+      expect(result).toEqual(receipt)
     })
   })
 
