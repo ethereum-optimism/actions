@@ -12,7 +12,6 @@ import { getActions } from '@/config/actions.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import { resolveAsset } from '@/utils/assets.js'
-import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 export interface SwapParams {
   idToken: string
@@ -31,10 +30,6 @@ export interface PriceParams {
   amountIn?: number
   amountOut?: number
   provider?: SwapProviderName
-}
-
-type SwapReceiptWithUrls = SwapReceipt & {
-  blockExplorerUrls: string[]
 }
 
 export async function getMarkets(
@@ -67,9 +62,7 @@ export async function getQuote(params: PriceParams): Promise<SwapQuote> {
   })
 }
 
-export async function executeSwap(
-  params: SwapParams,
-): Promise<SwapReceiptWithUrls> {
+export async function executeSwap(params: SwapParams): Promise<SwapReceipt> {
   const {
     idToken,
     amountIn,
@@ -104,14 +97,5 @@ export async function executeSwap(
     provider,
   })
 
-  const receipt = result.receipt
-  const blockExplorerUrls = getBlockExplorerUrls({
-    chainId,
-    ...(!Array.isArray(receipt) ? receipt : {}),
-  })
-
-  return {
-    ...result,
-    blockExplorerUrls,
-  }
+  return result
 }
