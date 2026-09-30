@@ -121,7 +121,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     totalUsd,
     isLoading: isLoadingTotalBalance,
   } = useTotalBalance({
-    assets: swapAssets,
+    balances: walletTokenBalances ?? [],
     getPrice: handleGetQuote,
   })
 
