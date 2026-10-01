@@ -4,12 +4,11 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
 import {
-  getPoolAddress,
+  requireAavePoolAddress,
+  requireAaveWethGatewayAddress,
   getSupportedChainIds,
-  getWETHGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
 import { WETH } from '@/constants/assets.js'
-import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
@@ -58,13 +57,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendOpenPosition> {
     try {
       // Get Pool address for this chain
-      const poolAddress = getPoolAddress(params.marketId.chainId)
-      if (!poolAddress) {
-        throw new ChainNotSupportedError({
-          chainId: params.marketId.chainId,
-          supportedChainIds: this.supportedChainIds(),
-        })
-      }
+      const poolAddress = requireAavePoolAddress(params.marketId.chainId)
 
       // Get market information for APY
       const marketInfo = await this.getMarket({
@@ -94,13 +87,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     try {
       // Get Pool address for this chain
-      const poolAddress = getPoolAddress(params.marketId.chainId)
-      if (!poolAddress) {
-        throw new ChainNotSupportedError({
-          chainId: params.marketId.chainId,
-          supportedChainIds: this.supportedChainIds(),
-        })
-      }
+      const poolAddress = requireAavePoolAddress(params.marketId.chainId)
 
       const marketInfo = await this.getMarket({
         address: params.marketId.address,
@@ -162,14 +149,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         params.marketId.chainId,
       )
       const market = await this._getMarket(params.marketId)
-      const poolAddress = getPoolAddress(params.marketId.chainId)
-
-      if (!poolAddress) {
-        throw new ChainNotSupportedError({
-          chainId: params.marketId.chainId,
-          supportedChainIds: this.supportedChainIds(),
-        })
-      }
+      requireAavePoolAddress(params.marketId.chainId)
 
       // Get the aToken address from Pool.getReserveData
       // For native assets, use WETH address since Aave uses WETH internally
@@ -218,13 +198,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     poolAddress: Address,
     marketInfo: LendMarket,
   ): Promise<LendOpenPosition> {
-    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
-    if (!gatewayAddress) {
-      throw new ChainNotSupportedError({
-        chainId: params.marketId.chainId,
-        supportedChainIds: this.supportedChainIds(),
-      })
-    }
+    const gatewayAddress = requireAaveWethGatewayAddress(params.marketId.chainId)
 
     const depositCallData = encodeFunctionData({
       abi: WETH_GATEWAY_ABI,
@@ -293,13 +267,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     poolAddress: Address,
     marketInfo: LendMarket,
   ): Promise<LendTransaction> {
-    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
-    if (!gatewayAddress) {
-      throw new ChainNotSupportedError({
-        chainId: params.marketId.chainId,
-        supportedChainIds: this.supportedChainIds(),
-      })
-    }
+    const gatewayAddress = requireAaveWethGatewayAddress(params.marketId.chainId)
 
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
