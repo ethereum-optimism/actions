@@ -45,6 +45,25 @@ A backend service for interacting with the Actions SDK.
 
 Both require `BASE_SEPOLIA_RPC_URL` and `DEMO_MARKET_SETUP_PRIVATE_KEY` in `.env`.
 
+## Authentication
+
+Authenticated routes require **two** Privy credentials on every request:
+
+| Header           | Value                         | Purpose                       |
+| ---------------- | ----------------------------- | ----------------------------- |
+| `Authorization`  | `Bearer <privy access token>` | Authenticates the caller      |
+| `privy-id-token` | `<privy identity token>`      | Resolves the wallet to act on |
+
+Both are verified, and both must have been issued to the same Privy user. A pair
+belonging to two different users is rejected with `401`, because the identity
+token is what selects the wallet downstream.
+
+Refresh the two together. They come from one login session, so refreshing only
+the access token after a `401` leaves a stale identity token in place and every
+retry keeps failing. All authentication failures return the same
+`401 {"error": "Invalid or expired token"}` regardless of cause, so the body
+cannot be used to tell an expired token from a mismatched pair.
+
 ## API Endpoints
 
 | Method | Endpoint            | Description         |

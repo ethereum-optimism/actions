@@ -5,6 +5,8 @@ import { createApp } from '@/app.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import * as lendService from '@/services/lend.js'
 
+import { authHeaders, mockVerifiedUser } from './routeTestUtils.js'
+
 vi.mock('@/services/lend.js', () => ({
   getMarkets: vi.fn(),
   getMarket: vi.fn(),
@@ -29,21 +31,26 @@ const MARKET = {
   chainId: 130,
 }
 
-function authHeaders() {
-  return {
-    Authorization: 'Bearer fake-access-token',
-    'privy-id-token': 'fake-id-token',
-  }
-}
-
 beforeEach(async () => {
   vi.resetAllMocks()
-  const { getPrivyClient } = await import('@/config/actions.js')
-  vi.mocked(getPrivyClient).mockReturnValue({
-    utils: () => ({
-      auth: () => ({ verifyAuthToken: vi.fn().mockResolvedValue(undefined) }),
-    }),
-  } as never)
+  await mockVerifiedUser('user-a')
+})
+
+describe('lend routes credential binding', () => {
+  it('rejects a cross-user credential pair before reaching the service', async () => {
+    // Proves the binding through the real createApp() stack, not just the
+    // middleware in isolation, so the fix cannot be silently unwired.
+    await mockVerifiedUser('user-a', 'user-b')
+
+    const res = await createApp().request('/lend/position/open', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketId: MARKET, amount: 1 }),
+    })
+
+    expect(res.status).toBe(401)
+    expect(lendService.openPosition).not.toBeCalled()
+  })
 })
 
 describe('lend routes error mapping via global onError', () => {
