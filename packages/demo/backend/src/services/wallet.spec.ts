@@ -13,10 +13,6 @@ vi.mock('./usdcDemo.js', () => ({
   transferUsdcDemo: vi.fn(),
 }))
 
-vi.mock('../utils/explorers.js', () => ({
-  getBlockExplorerUrls: vi.fn(() => []),
-}))
-
 const mockBorrowProvider = {
   getMarket: vi.fn(),
   getMarkets: vi.fn(),
