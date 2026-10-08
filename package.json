@@ -75,6 +75,7 @@
       "brace-expansion@>=1.0.0 <1.1.18": "1.1.21",
       "brace-expansion@>=2.0.0 <2.1.4": "2.1.7",
       "tinypool": "2.1.2",
+      "source-map-js@>=1.0.0 <1.2.2": "1.2.2",
       "bigint-buffer": "npm:@exodus/bigint-buffer@1.1.5-exodus.1"
     },
     "peerDependencyRules": {
