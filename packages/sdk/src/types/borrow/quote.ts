@@ -117,4 +117,6 @@ export interface BorrowReceipt {
   transactionHashes?: Hex[]
   /** UserOperation hash (set when dispatch ran through ERC-4337) */
   userOpHash?: Hex
+  /** Block-explorer URL(s) for the dispatched hash(es) */
+  blockExplorerUrls: string[]
 }

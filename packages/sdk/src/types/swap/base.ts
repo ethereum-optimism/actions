@@ -383,6 +383,8 @@ export interface SwapReceipt {
   price: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
+  /** Block-explorer URL(s) for the dispatched hash(es) */
+  blockExplorerUrls: string[]
 }
 
 /**
