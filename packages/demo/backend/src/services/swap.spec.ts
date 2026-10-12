@@ -159,9 +159,10 @@ describe('Swap Service', () => {
       ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
-    it('executes swap and returns receipt with explorer urls', async () => {
+    it("passes through the SDK receipt's explorer urls", async () => {
       const mockReceipt = {
         receipt: { transactionHash: '0xtxhash' },
+        blockExplorerUrls: ['https://sepolia.basescan.org/tx/0xtxhash'],
         amountIn: 100,
         amountOut: 0.5,
         amountInRaw: 100000000n,
@@ -186,7 +187,9 @@ describe('Swap Service', () => {
       })
 
       expect(result.amountIn).toBe(100)
-      expect(result.blockExplorerUrls).toBeDefined()
+      expect(result.blockExplorerUrls).toEqual([
+        'https://sepolia.basescan.org/tx/0xtxhash',
+      ])
     })
   })
 })

@@ -101,6 +101,11 @@ export interface BorrowQuote {
 export interface BorrowReceipt {
   /** Underlying transaction receipt(s) */
   receipt: TransactionReturnType | BatchTransactionReturnType
+  /**
+   * Block-explorer `/tx/` link per dispatched transaction. Empty when the
+   * chain definition carries no explorer.
+   */
+  blockExplorerUrls: string[]
   /** Action that was executed */
   action: BorrowAction
   /** Realized borrow-side amount in wei */
