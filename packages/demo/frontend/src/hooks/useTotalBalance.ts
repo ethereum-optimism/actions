@@ -1,7 +1,12 @@
 import { useMemo, useEffect, useRef, useState, useCallback } from 'react'
 import type { Address } from 'viem'
-import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
-import type { SwapAsset } from '@/hooks/useSwapAssets'
+import type {
+  Asset,
+  SupportedChainId,
+  TokenBalance,
+} from '@eth-optimism/actions-sdk/react'
+import { WETH } from '@eth-optimism/actions-sdk/react'
+import { getAssetLogo } from '@/constants/logos'
 import { displaySymbol, isStablecoin } from '@/utils/tokenDisplay'
 
 export interface TokenBalanceRow {
@@ -12,7 +17,13 @@ export interface TokenBalanceRow {
 }
 
 interface UseTotalBalanceParams {
-  assets: SwapAsset[]
+  /**
+   * Every asset the wallet holds, straight from the wallet layer. Not the
+   * swap asset list: that one is filtered to the swap `marketAllowlist`, so
+   * deriving the wallet total from it hides anything the wallet holds but
+   * cannot swap — native ETH in particular.
+   */
+  balances: TokenBalance[]
   getPrice: (params: {
     tokenInAddress: Address
     tokenOutAddress: Address
@@ -21,40 +32,63 @@ interface UseTotalBalanceParams {
   }) => Promise<{ amountOut: number } | null>
 }
 
-export function useTotalBalance({ assets, getPrice }: UseTotalBalanceParams) {
+/**
+ * The chain a balance is priced and displayed on. Mirrors the pick made when
+ * building swap assets, so a token reads the same in both places.
+ */
+function primaryChainId(balance: TokenBalance): SupportedChainId {
+  return Number(Object.keys(balance.chains)[0] ?? 84532) as SupportedChainId
+}
+
+/**
+ * The ERC-20 address to quote an asset against. Native assets have no address
+ * to trade, so they are priced through their wrapped equivalent, which is 1:1
+ * — on every chain this SDK supports, native is ETH and the wrapper is WETH.
+ */
+function quotableAddress(
+  asset: Asset,
+  chainId: SupportedChainId,
+): Address | undefined {
+  const address = asset.address[chainId]
+  if (address && address !== 'native') {
+    return address as Address
+  }
+  return WETH.address[chainId] as Address | undefined
+}
+
+export function useTotalBalance({ balances, getPrice }: UseTotalBalanceParams) {
   const priceCache = useRef<Map<string, number>>(new Map())
   const [prices, setPrices] = useState<Map<string, number>>(new Map())
 
   // Fetch prices for non-USDC assets concurrently (only new symbols)
   const fetchPrices = useCallback(async () => {
-    const usdcAsset = assets.find((a) => isStablecoin(a.asset.metadata.symbol))
-    if (!usdcAsset) return
+    const usdcBalance = balances.find((b) =>
+      isStablecoin(b.asset.metadata.symbol),
+    )
+    if (!usdcBalance) return
 
-    const toFetch = assets.filter(
-      (a) =>
-        !isStablecoin(a.asset.metadata.symbol) &&
-        !priceCache.current.has(a.asset.metadata.symbol),
+    const toFetch = balances.filter(
+      (b) =>
+        !isStablecoin(b.asset.metadata.symbol) &&
+        !priceCache.current.has(b.asset.metadata.symbol),
     )
     if (toFetch.length === 0) return
 
     const results = await Promise.allSettled(
-      toFetch.map(async (asset) => {
-        const tokenAddress = asset.asset.address[asset.chainId] as
-          | Address
-          | undefined
-        const usdcAddress = usdcAsset.asset.address[asset.chainId] as
-          | Address
-          | undefined
+      toFetch.map(async (balance) => {
+        const chainId = primaryChainId(balance)
+        const tokenAddress = quotableAddress(balance.asset, chainId)
+        const usdcAddress = quotableAddress(usdcBalance.asset, chainId)
         if (!tokenAddress || !usdcAddress) return null
         const quote = await getPrice({
           tokenInAddress: tokenAddress,
           tokenOutAddress: usdcAddress,
-          chainId: asset.chainId,
+          chainId,
           amountIn: 1,
         })
         return quote
           ? {
-              symbol: asset.asset.metadata.symbol,
+              symbol: balance.asset.metadata.symbol,
               price: quote.amountOut || 0,
             }
           : null
@@ -69,28 +103,29 @@ export function useTotalBalance({ assets, getPrice }: UseTotalBalanceParams) {
       }
     }
     if (updated) setPrices(new Map(priceCache.current))
-  }, [assets, getPrice])
+  }, [balances, getPrice])
 
   useEffect(() => {
     fetchPrices()
   }, [fetchPrices])
 
-  // Derive balances from assets + cached prices (reactive to balance changes)
+  // Derive rows from held balances + cached prices (reactive to balance changes)
   const tokenBalances = useMemo<TokenBalanceRow[]>(() => {
-    return assets
-      .map((asset) => {
-        const balance = parseFloat(asset.balance) || 0
-        const symbol = displaySymbol(asset.asset.metadata.symbol)
+    return balances
+      .map((balance) => {
+        const amount = balance.totalBalance
+        const symbol = displaySymbol(balance.asset.metadata.symbol)
+        const logo = getAssetLogo(balance.asset.metadata.symbol)
 
-        if (isStablecoin(asset.asset.metadata.symbol)) {
-          return { symbol, logo: asset.logo, balance, usdValue: balance }
+        if (isStablecoin(balance.asset.metadata.symbol)) {
+          return { symbol, logo, balance: amount, usdValue: amount }
         }
 
-        const price = prices.get(asset.asset.metadata.symbol) ?? 0
-        return { symbol, logo: asset.logo, balance, usdValue: balance * price }
+        const price = prices.get(balance.asset.metadata.symbol) ?? 0
+        return { symbol, logo, balance: amount, usdValue: amount * price }
       })
       .filter((token) => token.balance > 0)
-  }, [assets, prices])
+  }, [balances, prices])
 
   const totalUsd = useMemo(
     () => tokenBalances.reduce((sum, t) => sum + t.usdValue, 0),
