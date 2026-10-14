@@ -11,13 +11,12 @@ import {
 } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
+import { fetchBalances } from '@/services/tokenBalance.js'
 import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 
 vi.mock('@/services/tokenBalance.js', async () => {
   return {
-    fetchETHBalance: vi.fn().mockResolvedValue({} as unknown),
-    fetchERC20Balance: vi.fn().mockResolvedValue({} as unknown),
+    fetchBalances: vi.fn().mockResolvedValue([] as unknown),
   }
 })
 
@@ -33,47 +32,50 @@ describe('Wallet (base)', () => {
     vi.clearAllMocks()
   })
 
-  it('getBalance returns only ETH when no supportedAssets configured', async () => {
+  it('getBalance fetches only ETH when no supportedAssets configured', async () => {
     const wallet = new TestWallet({ chainManager, address, signer })
 
     const result = await wallet.getBalance()
 
     expect(result).toBeTruthy()
-    expect(fetchETHBalance).toHaveBeenCalledTimes(1)
-    expect(fetchETHBalance).toHaveBeenCalledWith(
+    expect(fetchBalances).toHaveBeenCalledTimes(1)
+    expect(fetchBalances).toHaveBeenCalledWith(
       chainManager,
       address,
+      [ETH],
       undefined,
     )
-    // No supportedAssets configured, so no ERC20 balance fetches
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(0)
   })
 
-  it('getBalance fetches ERC20 balances for explicitly configured assets', async () => {
+  it('getBalance fetches ETH plus explicitly configured assets', async () => {
     const wallet = new TestWallet({
       chainManager,
       address,
       signer,
-      supportedAssets: [ETH, USDC],
+      supportedAssets: [USDC],
     })
 
     const result = await wallet.getBalance()
 
     expect(result).toBeTruthy()
-    expect(fetchETHBalance).toHaveBeenCalledTimes(1)
-    // Should call fetchERC20Balance for each configured asset
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(2)
+    expect(fetchBalances).toHaveBeenCalledTimes(1)
+    expect(fetchBalances).toHaveBeenCalledWith(
+      chainManager,
+      address,
+      [ETH, USDC],
+      undefined,
+    )
   })
 
-  it('getBalance propagates errors from underlying fetchers', async () => {
-    vi.mocked(fetchETHBalance).mockRejectedValueOnce(new Error('rpc error'))
+  it('getBalance propagates errors from the underlying fetcher', async () => {
+    vi.mocked(fetchBalances).mockRejectedValueOnce(new Error('rpc error'))
 
     const wallet = new TestWallet({ chainManager, address, signer })
 
     await expect(wallet.getBalance()).rejects.toThrow('rpc error')
   })
 
-  it('getBalance forwards chainIds to fetchers when provided', async () => {
+  it('getBalance forwards chainIds to the fetcher when provided', async () => {
     const multiCm = new MockChainManager({
       supportedChains: [optimism.id, base.id, unichain.id],
     }) as unknown as ChainManager
@@ -81,18 +83,14 @@ describe('Wallet (base)', () => {
       chainManager: multiCm,
       address,
       signer,
-      supportedAssets: [ETH, USDC],
+      supportedAssets: [USDC],
     })
 
     await wallet.getBalance({ chainIds: [base.id] })
 
-    expect(fetchETHBalance).toHaveBeenCalledWith(multiCm, address, {
+    expect(fetchBalances).toHaveBeenCalledWith(multiCm, address, [ETH, USDC], {
       chainIds: [base.id],
     })
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(2)
-    for (const call of vi.mocked(fetchERC20Balance).mock.calls) {
-      expect(call[3]).toEqual({ chainIds: [base.id] })
-    }
   })
 
   it('getBalance throws ChainNotSupportedError for chains outside the manager', async () => {
@@ -101,8 +99,7 @@ describe('Wallet (base)', () => {
     await expect(
       wallet.getBalance({ chainIds: [base.id] }),
     ).rejects.toBeInstanceOf(ChainNotSupportedError)
-    expect(fetchETHBalance).not.toHaveBeenCalled()
-    expect(fetchERC20Balance).not.toHaveBeenCalled()
+    expect(fetchBalances).not.toHaveBeenCalled()
   })
 
   it('getBalance throws InvalidParamsError when chainIds is empty', async () => {
@@ -111,7 +108,7 @@ describe('Wallet (base)', () => {
     await expect(wallet.getBalance({ chainIds: [] })).rejects.toBeInstanceOf(
       InvalidParamsError,
     )
-    expect(fetchETHBalance).not.toHaveBeenCalled()
+    expect(fetchBalances).not.toHaveBeenCalled()
   })
 
   it('has lend namespace available for inheritance', () => {
