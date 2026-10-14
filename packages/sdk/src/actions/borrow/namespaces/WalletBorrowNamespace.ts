@@ -27,6 +27,7 @@ import {
 } from '@/utils/validation.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import { extractReceiptHashes } from '@/wallet/core/utils/extractReceiptHashes.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -235,6 +236,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
       [...quote.execution.transactions],
       quote.marketId.chainId,
     )
+    const hashes = extractReceiptHashes(receipt)
     return {
       receipt,
       action: quote.action,
@@ -242,7 +244,11 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
       collateralAmount: quote.collateralAmountRaw,
       marketId: quote.marketId,
       positionAfter: quote.positionAfter,
-      ...extractReceiptHashes(receipt),
+      ...hashes,
+      blockExplorerUrls: getBlockExplorerUrls({
+        chainId: quote.marketId.chainId,
+        ...hashes,
+      }),
     }
   }
 }

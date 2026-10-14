@@ -168,3 +168,10 @@ export { serializeBigInt } from '@/utils/serializers.js'
 export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
+
+export {
+  getBlockExplorerBaseUrl,
+  getBlockExplorerUrls,
+  getTransactionUrl,
+  getUserOperationUrl,
+} from '@/utils/explorers.js'
