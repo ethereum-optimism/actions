@@ -25,12 +25,11 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
 
-  // Read-only subscriber to tokenBalances cache (managed by lend path's useTokenBalances).
-  // enabled:false means this never triggers fetches — it only receives cache updates.
-  // queryFn provided to suppress React Query warning (never called when disabled).
+  // This disabled observer only reads the shared cache during normal rendering.
+  // Invalidations can still select its queryFn, so it must use the real fetcher.
   const { data: walletTokenBalances } = useQuery<TokenBalance[]>({
     queryKey: ['tokenBalances'],
-    queryFn: () => Promise.resolve([]),
+    queryFn: operations.getTokenBalances,
     enabled: false,
   })
   const isLoadingBalances = !walletTokenBalances
