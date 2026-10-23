@@ -15,7 +15,7 @@ environment:
     packages:
       - busybox
       - ca-certificates-bundle
-      - nodejs-22
+      - nodejs-24
       - corepack
       - python-3
       - build-base
