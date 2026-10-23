@@ -6,7 +6,7 @@ contents:
   packages:
     - ca-certificates-bundle>=20260909-r3
     - wolfi-baselayout
-    - nodejs-22
+    - nodejs-24
     - ecosystem-verbs-backend@local
 
 archs:
