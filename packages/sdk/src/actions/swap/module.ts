@@ -1,3 +1,5 @@
+import { isAddress } from 'viem'
+
 import type {
   ActionModule,
   ActionModuleDeps,
@@ -20,7 +22,11 @@ import type { SwapProviders } from '@/types/providers.js'
  */
 function buildResolveRecipient(deps: ActionModuleDeps): RecipientResolver {
   const ens = deps.ens ?? new EnsNamespace(deps.chainManager)
-  return (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined))
+  return (r) => {
+    if (!r) return Promise.resolve(undefined)
+    if (isAddress(r, { strict: false })) return Promise.resolve(r)
+    return ens.getAddress(r)
+  }
 }
 
 /**
