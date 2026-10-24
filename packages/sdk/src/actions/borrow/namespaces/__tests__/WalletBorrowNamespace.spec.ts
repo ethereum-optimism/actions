@@ -1,6 +1,8 @@
 import { privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
+
 import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
 import {
   BASE_SEPOLIA_ID,
@@ -364,6 +366,12 @@ describe('WalletBorrowNamespace - receipt envelope hashes', () => {
     expect(receipt.transactionHash).toBe(singleTransactionHash)
     expect(receipt.transactionHashes).toBeUndefined()
     expect(receipt.userOpHash).toBeUndefined()
+    expect(receipt.blockExplorerUrls).toEqual(
+      getBlockExplorerUrls({
+        chainId: BASE_SEPOLIA_ID,
+        transactionHash: singleTransactionHash,
+      }),
+    )
   })
 
   it('surfaces transactionHashes for batched EOA txs', async () => {
@@ -391,6 +399,12 @@ describe('WalletBorrowNamespace - receipt envelope hashes', () => {
     const receipt = await namespace.openPosition(quote)
     expect(receipt.transactionHashes).toEqual(batchTransactionHashes)
     expect(receipt.transactionHash).toBeUndefined()
+    expect(receipt.blockExplorerUrls).toEqual(
+      getBlockExplorerUrls({
+        chainId: BASE_SEPOLIA_ID,
+        transactionHashes: [...batchTransactionHashes],
+      }),
+    )
     expect(receipt.userOpHash).toBeUndefined()
   })
 })
