@@ -65,21 +65,21 @@ export class EnsNamespace implements NameServiceProvider {
   }
 
   /**
-   * Resolve an ENS name or hex address to a checksummed hex address.
-   * Hex addresses are returned as-is after format validation.
+   * Resolve an ENS name to a checksummed hex address.
    *
    * If you need to resolve outside of an {@link Actions} instance (e.g. in a
-   * provider or script), use the lower-level `resolveAddress` utility instead.
-   * @param input - Hex address (0x...) or ENS name (e.g. "vitalik.eth")
+   * provider or script) or need to resolve an arbitrary input that may already
+   * be a hex address, use the lower-level `resolveAddress` utility instead.
+   * @param name - ENS name (e.g. "vitalik.eth")
    * @returns Resolved hex address
    * @throws {EnsResolutionError} If the name cannot be resolved
    * @throws {EnsRpcError} If the RPC call fails
    */
-  async getAddress(input: Address | EnsName): Promise<Address> {
-    const cached = this.addressCache.get(input)
+  async getAddress(name: EnsName): Promise<Address> {
+    const cached = this.addressCache.get(name)
     if (cached && Date.now() < cached.expiresAt) return cached.value
-    const value = await resolveAddress(input, this.getMainnetClient())
-    this.addressCache.set(input, {
+    const value = await resolveAddress(name, this.getMainnetClient())
+    this.addressCache.set(name, {
       value,
       expiresAt: Date.now() + this.cacheTtlMs,
     })
