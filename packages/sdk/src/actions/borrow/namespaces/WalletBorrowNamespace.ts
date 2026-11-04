@@ -21,6 +21,7 @@ import type {
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
 import {
   validateChainSupported,
   validateQuoteNotExpired,
@@ -237,6 +238,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     )
     return {
       receipt,
+      blockExplorerUrls: getBlockExplorerUrls(receipt, quote.marketId.chainId),
       action: quote.action,
       borrowAmount: quote.borrowAmountRaw,
       collateralAmount: quote.collateralAmountRaw,
