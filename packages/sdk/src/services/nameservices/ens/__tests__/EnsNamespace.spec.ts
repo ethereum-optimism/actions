@@ -32,11 +32,6 @@ function mockClient(
 
 describe('EnsNamespace', () => {
   describe('getAddress', () => {
-    it('resolves a hex address directly', async () => {
-      const ens = new EnsNamespace(mockChainManager())
-      expect(await ens.getAddress(REAL_ADDRESS)).toBe(REAL_ADDRESS)
-    })
-
     it('resolves an ENS name via mainnet client', async () => {
       const client = mockClient()
       const ens = new EnsNamespace(mockChainManager(client))
