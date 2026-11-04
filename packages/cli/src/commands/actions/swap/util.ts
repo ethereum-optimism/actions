@@ -75,6 +75,7 @@ interface QuoteFlagsBase {
   chain: string
   provider?: string
   slippage?: string
+  recipient?: string
 }
 
 /**
@@ -89,7 +90,6 @@ export type QuoteFlags =
  */
 export type WalletExecuteFlags = QuoteFlags & {
   approvalMode?: string
-  recipient?: string
   deadline?: string
 }
 
@@ -115,15 +115,10 @@ export function buildWalletExecuteParams(
 ): WalletSwapParams {
   const base = buildSwapInputs(flags, allow, chainIds)
   const approvalMode = parseApprovalMode(flags.approvalMode)
-  // Recipient validation (address-vs-ENS) is the SDK's responsibility:
-  // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
-  // provider sees the value. The CLI passes the raw string through.
-  const recipient = flags.recipient as WalletSwapParams['recipient'] | undefined
   const deadline = parseDeadline(flags.deadline)
   return {
     ...base,
     ...(approvalMode ? { approvalMode } : {}),
-    ...(recipient ? { recipient } : {}),
     ...(deadline !== undefined ? { deadline } : {}),
   }
 }
@@ -151,6 +146,10 @@ export function buildSwapInputs(
   const amounts = parseAmountFlags(flags.amountIn, flags.amountOut)
   const provider = parseProvider(flags.provider)
   const slippage = parseSlippage(flags.slippage)
+  // Recipient validation (address-vs-ENS) is the SDK's responsibility:
+  // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
+  // provider sees the value. The CLI passes the raw string through.
+  const recipient = flags.recipient as WalletSwapParams['recipient'] | undefined
   return {
     assetIn,
     assetOut,
@@ -158,5 +157,6 @@ export function buildSwapInputs(
     ...amounts,
     ...(provider ? { provider } : {}),
     ...(slippage !== undefined ? { slippage } : {}),
+    ...(recipient ? { recipient } : {}),
   }
 }
