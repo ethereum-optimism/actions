@@ -3,7 +3,7 @@ import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
 import { OP_DEMO, USDC_DEMO } from './assets.js'
-import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
+import { BASE_SEPOLIA, OPTIMISM_SEPOLIA } from './chains.js'
 import { env } from './env.js'
 import {
   AaveETH,
@@ -65,7 +65,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     assets: {
       allow: [USDC_DEMO, OP_DEMO, ETH, USDC],
     },
-    chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
+    chains: [BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
 }
 
