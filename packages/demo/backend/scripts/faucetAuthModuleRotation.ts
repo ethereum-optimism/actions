@@ -92,14 +92,15 @@ export async function rotateAuthModule(config: RotationConfig) {
   const oldConfig = await readModuleConfig(publicClient, faucet, oldModule)
   const newSigner = await resolveSigner(config)
 
-  log(`New signer address: ${newSigner}`)
-  await config.pause(
-    'keyFile' in config.signer
-      ? `Back up ${config.signer.keyFile}, then continue to deploy.`
-      : 'Check this is the address of your existing key, then continue.',
-  )
+  log(`New signer address (the key that signs drips): ${newSigner}`)
+  if ('keyFile' in config.signer) {
+    log(
+      `New signer key saved to ${config.signer.keyFile} (copied into prod secrets at the end)`,
+    )
+  }
+  await config.pause('Continue to deploy the new auth module contract.')
 
-  log('Step 1: deploy the new auth module')
+  log('Step 1: deploy the new auth module contract')
   const deployHash = await walletClient.sendTransaction({
     account,
     chain: optimismSepolia,
@@ -126,15 +127,17 @@ export async function rotateAuthModule(config: RotationConfig) {
   if ('keyFile' in config.signer) {
     appendFileSync(config.signer.keyFile, `AUTH_MODULE_ADDRESS=${newModule}\n`)
   }
-  log(`  NEW MODULE ADDRESS: ${newModule}`)
+  log(`  New module address (the contract): ${newModule}`)
   await config.pause(
-    'Copy the module address (this is the new AUTH_MODULE_ADDRESS), then continue to enable it.',
+    'Copy the new module address (this is AUTH_MODULE_ADDRESS, a plain config value), then continue to enable it.',
   )
 
   log('Step 2: enable the new module on the faucet')
   await configureModule(config, newModule, { ...oldConfig, enabled: true })
   await expectEnabled(publicClient, faucet, newModule, true)
-  await config.pause('New module is live. Continue to disable the old one.')
+  await config.pause(
+    'New module is live. To avoid faucet downtime, update prod and roll out the backend before disabling the old module (it stays enabled meanwhile). Continue to disable the old one.',
+  )
 
   log('Step 3: disable the old module')
   await configureModule(config, oldModule, { ...oldConfig, enabled: false })
