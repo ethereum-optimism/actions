@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fetches the pinned OP monorepo (shallow) into lib/optimism so forge can compile
-# its AdminFaucetAuthModule. Same approach as ecosystem-private.
+# its AdminFaucetAuthModule.
 set -euo pipefail
 
 OPTIMISM_COMMIT=8ca4df44b85cd270b3072692fae683a40d26b4fb
