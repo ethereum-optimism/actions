@@ -17,7 +17,15 @@ import {
 } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest'
 
 import { faucetAbi } from '../src/abis/ethFaucet.js'
 import {
@@ -82,12 +90,17 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       transport: http(RPC),
     })
 
-  const run = (caller: Address, signer: SignerChoice, logs: string[]) =>
+  const run = (
+    caller: Address,
+    signer: SignerChoice,
+    logs: string[],
+    oldModule: Address = OLD_MODULE,
+  ) =>
     rotateAuthModule({
       publicClient,
       walletClient: impersonate(caller),
       faucet: FAUCET,
-      oldModule: OLD_MODULE,
+      oldModule,
       signer,
       creationCode: loadCreationCode(),
       pause: async () => {},
@@ -112,6 +125,15 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       await testClient.setBalance({ address, value: parseEther('1') })
     }
   }, 60_000)
+
+  // Every rotation changes module state, so each test starts from a clean fork.
+  let snapshotId: Hex
+  beforeEach(async () => {
+    snapshotId = await testClient.snapshot()
+  })
+  afterEach(async () => {
+    await testClient.revert({ id: snapshotId })
+  })
 
   afterAll(() => {
     anvil?.kill()
@@ -158,6 +180,26 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       args: [newModule],
     })
     expect(enabled).toBe(true)
+  })
+
+  it('rejects an old module that is not enabled before writing a key', async () => {
+    const keyFile = tempKeyFile()
+
+    await expect(
+      run(FAUCET_ADMIN, { keyFile }, [], OTHER_ACCOUNT),
+    ).rejects.toThrow(/not an enabled module/)
+    expect(existsSync(keyFile)).toBe(false)
+  })
+
+  it('rejects rotating again once the old module is already disabled', async () => {
+    const signer = () => ({
+      address: privateKeyToAccount(generatePrivateKey()).address,
+    })
+    await run(FAUCET_ADMIN, signer(), [])
+
+    await expect(run(FAUCET_ADMIN, signer(), [])).rejects.toThrow(
+      /not an enabled module/,
+    )
   })
 
   it('generates a key by default, swaps modules, accepts new-signer drips and logs no keys', async () => {

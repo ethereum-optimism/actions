@@ -99,6 +99,11 @@ export async function rotateAuthModule(config: RotationConfig) {
 
   await assertReady(config, account.address)
   const oldConfig = await readModuleConfig(publicClient, faucet, oldModule)
+  if (!oldConfig.enabled) {
+    throw new Error(
+      `${oldModule} is not an enabled module on the faucet; pass --old-module <the module currently enabled>`,
+    )
+  }
   const oldSigner = await readModuleSigner(publicClient, oldModule)
   const { address: newSigner } = resolveSigner(config, oldSigner)
 
