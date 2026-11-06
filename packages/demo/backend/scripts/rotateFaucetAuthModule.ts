@@ -74,7 +74,7 @@ async function ask(question: string) {
 }
 
 async function pause(message: string) {
-  await ask(`\n${message}\nPress Enter to continue (Ctrl-C to stop) `)
+  await ask(`\n${message} Press Enter to continue (Ctrl-C to stop) `)
 }
 
 async function chooseSigner(options: {
@@ -85,9 +85,7 @@ async function chooseSigner(options: {
     console.log('\nNo --existing-signer provided, minting a new signer key...')
     return { keyFile: options.keyFile }
   }
-  const typed = await ask(
-    'Enter the existing signer address (the key that signs drips, not the module): ',
-  )
+  const typed = await ask('Enter the existing signer address: ')
   if (!isAddress(typed)) {
     throw new Error('not an Ethereum address (0x + 40 hex characters)')
   }
@@ -135,7 +133,7 @@ async function main() {
     options as { existingSigner?: boolean; keyFile: string },
   )
 
-  const { newModule, newSigner, smartWallet } = await rotateAuthModule({
+  const { newModule, newSigner } = await rotateAuthModule({
     publicClient: createPublicClient({ transport }),
     walletClient: createWalletClient({
       account,
@@ -151,15 +149,11 @@ async function main() {
   })
 
   const signerKey =
-    'keyFile' in signer
-      ? `copy from ${signer.keyFile}`
-      : 'the private key of your existing signer'
+    'keyFile' in signer ? `see ${signer.keyFile}` : `key of ${newSigner}`
   console.log(`
-Done. Update prod:
-  AUTH_MODULE_ADDRESS                    = ${newModule}   (the new module contract; plain deploy config, not a secret)
-  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = ${signerKey}   (secret; key of signer ${newSigner})
-Then deploy the backend${'keyFile' in signer ? ` and delete ${signer.keyFile}` : ''}.
-The backend sends drips from the new signer's smart wallet (${smartWallet}).`)
+Done.
+New AUTH_MODULE_ADDRESS: ${newModule}
+New FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY: ${signerKey}`)
 }
 
 main().catch((error) => {

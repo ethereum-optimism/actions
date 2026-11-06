@@ -188,7 +188,7 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     expect(newEnabled).toBe(true)
     expect([ttl, amount]).toEqual([oldTtl, oldAmount])
     expect(name).toBe('OffChainAuthModule')
-    expect(logs.join('\n')).toMatch(/Backend smart wallet, new signer: 0x/)
+    expect(logs.join('\n')).toMatch(/Smart wallet \(new signer\): 0x/)
 
     // Sign exactly like services/faucet.ts and drip to a fresh recipient.
     const fileContent = readFileSync(keyFile, 'utf8')

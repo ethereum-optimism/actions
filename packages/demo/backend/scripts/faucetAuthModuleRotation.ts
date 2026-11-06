@@ -102,16 +102,12 @@ export async function rotateAuthModule(config: RotationConfig) {
   const oldSigner = await readModuleSigner(publicClient, oldModule)
   const { address: newSigner } = resolveSigner(config, oldSigner)
 
-  log(`New signer address (the key that signs drips): ${newSigner}`)
-  if ('keyFile' in config.signer) {
-    log(
-      `New signer key saved to ${config.signer.keyFile} (copied into prod secrets at the end)`,
-    )
-  }
+  log(`New signer: ${newSigner}`)
+  if ('keyFile' in config.signer) log(`Key saved to ${config.signer.keyFile}`)
   const smartWallet = await logSmartWallets(config, oldSigner, newSigner)
-  await config.pause('Continue to deploy the new auth module contract.')
+  await config.pause('Deploy the new module.')
 
-  log('Step 1: deploy the new auth module contract')
+  log('Deploying...')
   const deployHash = await walletClient.sendTransaction({
     account,
     chain: optimismSepolia,
@@ -134,24 +130,20 @@ export async function rotateAuthModule(config: RotationConfig) {
   if ('keyFile' in config.signer) {
     appendFileSync(config.signer.keyFile, `AUTH_MODULE_ADDRESS=${newModule}\n`)
   }
-  log(`  New module address (the contract): ${newModule}`)
-  await config.pause(
-    'Copy the new module address (this is AUTH_MODULE_ADDRESS, a plain config value), then continue to enable it.',
-  )
+  log(`New AUTH_MODULE_ADDRESS: ${newModule}`)
+  await config.pause('Enable it on the faucet.')
 
-  log('Step 2: enable the new module on the faucet')
+  log('Enabling...')
   await configureModule(config, newModule, { ...oldConfig, enabled: true })
   await expectEnabled(publicClient, faucet, newModule, true)
-
   await config.pause(
-    'New module is live. To avoid faucet downtime, update prod and roll out the backend before disabling the old module (it stays enabled meanwhile). Continue to disable the old one.',
+    'Update prod now to avoid downtime. Then disable the old module.',
   )
 
-  log('Step 3: disable the old module')
+  log('Disabling the old module...')
   await configureModule(config, oldModule, { ...oldConfig, enabled: false })
   await expectEnabled(publicClient, faucet, oldModule, false)
 
-  log('Done: old module disabled, new module enabled.')
   return { newModule, newSigner, smartWallet }
 }
 
@@ -204,17 +196,13 @@ async function logSmartWallets(
     publicClient.getBalance({ address: newWallet }),
   ])
   log(
-    `Backend smart wallet, old signer: ${oldWallet} (${formatEther(oldBalance)} ETH)`,
+    `Smart wallet (old signer): ${oldWallet} (${formatEther(oldBalance)} ETH)`,
   )
   log(
-    `Backend smart wallet, new signer: ${newWallet} (${formatEther(newBalance)} ETH)`,
+    `Smart wallet (new signer): ${newWallet} (${formatEther(newBalance)} ETH)`,
   )
   if (oldBalance > 0n && newBalance === 0n) {
-    log(
-      `  WARNING: the old smart wallet is funded and the new one is not. Fund ${newWallet} on OP Sepolia if drips are not sponsored.`,
-    )
-  } else if (oldBalance === 0n && newBalance === 0n) {
-    log('  Both are empty, so gas is presumably sponsored by the bundler.')
+    log('WARNING: old smart wallet is funded, new one is not')
   }
   return newWallet
 }
