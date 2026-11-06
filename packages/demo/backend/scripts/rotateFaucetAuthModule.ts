@@ -133,7 +133,7 @@ async function main() {
     options as { existingSigner?: boolean; keyFile: string },
   )
 
-  const { newModule, newSigner } = await rotateAuthModule({
+  await rotateAuthModule({
     publicClient: createPublicClient({ transport }),
     walletClient: createWalletClient({
       account,
@@ -148,12 +148,7 @@ async function main() {
     log: console.log,
   })
 
-  const signerKey =
-    'keyFile' in signer ? `see ${signer.keyFile}` : `key of ${newSigner}`
-  console.log(`
-Done.
-New AUTH_MODULE_ADDRESS: ${newModule}
-New FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY: ${signerKey}`)
+  console.log('\nDone.')
 }
 
 main().catch((error) => {

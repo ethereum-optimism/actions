@@ -136,8 +136,12 @@ export async function rotateAuthModule(config: RotationConfig) {
   log('Enabling...')
   await configureModule(config, newModule, { ...oldConfig, enabled: true })
   await expectEnabled(publicClient, faucet, newModule, true)
+  const signerKey =
+    'keyFile' in config.signer
+      ? `see ${config.signer.keyFile}`
+      : `key of ${newSigner}`
   await config.pause(
-    'Update prod now to avoid downtime. Then disable the old module.',
+    `Update prod, then deploy the backend:\n  New AUTH_MODULE_ADDRESS: ${newModule}\n  New FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY: ${signerKey}\nThen disable the old module.`,
   )
 
   log('Disabling the old module...')
