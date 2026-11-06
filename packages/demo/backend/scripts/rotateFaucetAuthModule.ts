@@ -8,12 +8,14 @@
     jq -r '.[0].address' ~/faucet-new-signer.json
 
   Usage:
-    pnpm rotate:faucet-module --signer <new signer address> [--rpc-url <url>]
+    pnpm rotate:faucet-module --signer <new signer address> --key-file <path> [--rpc-url <url>]
 
   Prompts (hidden) for the faucet ADMIN private key. No private key is logged
-  and this script never sees the new signer key.
+  and this script never reads the new signer key: --key-file is only shown in
+  the final instructions so you know where to copy it from.
 */
 
+import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 
 import { Command } from 'commander'
@@ -80,6 +82,7 @@ async function main() {
     .option('--faucet <address>', 'faucet contract', DEFAULT_FAUCET)
     .option('--old-module <address>', 'module to disable', DEFAULT_OLD_MODULE)
     .requiredOption('--signer <address>', 'address of the new signer key')
+    .requiredOption('--key-file <path>', 'file holding the new signer key')
     .parse()
     .opts()
 
@@ -87,6 +90,10 @@ async function main() {
     throw new Error(
       '--signer must be an Ethereum address (0x + 40 hex characters)',
     )
+  }
+
+  if (!existsSync(options.keyFile)) {
+    throw new Error(`--key-file ${options.keyFile} does not exist`)
   }
 
   console.log('Building the auth module (first run fetches the OP monorepo)...')
@@ -121,10 +128,10 @@ async function main() {
   console.log(`
 Done. Set in the prod secrets:
   AUTH_MODULE_ADDRESS                    = ${newModule}
-  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = the private key of ${options.signer}
-Then deploy the backend.
-That signer owns a new smart wallet that sends drips: check it can pay gas
-(sponsored or funded) before relying on the faucet.`)
+  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = copy from ${options.keyFile}
+Then deploy the backend and delete ${options.keyFile}.
+The signer (${options.signer}) owns a new smart wallet that sends drips: check it
+can pay gas (sponsored or funded) before relying on the faucet.`)
 }
 
 main().catch((error) => {
