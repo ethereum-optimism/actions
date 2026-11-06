@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { randomBytes } from 'node:crypto'
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,19 +11,13 @@ import {
   getAddress,
   type Hex,
   isAddressEqual,
-  keccak256,
   pad,
   parseAbi,
   type PublicClient,
-  toHex,
   type WalletClient,
   zeroAddress,
 } from 'viem'
-import {
-  generatePrivateKey,
-  type PrivateKeyAccount,
-  privateKeyToAccount,
-} from 'viem/accounts'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 
 const contractsDir = path.resolve(
@@ -64,11 +57,6 @@ export const faucetModuleAbi = parseAbi([
 /** Either an existing signer (address only) or a fresh key written to `keyFile`. */
 export type SignerChoice = { address: Address } | { keyFile: string }
 
-const dripAbi = parseAbi([
-  'struct DripParameters { address recipient; bytes data; bytes32 nonce; }',
-  'struct AuthParameters { address module; bytes32 id; bytes proof; }',
-  'function drip(DripParameters _params, AuthParameters _auth)',
-])
 /** Coinbase smart wallet factory the SDK derives backend smart wallets from. */
 const SMART_WALLET_FACTORY: Address =
   '0xBA5ED110eFDBa3D005bfC882d75358ACBbB85842'
@@ -83,10 +71,6 @@ export interface RotationConfig {
   oldModule: Address
   signer: SignerChoice
   creationCode: Hex
-  /** Returns an address to receive a test drip, or undefined to skip the test. */
-  askTestRecipient: () => Promise<Address | undefined>
-  /** Hidden prompt for the signer's private key; only called for a test drip with an existing signer. */
-  askSignerKey: () => Promise<Hex>
   pause: (message: string) => Promise<void>
   log: (line: string) => void
 }
@@ -116,10 +100,7 @@ export async function rotateAuthModule(config: RotationConfig) {
   await assertReady(config, account.address)
   const oldConfig = await readModuleConfig(publicClient, faucet, oldModule)
   const oldSigner = await readModuleSigner(publicClient, oldModule)
-  const { address: newSigner, privateKey: generatedKey } = resolveSigner(
-    config,
-    oldSigner,
-  )
+  const { address: newSigner } = resolveSigner(config, oldSigner)
 
   log(`New signer address (the key that signs drips): ${newSigner}`)
   if ('keyFile' in config.signer) {
@@ -162,13 +143,11 @@ export async function rotateAuthModule(config: RotationConfig) {
   await configureModule(config, newModule, { ...oldConfig, enabled: true })
   await expectEnabled(publicClient, faucet, newModule, true)
 
-  log('Step 3 (optional): test drip with the new module')
-  await testDrip(config, newModule, newSigner, generatedKey)
   await config.pause(
     'New module is live. To avoid faucet downtime, update prod and roll out the backend before disabling the old module (it stays enabled meanwhile). Continue to disable the old one.',
   )
 
-  log('Step 4: disable the old module')
+  log('Step 3: disable the old module')
   await configureModule(config, oldModule, { ...oldConfig, enabled: false })
   await expectEnabled(publicClient, faucet, oldModule, false)
 
@@ -238,80 +217,6 @@ async function logSmartWallets(
     log('  Both are empty, so gas is presumably sponsored by the bundler.')
   }
   return newWallet
-}
-
-/**
- * Optionally sends one drip signed by the new signer. The faucet admin wallet
- * submits it, so this checks the module and signer but not the backend's
- * smart wallet or bundler path.
- */
-async function testDrip(
-  config: RotationConfig,
-  newModule: Address,
-  newSigner: Address,
-  generatedKey: Hex | undefined,
-) {
-  const recipient = await config.askTestRecipient()
-  if (!recipient) {
-    config.log('  Skipped.')
-    return
-  }
-  const signer = privateKeyToAccount(
-    generatedKey ?? (await config.askSignerKey()),
-  )
-  if (!isAddressEqual(signer.address, newSigner)) {
-    throw new Error('that key does not belong to the new signer address')
-  }
-
-  const id = keccak256(recipient)
-  const nonce = toHex(randomBytes(32))
-  const proof = await signProof(signer, newModule, { recipient, nonce, id })
-  const before = await config.publicClient.getBalance({ address: recipient })
-  const hash = await config.walletClient.sendTransaction({
-    account: config.walletClient.account!,
-    chain: optimismSepolia,
-    to: config.faucet,
-    data: encodeFunctionData({
-      abi: dripAbi,
-      functionName: 'drip',
-      args: [
-        { recipient, data: '0x', nonce },
-        { module: newModule, id, proof },
-      ],
-    }),
-  })
-  const receipt = await config.publicClient.waitForTransactionReceipt({ hash })
-  if (receipt.status !== 'success')
-    throw new Error(`test drip ${hash} reverted`)
-  const after = await config.publicClient.getBalance({ address: recipient })
-  config.log(
-    `  Test drip confirmed (tx ${hash}): ${recipient} received ${formatEther(after - before)} ETH`,
-  )
-}
-
-/** Signs the EIP-712 Proof exactly like services/faucet.ts. */
-function signProof(
-  signer: PrivateKeyAccount,
-  module: Address,
-  message: { recipient: Address; nonce: Hex; id: Hex },
-) {
-  return signer.signTypedData({
-    domain: {
-      name: MODULE_NAME,
-      version: MODULE_VERSION,
-      chainId: optimismSepolia.id,
-      verifyingContract: module,
-    },
-    types: {
-      Proof: [
-        { name: 'recipient', type: 'address' },
-        { name: 'nonce', type: 'bytes32' },
-        { name: 'id', type: 'bytes32' },
-      ],
-    },
-    primaryType: 'Proof',
-    message,
-  })
 }
 
 interface ModuleConfig {

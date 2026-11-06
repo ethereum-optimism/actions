@@ -82,13 +82,7 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       transport: http(RPC),
     })
 
-  const run = (
-    caller: Address,
-    signer: SignerChoice,
-    logs: string[],
-    testRecipient?: Address,
-    signerKey?: Hex,
-  ) =>
+  const run = (caller: Address, signer: SignerChoice, logs: string[]) =>
     rotateAuthModule({
       publicClient,
       walletClient: impersonate(caller),
@@ -96,11 +90,6 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       oldModule: OLD_MODULE,
       signer,
       creationCode: loadCreationCode(),
-      askTestRecipient: async () => testRecipient,
-      askSignerKey: async () => {
-        if (!signerKey) throw new Error('unexpected signer key prompt')
-        return signerKey
-      },
       pause: async () => {},
       log: (line) => logs.push(line),
     })
@@ -152,44 +141,23 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     )
   })
 
-  it('accepts an existing signer and runs the optional test drip with its key', async () => {
-    const existingKey = generatePrivateKey()
-    const existing = privateKeyToAccount(existingKey).address
-    const testRecipient: Address = '0x00000000000000000000000000000000000d0d03'
+  it('accepts an existing signer address', async () => {
+    const existing = privateKeyToAccount(generatePrivateKey()).address
 
     const { newModule, newSigner } = await run(
       FAUCET_ADMIN,
       { address: existing },
       [],
-      testRecipient,
-      existingKey,
     )
 
     expect(newSigner).toBe(existing)
-    const [, enabled, , amount] = await publicClient.readContract({
+    const [, enabled] = await publicClient.readContract({
       address: FAUCET,
       abi: faucetModuleAbi,
       functionName: 'modules',
       args: [newModule],
     })
     expect(enabled).toBe(true)
-    expect(await publicClient.getBalance({ address: testRecipient })).toBe(
-      amount,
-    )
-  })
-
-  it('rejects a test drip key that is not the new signer', async () => {
-    const existing = privateKeyToAccount(generatePrivateKey()).address
-
-    await expect(
-      run(
-        FAUCET_ADMIN,
-        { address: existing },
-        [],
-        '0x00000000000000000000000000000000000d0d04',
-        generatePrivateKey(),
-      ),
-    ).rejects.toThrow(/does not belong/)
   })
 
   it('generates a key by default, swaps modules, accepts new-signer drips and logs no keys', async () => {
@@ -202,13 +170,7 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       args: [OLD_MODULE],
     })
 
-    const testRecipient: Address = '0x00000000000000000000000000000000000d0d02'
-    const { newModule, newSigner } = await run(
-      FAUCET_ADMIN,
-      { keyFile },
-      logs,
-      testRecipient,
-    )
+    const { newModule, newSigner } = await run(FAUCET_ADMIN, { keyFile }, logs)
 
     const [, oldEnabled] = await publicClient.readContract({
       address: FAUCET,
@@ -226,10 +188,6 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     expect(newEnabled).toBe(true)
     expect([ttl, amount]).toEqual([oldTtl, oldAmount])
     expect(name).toBe('OffChainAuthModule')
-    expect(await publicClient.getBalance({ address: testRecipient })).toBe(
-      amount,
-    )
-    expect(logs.join('\n')).toContain('Test drip confirmed')
     expect(logs.join('\n')).toMatch(/Backend smart wallet, new signer: 0x/)
 
     // Sign exactly like services/faucet.ts and drip to a fresh recipient.
