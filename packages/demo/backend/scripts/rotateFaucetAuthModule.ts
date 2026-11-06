@@ -23,6 +23,7 @@ import {
   createPublicClient,
   createWalletClient,
   getAddress,
+  type Hex,
   http,
   isAddress,
 } from 'viem'
@@ -75,6 +76,31 @@ async function ask(question: string) {
 
 async function pause(message: string) {
   await ask(`\n${message}\nPress Enter to continue (Ctrl-C to stop) `)
+}
+
+async function askTestRecipient(): Promise<Address | undefined> {
+  const typed = await ask(
+    'Optional: enter an address to receive a test drip from the faucet (or press Enter to skip): ',
+  )
+  if (!typed) return undefined
+  if (!isAddress(typed)) {
+    throw new Error('not an Ethereum address (0x + 40 hex characters)')
+  }
+  return getAddress(typed)
+}
+
+async function askSignerKey(): Promise<Hex> {
+  const typed = (
+    await readHidden(
+      "Enter the new signer's private key (hidden), to sign the test drip: ",
+    )
+  ).trim()
+  if (!PRIVATE_KEY_PATTERN.test(typed)) {
+    throw new Error(
+      `not a private key (length ${typed.length}, expected 64 hex characters)`,
+    )
+  }
+  return typed.startsWith('0x') ? (typed as Hex) : `0x${typed}`
 }
 
 async function chooseSigner(options: {
@@ -135,7 +161,7 @@ async function main() {
     options as { existingSigner?: boolean; keyFile: string },
   )
 
-  const { newModule, newSigner } = await rotateAuthModule({
+  const { newModule, newSigner, smartWallet } = await rotateAuthModule({
     publicClient: createPublicClient({ transport }),
     walletClient: createWalletClient({
       account,
@@ -146,6 +172,8 @@ async function main() {
     oldModule: options.oldModule as Address,
     signer,
     creationCode,
+    askTestRecipient,
+    askSignerKey,
     pause,
     log: console.log,
   })
@@ -159,8 +187,8 @@ Done. Update prod:
   AUTH_MODULE_ADDRESS                    = ${newModule}   (the new module contract; plain deploy config, not a secret)
   FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = ${signerKey}   (secret; key of signer ${newSigner})
 Then deploy the backend${'keyFile' in signer ? ` and delete ${signer.keyFile}` : ''}.
-The signer owns a new smart wallet that sends drips: check it can pay gas
-(sponsored or funded) before relying on the faucet.`)
+After deploying, request a drip in the app: the backend sends it from the signer's
+smart wallet (${smartWallet}), which the optional test drip does not cover.`)
 }
 
 main().catch((error) => {
