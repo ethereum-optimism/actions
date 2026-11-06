@@ -28,7 +28,10 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 
-import { rotateAuthModule } from './faucetAuthModuleRotation.js'
+import {
+  loadCreationCode,
+  rotateAuthModule,
+} from './faucetAuthModuleRotation.js'
 
 const DEFAULT_FAUCET = '0xAe23F412d318Ceb3E91De8FA57e8728a30733CAE'
 const DEFAULT_OLD_MODULE = '0x23C86891F94A92DB3f4cE292aF6dA1b4e5330A00'
@@ -86,6 +89,9 @@ async function main() {
     )
   }
 
+  console.log('Building the auth module (first run fetches the OP monorepo)...')
+  const creationCode = loadCreationCode()
+
   const typed = (await readHidden('Faucet ADMIN private key (hidden): ')).trim()
   if (!PRIVATE_KEY_PATTERN.test(typed)) {
     throw new Error(
@@ -107,6 +113,7 @@ async function main() {
     faucet: options.faucet as Address,
     oldModule: options.oldModule as Address,
     newSigner: getAddress(options.signer),
+    creationCode,
     pause,
     log: console.log,
   })

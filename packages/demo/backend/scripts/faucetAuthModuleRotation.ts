@@ -1,3 +1,8 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import {
   type Address,
   encodeAbiParameters,
@@ -12,7 +17,27 @@ import {
 } from 'viem'
 import { optimismSepolia } from 'viem/chains'
 
-import { adminFaucetAuthModuleCreationCode } from './adminFaucetAuthModuleBytecode.js'
+const contractsDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../contracts',
+)
+
+/** Builds OP's AdminFaucetAuthModule from the pinned OP monorepo and returns its creation bytecode. */
+export function loadCreationCode(): Hex {
+  const stdio: ['ignore', 'ignore', 'inherit'] = ['ignore', 'ignore', 'inherit']
+  execFileSync(path.join(contractsDir, 'script/install-optimism.sh'), { stdio })
+  execFileSync('forge', ['build', '--root', contractsDir], { stdio })
+  const artifact = JSON.parse(
+    readFileSync(
+      path.join(
+        contractsDir,
+        'out/AdminFaucetAuthModule.sol/AdminFaucetAuthModule.json',
+      ),
+      'utf8',
+    ),
+  )
+  return artifact.bytecode.object as Hex
+}
 
 /** Domain the backend signs with (services/faucet.ts) and the live module uses. */
 const MODULE_NAME = 'OffChainAuthModule'
@@ -33,6 +58,7 @@ export interface RotationConfig {
   oldModule: Address
   /** Address of the signer key the backend will use; its key never reaches this script. */
   newSigner: Address
+  creationCode: Hex
   pause: (message: string) => Promise<void>
   log: (line: string) => void
 }
@@ -60,7 +86,7 @@ export async function rotateAuthModule(config: RotationConfig) {
   const deployHash = await walletClient.sendTransaction({
     account,
     chain: optimismSepolia,
-    data: `${adminFaucetAuthModuleCreationCode}${encodeAbiParameters(
+    data: `${config.creationCode}${encodeAbiParameters(
       [{ type: 'address' }, { type: 'string' }, { type: 'string' }],
       [newSigner, MODULE_NAME, MODULE_VERSION],
     ).slice(2)}` as Hex,

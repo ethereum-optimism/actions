@@ -18,6 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { faucetAbi } from '../src/abis/ethFaucet.js'
 import {
   faucetModuleAbi,
+  loadCreationCode,
   rotateAuthModule,
 } from './faucetAuthModuleRotation.js'
 
@@ -65,6 +66,7 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       faucet: FAUCET,
       oldModule: OLD_MODULE,
       newSigner,
+      creationCode: loadCreationCode(),
       pause: async () => {},
       log: (line) => logs.push(line),
     })
