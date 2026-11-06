@@ -1,6 +1,6 @@
 /*
   Rotates the faucet auth module signer: deploys a new
-  AdminFaucetAuthModule for a signer address you pass in, enables it on the
+  AdminFaucetAuthModule whose signer is the address you pass in, enables it on the
   faucet and disables the old module. The faucet itself is not redeployed.
 
   Create the new signer key first (private key goes to a 0600 file, not the terminal):
@@ -8,7 +8,7 @@
     jq -r '.[0].address' ~/faucet-new-signer.json
 
   Usage:
-    pnpm rotate:faucet-module --signer <new signer address> --key-file <path> [--rpc-url <url>]
+    pnpm rotate:faucet-module --new-signer-address <address> --key-file <path> [--rpc-url <url>]
 
   Prompts (hidden) for the faucet ADMIN private key. No private key is logged
   and this script never reads the new signer key: --key-file is only shown in
@@ -81,14 +81,17 @@ async function main() {
     )
     .option('--faucet <address>', 'faucet contract', DEFAULT_FAUCET)
     .option('--old-module <address>', 'module to disable', DEFAULT_OLD_MODULE)
-    .requiredOption('--signer <address>', 'address of the new signer key')
+    .requiredOption(
+      '--new-signer-address <address>',
+      'address of the new key that signs drips (the module address is printed at the end)',
+    )
     .requiredOption('--key-file <path>', 'file holding the new signer key')
     .parse()
     .opts()
 
-  if (!isAddress(options.signer)) {
+  if (!isAddress(options.newSignerAddress)) {
     throw new Error(
-      '--signer must be an Ethereum address (0x + 40 hex characters)',
+      '--new-signer-address must be an Ethereum address (0x + 40 hex characters)',
     )
   }
 
@@ -119,7 +122,7 @@ async function main() {
     }),
     faucet: options.faucet as Address,
     oldModule: options.oldModule as Address,
-    newSigner: getAddress(options.signer),
+    newSigner: getAddress(options.newSignerAddress),
     creationCode,
     pause,
     log: console.log,
@@ -130,7 +133,7 @@ Done. Set in the prod secrets:
   AUTH_MODULE_ADDRESS                    = ${newModule}
   FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = copy from ${options.keyFile}
 Then deploy the backend and delete ${options.keyFile}.
-The signer (${options.signer}) owns a new smart wallet that sends drips: check it
+The signer (${options.newSignerAddress}) owns a new smart wallet that sends drips: check it
 can pay gas (sponsored or funded) before relying on the faucet.`)
 }
 
