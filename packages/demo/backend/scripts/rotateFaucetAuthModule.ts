@@ -1,21 +1,20 @@
 /*
-  Rotates the faucet auth module signer: deploys a new
-  AdminFaucetAuthModule whose signer is the address you pass in, enables it on the
-  faucet and disables the old module. The faucet itself is not redeployed.
-
-  Create the new signer key first (private key goes to a 0600 file, not the terminal):
-    (umask 077; cast wallet new --json > ~/faucet-new-signer.json)
-    jq -r '.[0].address' ~/faucet-new-signer.json
+  Rotates the faucet auth module signer: deploys a new AdminFaucetAuthModule,
+  enables it on the faucet and disables the old module. The faucet itself is
+  not redeployed.
 
   Usage:
-    pnpm rotate:faucet-module --new-signer-address <address> --key-file <path> [--rpc-url <url>]
+    pnpm rotate:faucet-module [--existing-signer] [--key-file <path>] [--rpc-url <url>]
 
-  Prompts (hidden) for the faucet ADMIN private key. No private key is logged
-  and this script never reads the new signer key: --key-file is only shown in
-  the final instructions so you know where to copy it from.
+  By default a new signer key is generated and written to --key-file (0600,
+  default ~/faucet-auth-module-rotation.env) along with the new AUTH_MODULE_ADDRESS.
+  With --existing-signer you are prompted for the address of a key you already
+  have (its key is never needed). Prompts (hidden) for the faucet ADMIN private
+  key. No private key is logged.
 */
 
-import { existsSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
 import { Command } from 'commander'
@@ -33,6 +32,7 @@ import { optimismSepolia } from 'viem/chains'
 import {
   loadCreationCode,
   rotateAuthModule,
+  type SignerChoice,
 } from './faucetAuthModuleRotation.js'
 
 const DEFAULT_FAUCET = '0xAe23F412d318Ceb3E91De8FA57e8728a30733CAE'
@@ -66,10 +66,29 @@ function readHidden(prompt: string): Promise<string> {
   })
 }
 
-async function pause(message: string) {
+async function ask(question: string) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
-  await rl.question(`\n${message}\nPress Enter to continue (Ctrl-C to stop) `)
+  const answer = await rl.question(question)
   rl.close()
+  return answer.trim()
+}
+
+async function pause(message: string) {
+  await ask(`\n${message}\nPress Enter to continue (Ctrl-C to stop) `)
+}
+
+async function chooseSigner(options: {
+  existingSigner?: boolean
+  keyFile: string
+}): Promise<SignerChoice> {
+  if (!options.existingSigner) return { keyFile: options.keyFile }
+  const typed = await ask(
+    'Existing signer address (the key that will sign drips): ',
+  )
+  if (!isAddress(typed)) {
+    throw new Error('not an Ethereum address (0x + 40 hex characters)')
+  }
+  return { address: getAddress(typed) }
 }
 
 async function main() {
@@ -81,23 +100,21 @@ async function main() {
     )
     .option('--faucet <address>', 'faucet contract', DEFAULT_FAUCET)
     .option('--old-module <address>', 'module to disable', DEFAULT_OLD_MODULE)
-    .requiredOption(
-      '--new-signer-address <address>',
-      'address of the new key that signs drips (the module address is printed at the end)',
+    .option(
+      '--existing-signer',
+      'prompt for an existing signer address instead of generating a new key',
     )
-    .requiredOption('--key-file <path>', 'file holding the new signer key')
+    .option(
+      '--key-file <path>',
+      'where a generated signer key is written',
+      path.join(os.homedir(), 'faucet-auth-module-rotation.env'),
+    )
     .parse()
     .opts()
 
-  if (!isAddress(options.newSignerAddress)) {
-    throw new Error(
-      '--new-signer-address must be an Ethereum address (0x + 40 hex characters)',
-    )
-  }
-
-  if (!existsSync(options.keyFile)) {
-    throw new Error(`--key-file ${options.keyFile} does not exist`)
-  }
+  const signer = await chooseSigner(
+    options as { existingSigner?: boolean; keyFile: string },
+  )
 
   console.log('Building the auth module (first run fetches the OP monorepo)...')
   const creationCode = loadCreationCode()
@@ -113,7 +130,7 @@ async function main() {
   )
   const transport = http(options.rpcUrl)
 
-  const { newModule } = await rotateAuthModule({
+  const { newModule, newSigner } = await rotateAuthModule({
     publicClient: createPublicClient({ transport }),
     walletClient: createWalletClient({
       account,
@@ -122,18 +139,22 @@ async function main() {
     }),
     faucet: options.faucet as Address,
     oldModule: options.oldModule as Address,
-    newSigner: getAddress(options.newSignerAddress),
+    signer,
     creationCode,
     pause,
     log: console.log,
   })
 
+  const keyInstruction =
+    'keyFile' in signer
+      ? `copy from ${signer.keyFile}`
+      : `the private key of your existing signer ${newSigner}`
   console.log(`
 Done. Set in the prod secrets:
   AUTH_MODULE_ADDRESS                    = ${newModule}
-  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = copy from ${options.keyFile}
-Then deploy the backend and delete ${options.keyFile}.
-The signer (${options.newSignerAddress}) owns a new smart wallet that sends drips: check it
+  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY   = ${keyInstruction}
+Then deploy the backend${'keyFile' in signer ? ` and delete ${signer.keyFile}` : ''}.
+The signer (${newSigner}) owns a new smart wallet that sends drips: check it
 can pay gas (sponsored or funded) before relying on the faucet.`)
 }
 
