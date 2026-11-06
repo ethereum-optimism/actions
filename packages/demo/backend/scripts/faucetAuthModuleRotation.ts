@@ -1,16 +1,15 @@
-import { appendFileSync, writeFileSync } from 'node:fs'
-
 import {
   type Address,
   encodeAbiParameters,
   encodeFunctionData,
   getAddress,
   type Hex,
+  isAddressEqual,
   parseAbi,
   type PublicClient,
   type WalletClient,
+  zeroAddress,
 } from 'viem'
-import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 
 import { adminFaucetAuthModuleCreationCode } from './adminFaucetAuthModuleBytecode.js'
@@ -32,43 +31,32 @@ export interface RotationConfig {
   walletClient: WalletClient
   faucet: Address
   oldModule: Address
-  keyFile: string
+  /** Address of the signer key the backend will use; its key never reaches this script. */
+  newSigner: Address
   pause: (message: string) => Promise<void>
   log: (line: string) => void
 }
 
-/** Writes a new signer key to a 0600 file and returns its address. Never overwrites. */
-export function writeSignerKeyFile(keyFile: string): Address {
-  const privateKey = generatePrivateKey()
-  const address = privateKeyToAddress(privateKey)
-  writeFileSync(
-    keyFile,
-    `FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY=${privateKey}\nFAUCET_AUTH_MODULE_ADMIN_ADDRESS=${address}\n`,
-    { flag: 'wx', mode: 0o600 },
-  )
-  return address
-}
-
 /**
- * Deploys a new auth module for a freshly generated signer, enables it on the
- * faucet and disables the old one. The caller's wallet must be the faucet ADMIN.
+ * Deploys a new auth module for `newSigner`, enables it on the faucet and
+ * disables the old one. The caller's wallet must be the faucet ADMIN.
  * Private keys are never logged.
  */
 export async function rotateAuthModule(config: RotationConfig) {
-  const { publicClient, walletClient, faucet, oldModule, log } = config
+  const { publicClient, walletClient, faucet, oldModule, newSigner, log } =
+    config
   const account = walletClient.account
   if (!account) throw new Error('walletClient has no account')
 
   await assertReady(config, account.address)
   const oldConfig = await readModuleConfig(publicClient, faucet, oldModule)
 
-  log('Step 1: generate the new signer key')
-  const newSigner = writeSignerKeyFile(config.keyFile)
-  log(`  new signer address: ${newSigner}`)
-  log(`  key written to:     ${config.keyFile}`)
-  await config.pause('Back up the key file, then continue to deploy.')
+  log(`New signer address: ${newSigner}`)
+  await config.pause(
+    'Check this is the address of your new key, then continue.',
+  )
 
-  log('Step 2: deploy the new auth module')
+  log('Step 1: deploy the new auth module')
   const deployHash = await walletClient.sendTransaction({
     account,
     chain: optimismSepolia,
@@ -90,21 +78,19 @@ export async function rotateAuthModule(config: RotationConfig) {
     functionName: 'ADMIN',
   })
   if (onchainSigner.toLowerCase() !== newSigner.toLowerCase()) {
-    throw new Error('deployed module signer does not match the new key')
+    throw new Error('deployed module signer does not match the new signer')
   }
-  appendFileSync(config.keyFile, `AUTH_MODULE_ADDRESS=${newModule}\n`)
   log(`  NEW MODULE ADDRESS: ${newModule}`)
-  log(`  also saved to:      ${config.keyFile}`)
   await config.pause(
     'Copy the module address (this is the new AUTH_MODULE_ADDRESS), then continue to enable it.',
   )
 
-  log('Step 3: enable the new module on the faucet')
+  log('Step 2: enable the new module on the faucet')
   await configureModule(config, newModule, { ...oldConfig, enabled: true })
   await expectEnabled(publicClient, faucet, newModule, true)
   await config.pause('New module is live. Continue to disable the old one.')
 
-  log('Step 4: disable the old module')
+  log('Step 3: disable the old module')
   await configureModule(config, oldModule, { ...oldConfig, enabled: false })
   await expectEnabled(publicClient, faucet, oldModule, false)
 
@@ -131,6 +117,17 @@ async function assertReady(config: RotationConfig, caller: Address) {
     abi: faucetModuleAbi,
     functionName: 'ADMIN',
   })
+  if (isAddressEqual(config.newSigner, zeroAddress)) {
+    throw new Error('new signer is the zero address')
+  }
+  const oldSigner = await config.publicClient.readContract({
+    address: config.oldModule,
+    abi: moduleAbi,
+    functionName: 'ADMIN',
+  })
+  if (isAddressEqual(oldSigner, config.newSigner)) {
+    throw new Error('new signer is the same as the old module signer')
+  }
   if (admin.toLowerCase() !== caller.toLowerCase()) {
     throw new Error(`key is ${caller}, but the faucet ADMIN is ${admin}`)
   }

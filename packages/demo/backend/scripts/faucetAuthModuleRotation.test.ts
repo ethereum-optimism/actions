@@ -1,19 +1,17 @@
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs'
-import os from 'node:os'
-import path from 'node:path'
 
 import {
   type Address,
   createPublicClient,
   createTestClient,
   createWalletClient,
-  type Hex,
   http,
   keccak256,
+  parseAbi,
   parseEther,
+  zeroAddress,
 } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { optimismSepolia } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -21,7 +19,6 @@ import { faucetAbi } from '../src/abis/ethFaucet.js'
 import {
   faucetModuleAbi,
   rotateAuthModule,
-  writeSignerKeyFile,
 } from './faucetAuthModuleRotation.js'
 
 const FAUCET: Address = '0xAe23F412d318Ceb3E91De8FA57e8728a30733CAE'
@@ -45,20 +42,6 @@ const runForkTests = (() => {
   }
 })()
 
-describe('writeSignerKeyFile', () => {
-  it('writes a 0600 file matching the returned address and never overwrites', () => {
-    const file = path.join(mkdtempSync(path.join(os.tmpdir(), 'key-')), 'k.env')
-    const address = writeSignerKeyFile(file)
-
-    const content = readFileSync(file, 'utf8')
-    const key = content.match(/PRIVATE_KEY=(0x[0-9a-f]{64})/)?.[1] as Hex
-    expect(privateKeyToAccount(key).address).toBe(address)
-    expect(content).toContain(`ADDRESS=${address}`)
-    expect(statSync(file).mode & 0o777).toBe(0o600)
-    expect(() => writeSignerKeyFile(file)).toThrow(/EEXIST/)
-  })
-})
-
 describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
   let anvil: ChildProcess
   const publicClient = createPublicClient({ transport: http(RPC) })
@@ -75,13 +58,13 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       transport: http(RPC),
     })
 
-  const run = (caller: Address, keyFile: string, logs: string[]) =>
+  const run = (caller: Address, newSigner: Address, logs: string[]) =>
     rotateAuthModule({
       publicClient,
       walletClient: impersonate(caller),
       faucet: FAUCET,
       oldModule: OLD_MODULE,
-      keyFile,
+      newSigner,
       pause: async () => {},
       log: (line) => logs.push(line),
     })
@@ -109,23 +92,29 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     anvil?.kill()
   })
 
-  it('refuses a caller that is not the faucet admin before writing a key', async () => {
-    const keyFile = path.join(
-      mkdtempSync(path.join(os.tmpdir(), 'rot-')),
-      'k.env',
-    )
+  const newSignerKey = generatePrivateKey()
+  const newSignerAccount = privateKeyToAccount(newSignerKey)
 
-    await expect(run(OTHER_ACCOUNT, keyFile, [])).rejects.toThrow(
-      /faucet ADMIN/,
-    )
-    expect(existsSync(keyFile)).toBe(false)
+  it('refuses a caller that is not the faucet admin', async () => {
+    await expect(
+      run(OTHER_ACCOUNT, newSignerAccount.address, []),
+    ).rejects.toThrow(/faucet ADMIN/)
   })
 
-  it('swaps modules, copies the config, accepts new-signer drips and leaks no keys', async () => {
-    const keyFile = path.join(
-      mkdtempSync(path.join(os.tmpdir(), 'rot-')),
-      'k.env',
+  it('refuses the zero address and the old module signer', async () => {
+    const oldSigner = await publicClient.readContract({
+      address: OLD_MODULE,
+      abi: parseAbi(['function ADMIN() view returns (address)']),
+      functionName: 'ADMIN',
+    })
+
+    await expect(run(FAUCET_ADMIN, zeroAddress, [])).rejects.toThrow(/zero/)
+    await expect(run(FAUCET_ADMIN, oldSigner, [])).rejects.toThrow(
+      /same as the old/,
     )
+  })
+
+  it('swaps modules, copies the config, accepts new-signer drips and logs no keys', async () => {
     const logs: string[] = []
     const [, , oldTtl, oldAmount] = await publicClient.readContract({
       address: FAUCET,
@@ -134,7 +123,11 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
       args: [OLD_MODULE],
     })
 
-    const { newModule, newSigner } = await run(FAUCET_ADMIN, keyFile, logs)
+    const { newModule } = await run(
+      FAUCET_ADMIN,
+      newSignerAccount.address,
+      logs,
+    )
 
     const [, oldEnabled] = await publicClient.readContract({
       address: FAUCET,
@@ -154,14 +147,7 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     expect(name).toBe('OffChainAuthModule')
 
     // Sign exactly like services/faucet.ts and drip to a fresh recipient.
-    const key = readFileSync(keyFile, 'utf8').match(
-      /PRIVATE_KEY=(0x\w+)/,
-    )![1] as Hex
-    const signer = privateKeyToAccount(key)
-    expect(signer.address).toBe(newSigner)
-    expect(readFileSync(keyFile, 'utf8')).toContain(
-      `AUTH_MODULE_ADDRESS=${newModule}`,
-    )
+    const signer = newSignerAccount
     const recipient: Address = '0x00000000000000000000000000000000000b0b01'
     const id = keccak256(recipient)
     const nonce = keccak256('0x01')
@@ -211,8 +197,8 @@ describe.skipIf(!runForkTests)('rotateAuthModule on an OP Sepolia fork', () => {
     ).rejects.toThrow(/not supported|not enabled|module/i)
 
     const output = logs.join('\n')
-    expect(output).not.toContain(key)
-    expect(output).not.toContain(key.slice(2))
+    expect(output).not.toContain(newSignerKey)
+    expect(output).not.toContain(newSignerKey.slice(2))
     expect(output).toContain(newModule)
   }, 120_000)
 })
