@@ -2,3 +2,8 @@ forge-std/=lib/forge-std/src/
 @uniswap/v4-periphery/=lib/v4-periphery/
 @uniswap/v4-core/=lib/v4-periphery/lib/v4-core/
 permit2/=lib/v4-periphery/lib/permit2/
+
+@eth-optimism/contracts-bedrock/=lib/optimism/packages/contracts-bedrock/
+@openzeppelin/contracts/=lib/optimism/packages/contracts-bedrock/lib/openzeppelin-contracts/contracts/
+lib/optimism/packages/contracts-bedrock/:src/=lib/optimism/packages/contracts-bedrock/src/
+lib/optimism/packages/contracts-bedrock/:@openzeppelin/contracts/=lib/optimism/packages/contracts-bedrock/lib/openzeppelin-contracts/contracts/
