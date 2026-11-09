@@ -10,6 +10,7 @@ import {
   worldchain,
 } from 'viem/chains'
 
+import { withEmptyMetadata } from '@/actions/shared/contractAddresses.js'
 import type {
   MorphoContracts,
   MorphoContractsRegistry,
@@ -28,51 +29,53 @@ const MORPHO_BLUE = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
  * @see https://github.com/morpho-org/sdks
  */
 export const MORPHO_CONTRACTS: MorphoContractsRegistry = {
-  [mainnet.id]: {
+  [mainnet.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC',
-  },
-  [optimism.id]: {
+  }),
+  [optimism.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6',
-  },
-  [base.id]: {
+  }),
+  [base.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
-  },
-  [unichain.id]: {
+  }),
+  [unichain.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x9a6061d51743B31D2c3Be75D83781Fa423f53F0E',
-  },
-  [worldchain.id]: {
+  }),
+  [worldchain.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x34E99D604751a72cF8d0CFDf87069292d82De472',
-  },
-  [ink.id]: {
+  }),
+  [ink.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x9515407b1512F53388ffE699524100e7270Ee57B',
-  },
-  [soneium.id]: {
+  }),
+  [soneium.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x68F9b666b984527A7c145Db4103Cc6d3171C797F',
-  },
-  [mode.id]: {
+  }),
+  [mode.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0xE3d46Ae190Cb39ccA3655E966DcEF96b4eAe1d1c',
-  },
-  [baseSepolia.id]: {
+  }),
+  [baseSepolia.id]: withEmptyMetadata({
     morphoBlue: MORPHO_BLUE,
     irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
-  },
+  }),
 }
 
 /**
- * Get Morpho contracts for a chain
+ * Get Morpho contracts for a chain.
+ * @param chainId - Target chain.
+ * @returns Contract addresses, or undefined when Morpho is not deployed there.
  */
 export function getMorphoContracts(
   chainId: number,
 ): MorphoContracts | undefined {
-  return MORPHO_CONTRACTS[chainId as SupportedChainId]
+  return MORPHO_CONTRACTS[chainId as SupportedChainId]?.contracts
 }
 
 /**
@@ -80,6 +83,7 @@ export function getMorphoContracts(
  * Returns chains present in the local contracts registry.
  * Filtering against SUPPORTED_CHAIN_IDS and developer-configured chains
  * is handled by the LendProvider base class.
+ * @returns Chain IDs present in the Morpho registry.
  */
 export function getSupportedChainIds(): number[] {
   return Object.keys(MORPHO_CONTRACTS).map(Number)

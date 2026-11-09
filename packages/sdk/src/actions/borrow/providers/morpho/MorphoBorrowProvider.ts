@@ -35,7 +35,11 @@ import {
   fetchMorphoPosition,
   fetchMorphoStateWithAllowance,
 } from '@/actions/borrow/providers/morpho/state.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
+import {
+  getSupportedChainIds as getMorphoSupportedChainIds,
+  MORPHO_CONTRACTS,
+} from '@/actions/shared/morpho/contracts.js'
 import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
@@ -94,6 +98,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return getMorphoSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the shared Morpho `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Morpho contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(MORPHO_CONTRACTS)
   }
 
   protected async _getMarket(

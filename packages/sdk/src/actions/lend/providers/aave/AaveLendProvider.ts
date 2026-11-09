@@ -4,10 +4,12 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { POOL_ABI, WETH_GATEWAY_ABI } from '@/actions/shared/aave/abis/pool.js'
 import {
+  AAVE_ADDRESSES,
   getPoolAddress,
   getSupportedChainIds,
   getWETHGatewayAddress,
 } from '@/actions/shared/aave/addresses.js'
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
 import { WETH } from '@/constants/assets.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -42,6 +44,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return getSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the shared Aave `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Aave contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(AAVE_ADDRESSES)
   }
 
   /**
