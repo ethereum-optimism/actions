@@ -23,6 +23,10 @@ export const QUOTE_OPTIONS_HELP = {
     '--slippage <pct>',
     'slippage tolerance as a percent (e.g. 0.5 = 0.5%); upper bound is operator-configured via SwapSettings.maxSlippage (SDK default 50%)',
   ],
+  recipient: [
+    '--recipient <addr|ens>',
+    'address or ENS name to receive the output tokens (defaults to the caller or wallet address)',
+  ],
 } as const
 
 /**
@@ -37,4 +41,5 @@ export function addQuoteOptions(cmd: Command): Command {
     .requiredOption(...QUOTE_OPTIONS_HELP.chain)
     .option(...QUOTE_OPTIONS_HELP.provider)
     .option(...QUOTE_OPTIONS_HELP.slippage)
+    .option(...QUOTE_OPTIONS_HELP.recipient)
 }
