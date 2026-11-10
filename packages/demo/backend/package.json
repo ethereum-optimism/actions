@@ -36,7 +36,8 @@
     "typecheck": "tsc --noEmit",
     "attribution": "tsx scripts/attribution.ts",
     "deploy:uniswap": "tsx scripts/deployUniswapMarket.ts",
-    "deploy:velodrome": "tsx scripts/deployVelodromeMarket.ts"
+    "deploy:velodrome": "tsx scripts/deployVelodromeMarket.ts",
+    "rotate:faucet-module": "tsx scripts/rotateFaucetAuthModule.ts"
   },
   "dependencies": {
     "@eth-optimism/actions-sdk": "workspace:*",
