@@ -10,3 +10,6 @@ docs/
 
 # Dotenv file
 .env
+
+# OP monorepo fetched by script/install-optimism.sh
+lib/optimism/
