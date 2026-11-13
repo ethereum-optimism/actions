@@ -1,12 +1,14 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
 import {
   expandMarkets,
   findMarket,
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/core/markets.js'
 import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
+import { VELODROME_CHAINS } from '@/actions/swap/providers/velodrome/addresses.js'
 import {
   getChainConfig,
   getSupportedChainIds,
@@ -70,6 +72,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   /** @returns Chain IDs where Velodrome/Aerodrome contracts are deployed */
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the Velodrome `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Velodrome contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(VELODROME_CHAINS)
   }
 
   /**

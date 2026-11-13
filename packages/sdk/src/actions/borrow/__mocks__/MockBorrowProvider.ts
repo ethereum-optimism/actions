@@ -1,3 +1,4 @@
+import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
@@ -128,6 +129,14 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return this.mockConfig.supportedChains
+  }
+
+  /**
+   * @description Mocks have no protocol deployments to validate.
+   * @returns An empty map.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return {}
   }
 
   // Concrete `_*` hooks are unused in mocks (public methods are overridden

@@ -1,4 +1,4 @@
-import { zeroAddress } from 'viem'
+import { type Address, zeroAddress } from 'viem'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
@@ -55,6 +55,10 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return [BASE_SEPOLIA_ID]
+  }
+
+  contractAddresses(): Record<number, Address[]> {
+    return {}
   }
 
   protected async _openPosition(

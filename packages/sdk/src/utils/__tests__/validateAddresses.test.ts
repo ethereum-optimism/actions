@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import { type Address, getAddress } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
@@ -7,22 +7,25 @@ import {
   getMockAuthorizationContext,
 } from '@/__mocks__/MockPrivyClient.js'
 import { Actions } from '@/actions.js'
-import {
-  POOL_ADDRESSES_MAINNET,
-  POOL_ADDRESSES_TESTNET,
-  WETH_GATEWAY_ADDRESSES_MAINNET,
-  WETH_GATEWAY_ADDRESSES_TESTNET,
-} from '@/actions/shared/aave/addresses.js'
-import { MORPHO_CONTRACTS } from '@/actions/shared/morpho/contracts.js'
-import { UNISWAP_ADDRESSES } from '@/actions/swap/providers/uniswap/addresses.js'
-import { VELODROME_CHAINS } from '@/actions/swap/providers/velodrome/addresses.js'
+import { AaveBorrowProvider } from '@/actions/borrow/providers/aave/AaveBorrowProvider.js'
+import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
+import { AaveLendProvider } from '@/actions/lend/providers/aave/AaveLendProvider.js'
+import { MorphoLendProvider } from '@/actions/lend/providers/morpho/MorphoLendProvider.js'
+import { UniswapSwapProvider } from '@/actions/swap/providers/uniswap/UniswapSwapProvider.js'
+import { VelodromeSwapProvider } from '@/actions/swap/providers/velodrome/VelodromeSwapProvider.js'
 import {
   NATIVELY_SUPPORTED_ASSETS,
   OP_DEMO,
   USDC_DEMO,
 } from '@/constants/assets.js'
+import { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
+import {
+  BORROW_PROVIDER_NAMES,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/providers.js'
 import {
   validateAddressMap,
   validateAssetAddresses,
@@ -277,37 +280,41 @@ describe('validateConfigAddresses', () => {
   })
 })
 
-describe('hardcoded address maps contain valid EVM addresses', () => {
-  it('all hardcoded address maps contain valid EVM addresses', () => {
-    expect(() => validateAddressMap(POOL_ADDRESSES_MAINNET)).not.toThrow()
-    expect(() => validateAddressMap(POOL_ADDRESSES_TESTNET)).not.toThrow()
-    expect(() =>
-      validateAddressMap(WETH_GATEWAY_ADDRESSES_MAINNET),
-    ).not.toThrow()
-    expect(() =>
-      validateAddressMap(WETH_GATEWAY_ADDRESSES_TESTNET),
-    ).not.toThrow()
-    expect(() =>
-      validateAddressMap(
-        MORPHO_CONTRACTS as unknown as Record<number, Record<string, Address>>,
-      ),
-    ).not.toThrow()
-    expect(() =>
-      validateAddressMap(
-        UNISWAP_ADDRESSES as Record<number, Record<string, Address>>,
-      ),
-    ).not.toThrow()
-    // Velodrome: contracts are cleanly separated from metadata
-    const veloContracts = Object.fromEntries(
-      Object.entries(VELODROME_CHAINS).map(([id, cfg]) => [id, cfg!.contracts]),
-    )
-    expect(() =>
-      validateAddressMap(
-        veloContracts as unknown as Record<number, Record<string, Address>>,
-      ),
-    ).not.toThrow()
-  })
+function expectValidContractAddresses(provider: {
+  contractAddresses(): Record<number, Address[]>
+}): void {
+  const name = provider.constructor.name
+  const byChain = provider.contractAddresses()
+  expect(Object.keys(byChain).length, name).toBeGreaterThan(0)
+  for (const [chainId, addrs] of Object.entries(byChain)) {
+    expect(addrs.length, `${name} chain ${chainId}`).toBeGreaterThan(0)
+    for (const addr of addrs) {
+      expect(() => getAddress(addr), `${name} chain ${chainId}`).not.toThrow()
+    }
+  }
+}
 
+describe('provider contract addresses contain valid EVM addresses', () => {
+  it('validates every concrete provider through contractAddresses()', () => {
+    const chainManager = new ChainManager([])
+    const providers = [
+      new UniswapSwapProvider({}, chainManager),
+      new VelodromeSwapProvider({}, chainManager),
+      new AaveLendProvider({}, chainManager),
+      new MorphoLendProvider({}, chainManager),
+      new AaveBorrowProvider({}, chainManager),
+      new MorphoBorrowProvider({}, chainManager),
+    ]
+    expect(providers).toHaveLength(
+      SWAP_PROVIDER_NAMES.length +
+        LEND_PROVIDER_NAMES.length +
+        BORROW_PROVIDER_NAMES.length,
+    )
+    for (const provider of providers) expectValidContractAddresses(provider)
+  })
+})
+
+describe('hardcoded asset address maps contain valid EVM addresses', () => {
   it('all hardcoded asset address maps contain valid EVM addresses', () => {
     for (const asset of NATIVELY_SUPPORTED_ASSETS) {
       expect(() => validateAssetAddresses(asset.address)).not.toThrow()

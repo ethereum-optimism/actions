@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
 import {
   expandMarkets,
   findMarket,
@@ -10,6 +11,7 @@ import { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
   getUniswapAddresses,
+  UNISWAP_ADDRESSES,
 } from '@/actions/swap/providers/uniswap/addresses.js'
 import {
   encodeUniversalRouterSwap,
@@ -62,6 +64,14 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the Uniswap `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Uniswap contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(UNISWAP_ADDRESSES)
   }
 
   protected async _execute(

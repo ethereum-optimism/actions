@@ -19,9 +19,11 @@ import {
   fetchAavePositionState,
 } from '@/actions/borrow/providers/aave/state.js'
 import {
+  AAVE_ADDRESSES,
   getPoolAddress,
   getSupportedChainIds as getAaveSupportedChainIds,
 } from '@/actions/shared/aave/addresses.js'
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
@@ -60,6 +62,14 @@ export class AaveBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return getAaveSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the shared Aave `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Aave contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(AAVE_ADDRESSES)
   }
 
   // ── Read hooks ────────────────────────────────────────────────────────────
