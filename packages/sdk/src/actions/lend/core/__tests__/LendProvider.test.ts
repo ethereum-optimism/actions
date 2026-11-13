@@ -4,9 +4,15 @@ import { describe, expect, it } from 'vitest'
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
-import { InvalidParamsError } from '@/core/error/errors.js'
+import {
+  InvalidParamsError,
+  MarketNotAllowedError,
+} from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type {
+  GetLendMarketParams,
+  GetLendMarketsParams,
+  LendMarket,
   LendMarketConfig,
   LendMarketId,
   LendOpenPositionParams,
@@ -14,14 +20,46 @@ import type {
 } from '@/types/lend/index.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
+const toLendMarket = (config: LendMarketConfig): LendMarket => ({
+  marketId: { address: config.address, chainId: config.chainId },
+  name: config.name,
+  asset: config.asset,
+  supply: { totalAssets: 0n, totalShares: 0n },
+  apy: { total: 0, native: 0, totalRewards: 0, performanceFee: 0 },
+  metadata: {
+    owner: '0x0000000000000000000000000000000000000002' as Address,
+    curator: '0x0000000000000000000000000000000000000003' as Address,
+    fee: 0,
+    lastUpdate: 0,
+  },
+})
+
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
+  public requestedMarkets: readonly LendMarketConfig[] | undefined
+  public extraMarkets: LendMarket[] = []
+
   public validateMarketAllowed(marketId: LendMarketId): void {
     return super.validateMarketAllowed(marketId)
   }
 
   public isChainSupported(chainId: number): boolean {
     return super.isChainSupported(chainId)
+  }
+
+  public baseGetMarkets(params?: GetLendMarketsParams): Promise<LendMarket[]> {
+    return LendProvider.prototype.getMarkets.call(this, params)
+  }
+
+  public baseGetMarket(params: GetLendMarketParams): Promise<LendMarket> {
+    return LendProvider.prototype.getMarket.call(this, params)
+  }
+
+  protected override async _getMarkets(
+    params: GetLendMarketsParams,
+  ): Promise<LendMarket[]> {
+    this.requestedMarkets = params.markets
+    return [...(params.markets ?? []).map(toLendMarket), ...this.extraMarkets]
   }
 }
 
@@ -443,7 +481,7 @@ describe('LendProvider', () => {
           address: '0x9999' as Address,
           chainId: 84532,
         })
-      }).toThrow('not in the market allowlist')
+      }).toThrow('not in the allowlist')
     })
 
     it('should validate chain support correctly', () => {
@@ -482,6 +520,234 @@ describe('LendProvider', () => {
     it('should return undefined for marketAllowlist when not provided', () => {
       const provider = new MockLendProvider()
       expect(provider.config.marketAllowlist).toBeUndefined()
+    })
+  })
+})
+
+describe('LendProvider market lists', () => {
+  const walletAddress = '0x0000000000000000000000000000000000005678' as Address
+  const marketA: LendMarketConfig = {
+    address: '0xaaaa' as Address,
+    chainId: 84532,
+    name: 'Market A',
+    asset: MockUSDCAsset,
+    lendProvider: 'morpho',
+  }
+  const marketB: LendMarketConfig = {
+    address: '0xbbbb' as Address,
+    chainId: 84532,
+    name: 'Market B',
+    asset: MockUSDCAsset,
+    lendProvider: 'morpho',
+  }
+  const marketC: LendMarketConfig = {
+    address: '0xcccc' as Address,
+    chainId: 130,
+    name: 'Market C',
+    asset: MockUSDCAsset,
+    lendProvider: 'morpho',
+  }
+  const idOf = (market: LendMarketConfig): LendMarketId => ({
+    address: market.address,
+    chainId: market.chainId,
+  })
+
+  describe('validateMarketAllowed()', () => {
+    it('allows any market when no lists are configured', () => {
+      const provider = new TestLendProvider()
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).not.toThrow()
+    })
+
+    it('rejects blocklisted markets', () => {
+      const provider = new TestLendProvider({ marketBlocklist: [marketA] })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).toThrow(
+        MarketNotAllowedError,
+      )
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).toThrow(
+        'is blocked',
+      )
+    })
+
+    it('matches blocklist addresses case-insensitively', () => {
+      const provider = new TestLendProvider({
+        marketBlocklist: [{ ...marketA, address: '0xAaAa' as Address }],
+      })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).toThrow(
+        'is blocked',
+      )
+    })
+
+    it('does not block the same address on a different chain', () => {
+      const provider = new TestLendProvider({
+        marketBlocklist: [{ ...marketA, chainId: 8453 }],
+      })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).not.toThrow()
+      expect(() =>
+        provider.validateMarketAllowed({
+          address: marketA.address,
+          chainId: 8453,
+        }),
+      ).toThrow('is blocked')
+    })
+
+    it('checks blocklist before allowlist', () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA],
+        marketBlocklist: [marketA],
+      })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).toThrow(
+        'is blocked',
+      )
+    })
+
+    it('still allows a market that is not blocklisted', () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA, marketB],
+        marketBlocklist: [marketB],
+      })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).not.toThrow()
+    })
+
+    it('treats an empty blocklist as unrestricted', () => {
+      const provider = new TestLendProvider({ marketBlocklist: [] })
+      expect(() => provider.validateMarketAllowed(idOf(marketA))).not.toThrow()
+    })
+  })
+
+  describe('getMarket()', () => {
+    it('rejects a blocked market', async () => {
+      const provider = new TestLendProvider({ marketBlocklist: [marketA] })
+      await expect(provider.baseGetMarket(idOf(marketA))).rejects.toThrow(
+        'is blocked',
+      )
+    })
+
+    it('returns a market that is not blocked', async () => {
+      const provider = new TestLendProvider({ marketBlocklist: [marketB] })
+      const market = await provider.baseGetMarket(idOf(marketA))
+      expect(market.marketId.address).toBe(marketA.address)
+    })
+  })
+
+  describe('getMarkets()', () => {
+    it('drops blocklisted markets from the allowlist', async () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA, marketB],
+        marketBlocklist: [marketB],
+      })
+      const markets = await provider.baseGetMarkets()
+      expect(
+        provider.requestedMarkets?.map((market) => market.address),
+      ).toEqual([marketA.address])
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+
+    it('filters caller-supplied markets through both lists', async () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA, marketB],
+        marketBlocklist: [marketB],
+      })
+      const markets = await provider.baseGetMarkets({
+        markets: [marketA, marketB, marketC],
+      })
+      expect(
+        provider.requestedMarkets?.map((market) => market.address),
+      ).toEqual([marketA.address])
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+
+    it('drops a blocklisted caller market when no allowlist is set', async () => {
+      const provider = new TestLendProvider({ marketBlocklist: [marketA] })
+      const markets = await provider.baseGetMarkets({
+        markets: [marketA, marketB],
+      })
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketB.address,
+      ])
+    })
+
+    it('keeps caller markets when no lists are configured', async () => {
+      const provider = new TestLendProvider()
+      const markets = await provider.baseGetMarkets({
+        markets: [marketA, marketB],
+      })
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+        marketB.address,
+      ])
+    })
+
+    it('falls back to the allowlist when caller markets is empty', async () => {
+      const provider = new TestLendProvider({ marketAllowlist: [marketA] })
+      const markets = await provider.baseGetMarkets({ markets: [] })
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+
+    it('applies the chain filter and the blocklist together', async () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA, marketC],
+        marketBlocklist: [marketC],
+      })
+      const onBaseSepolia = await provider.baseGetMarkets({ chainId: 84532 })
+      const onUnichain = await provider.baseGetMarkets({ chainId: 130 })
+      expect(onBaseSepolia.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+      expect(onUnichain).toEqual([])
+    })
+
+    it('omits blocked markets the provider still returns', async () => {
+      const provider = new TestLendProvider({
+        marketAllowlist: [marketA],
+        marketBlocklist: [marketB],
+      })
+      provider.extraMarkets = [toLendMarket(marketB)]
+      const markets = await provider.baseGetMarkets()
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+
+    it('omits non-allowlisted markets the provider still returns', async () => {
+      const provider = new TestLendProvider({ marketAllowlist: [marketA] })
+      provider.extraMarkets = [toLendMarket(marketC)]
+      const markets = await provider.baseGetMarkets()
+      expect(markets.map((market) => market.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+  })
+
+  describe('getPositions()', () => {
+    it('skips blocklisted allowlist markets', async () => {
+      const provider = new MockLendProvider({
+        marketAllowlist: [marketA, marketB],
+        marketBlocklist: [marketB],
+      })
+      const positions = await provider.getPositions({ walletAddress })
+      expect(positions.map((position) => position.marketId.address)).toEqual([
+        marketA.address,
+      ])
+    })
+  })
+
+  describe('openPosition()', () => {
+    it('rejects a blocklisted market', async () => {
+      const provider = new MockLendProvider({ marketBlocklist: [marketA] })
+      await expect(
+        LendProvider.prototype.openPosition.call(provider, {
+          amount: 1,
+          asset: marketA.asset,
+          marketId: idOf(marketA),
+          walletAddress,
+        }),
+      ).rejects.toThrow('is blocked')
     })
   })
 })

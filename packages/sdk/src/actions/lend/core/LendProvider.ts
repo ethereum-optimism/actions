@@ -1,14 +1,11 @@
 import type { Address } from 'viem'
 
 import {
-  lendMarketIdMatches,
+  findMarketInAllowlist,
   validateMarketAsset,
 } from '@/actions/lend/utils/markets.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
-import {
-  filterMatchingConfigs,
-  findMatchingConfig,
-} from '@/actions/shared/marketConfigs.js'
+import { filterMatchingConfigs } from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   AssetMetadataRequiredError,
@@ -120,10 +117,14 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get detailed market information
-   * @param address - Market contract address
-   * @param chainId - Chain ID where the market exists
+   * Get detailed market information.
+   * @description Rejects the market when it is blocklisted or missing from a
+   * configured allowlist, before the provider reads it.
+   * @param params - Market address and chain id
    * @returns Promise resolving to market information
+   * @throws ChainNotSupportedError when the market chain is not configured
+   * @throws MarketNotAllowedError when the market is blocklisted or absent
+   * from a configured allowlist
    */
   async getMarket(params: GetLendMarketParams): Promise<LendMarket> {
     const marketId: LendMarketId = {
@@ -136,23 +137,24 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get list of available lending markets
+   * Get list of available lending markets.
+   * @description Omits blocklisted markets. When an allowlist is configured,
+   * markets outside it are omitted too, including caller-supplied `markets`.
    * @param params - Optional filtering parameters
-   * @returns Promise resolving to array of market information
+   * @returns Promise resolving to markets that pass the provider lists
+   * @throws ChainNotSupportedError when `params.chainId` is not configured
    */
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
     if (params.chainId !== undefined) this.assertChainSupported(params.chainId)
 
-    const filteredMarkets = this.filterMarketConfigs(
-      params.chainId,
-      params.asset,
-    )
-
-    return this._getMarkets({
+    const markets = await this._getMarkets({
       asset: params.asset,
       chainId: params.chainId,
-      markets: params.markets || filteredMarkets,
+      markets: this.selectMarketConfigs(params),
     })
+    return markets.filter((market) =>
+      this.isMarketConfigAllowed(market.marketId),
+    )
   }
 
   /**
@@ -264,33 +266,17 @@ export abstract class LendProvider<
   }
 
   /**
-   * Validate that a market is in the config's market allowlist
+   * Validate that a market passes chain, blocklist, and allowlist checks.
+   * @description Blocklist matches are rejected before the allowlist is
+   * consulted. An empty or omitted list does not restrict that side.
    * @param marketId - Market identifier containing address and chainId
-   * @throws Error if market allowlist is configured but market is not in it
+   * @throws ChainNotSupportedError when the market chain is not configured
+   * @throws MarketNotAllowedError when the market is blocklisted or absent
+   * from a configured allowlist
    */
   protected validateMarketAllowed(marketId: LendMarketId): void {
     this.assertChainSupported(marketId.chainId)
-
-    if (
-      !this._config.marketAllowlist ||
-      this._config.marketAllowlist.length === 0
-    ) {
-      return
-    }
-
-    const foundMarket = findMatchingConfig({
-      configs: this._config.marketAllowlist,
-      target: marketId,
-      matches: lendMarketIdMatches,
-    })
-
-    if (!foundMarket) {
-      throw new MarketNotAllowedError({
-        address: marketId.address,
-        chainId: marketId.chainId,
-        reason: 'Market is not in the market allowlist',
-      })
-    }
+    this.assertMarketListsAllow(marketId)
   }
 
   /**
@@ -346,7 +332,75 @@ export abstract class LendProvider<
   }
 
   /**
-   * Helper method to filter market configurations
+   * Resolve the market configs `getMarkets` should read.
+   * @description An empty caller-supplied list falls back to the configured
+   * allowlist. Non-empty caller lists are kept only when they pass the
+   * blocklist and allowlist.
+   * @param params - Optional chain, asset, and market filters
+   * @returns Market configs to pass to the provider hook
+   */
+  private selectMarketConfigs(
+    params: GetLendMarketsParams,
+  ): LendMarketConfig[] {
+    if (!params.markets?.length) {
+      return this.filterMarketConfigs(params.chainId, params.asset)
+    }
+    return params.markets.filter((market) => this.isMarketConfigAllowed(market))
+  }
+
+  /**
+   * Report whether a market passes the configured blocklist and allowlist.
+   * @param marketId - Market identifier containing address and chainId
+   * @returns `false` when the market is blocked or not allowlisted
+   */
+  private isMarketConfigAllowed(marketId: LendMarketId): boolean {
+    try {
+      this.assertMarketListsAllow(marketId)
+      return true
+    } catch (error) {
+      if (error instanceof MarketNotAllowedError) return false
+      throw error
+    }
+  }
+
+  /**
+   * Reject a market that is blocklisted or missing from a configured allowlist.
+   * @description Blocklist is checked first so a market present on both lists
+   * fails as blocked. Chain support is enforced by the caller.
+   * @param marketId - Market identifier containing address and chainId
+   * @throws MarketNotAllowedError when the market is blocklisted or absent
+   * from a configured allowlist
+   */
+  private assertMarketListsAllow(marketId: LendMarketId): void {
+    const { marketBlocklist, marketAllowlist } = this._config
+
+    if (
+      marketBlocklist?.length &&
+      findMarketInAllowlist(marketBlocklist, marketId)
+    ) {
+      throw new MarketNotAllowedError({
+        address: marketId.address,
+        chainId: marketId.chainId,
+        reason: 'Market is blocked',
+      })
+    }
+
+    if (
+      marketAllowlist?.length &&
+      !findMarketInAllowlist(marketAllowlist, marketId)
+    ) {
+      throw new MarketNotAllowedError({
+        address: marketId.address,
+        chainId: marketId.chainId,
+        reason: 'Market is not in the allowlist',
+      })
+    }
+  }
+
+  /**
+   * Helper method to filter market configurations.
+   * @description Starts from the allowlist, then applies chain, asset, and
+   * blocklist filters. An empty allowlist yields no configs.
    * @param chainId - Chain ID to filter by
    * @param asset - Asset to filter by
    * @returns Filtered market configurations
@@ -362,6 +416,7 @@ export abstract class LendProvider<
       asset === undefined
         ? undefined
         : (market: LendMarketConfig) => market.asset === asset,
+      (market: LendMarketConfig) => this.isMarketConfigAllowed(market),
     ])
   }
 
