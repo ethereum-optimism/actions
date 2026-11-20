@@ -1,4 +1,15 @@
 {
+  "version": 2,
+  "registry": "us-docker.pkg.dev/oplabs-tools-artifacts/images",
+  "default_branch_tags": ["latest"],
+  "release": {
+    "tag_regex": "^(ecosystem-verbs-backend/)?(v.+)$",
+    "service_match": 2,
+    "version_match": 2,
+    "service": "ecosystem-verbs-backend",
+    "publish_tag": "${version}",
+    "source_ref": "${ref_name}"
+  },
   "shared_paths": [
     ".github/workflows/build-images.yaml",
     ".github/images.json",
@@ -8,15 +19,32 @@
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "nx.json",
-    "tsconfig.base.json"
+    "tsconfig.base.json",
+    "apko/**",
+    "melange/**"
   ],
+  "packages": {
+    "ecosystem-verbs-backend": {}
+  },
   "images": {
     "ecosystem-verbs-backend": {
-      "context": ".",
-      "dockerfile": "Dockerfile",
-      "target": "actions-service",
-      "build_args": "DOCKER_TARGET=actions-service",
-      "paths": ["packages/**"]
+      "builders": {
+        "docker": {
+          "context": ".",
+          "dockerfile": "Dockerfile",
+          "target": "actions-service",
+          "build_args": {"DOCKER_TARGET": "actions-service"},
+          "smoke": {}
+        },
+        "apko": {
+          "config": "apko/ecosystem-verbs-backend.yaml",
+          "needs_packages": ["ecosystem-verbs-backend"],
+          "tag_prefix": "apko-"
+        }
+      },
+      "primary": "docker",
+      "paths": ["packages/**", "melange/ecosystem-verbs-backend.yaml", "apko/ecosystem-verbs-backend.yaml"],
+      "smoke": {"commands": ["node --version"], "verify_version": false}
     }
   }
 }
