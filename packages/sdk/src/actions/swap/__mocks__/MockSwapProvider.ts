@@ -100,6 +100,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this._supportedChains
   }
 
+  /**
+   * @description Mocks have no protocol deployments to validate.
+   * @returns An empty map.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return {}
+  }
+
   reset(): void {
     vi.clearAllMocks()
   }

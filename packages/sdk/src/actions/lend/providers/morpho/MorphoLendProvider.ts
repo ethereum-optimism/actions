@@ -1,10 +1,14 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { erc20Abi, erc4626Abi, formatUnits } from 'viem'
+import { type Address, erc20Abi, erc4626Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
+import { collectContractAddresses } from '@/actions/shared/contractAddresses.js'
+import {
+  getSupportedChainIds as getMorphoSupportedChainIds,
+  MORPHO_CONTRACTS,
+} from '@/actions/shared/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
@@ -36,6 +40,14 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
 
   protocolSupportedChainIds(): number[] {
     return getMorphoSupportedChainIds()
+  }
+
+  /**
+   * @description Addresses from the shared Morpho `{ contracts, metadata }` registry.
+   * @returns Map of chain id to Morpho contract addresses.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return collectContractAddresses(MORPHO_CONTRACTS)
   }
 
   /**
