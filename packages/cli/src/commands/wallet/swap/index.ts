@@ -35,10 +35,6 @@ export function walletSwapCommand(): Command {
       'ERC-20 approval strategy: "exact" approves only this swap (default, gas-heavier on repeat); "max" approves max-uint to amortise across future swaps',
     )
     .option(
-      '--recipient <addr|ens>',
-      'address or ENS name to receive the output tokens (defaults to the wallet address)',
-    )
-    .option(
       '--deadline <unix>',
       'transaction deadline as a Unix timestamp in seconds (defaults to now + 60s)',
     )

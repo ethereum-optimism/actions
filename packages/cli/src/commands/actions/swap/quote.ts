@@ -11,7 +11,7 @@ import { configuredAssets } from '@/resolvers/assets.js'
  * @description Handler for
  * `actions swap quote --in <symbol> --out <symbol>
  * (--amount-in <n> | --amount-out <n>) --chain <name>
- * [--provider uniswap|velodrome] [--slippage <pct>]`.
+ * [--provider uniswap|velodrome] [--slippage <pct>] [--recipient <addr|ens>]`.
  * Returns one `SwapQuote` (best price by default; explicit `--provider`
  * skips routing). Read-only.
  * @param flags - Commander-parsed required + optional options.
