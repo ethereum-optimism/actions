@@ -1,9 +1,8 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import { baseSepolia, optimismSepolia, unichain } from 'viem/chains'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 function getBlockExplorerBaseUrl(chainId: SupportedChainId): string {
   const blockExplorerUrls: Record<number, string> = {
-    [unichain.id]: 'https://unichain.blockscout.com',
     [baseSepolia.id]: 'https://base-sepolia.blockscout.com',
     [optimismSepolia.id]: 'https://optimism-sepolia.blockscout.com',
   }
