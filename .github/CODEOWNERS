@@ -5,10 +5,8 @@
 # (rules below override the catch-all per GitHub last-match-wins semantics)
 
 # CI / CD pipelines
-.github/workflows/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 .circleci/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 /renovate.json @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
-/.github/dependency-review-config.yml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 
 # Container definitions
 Dockerfile @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
@@ -24,3 +22,6 @@ mise.toml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
 
 # Deploy configuration
 netlify.toml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+
+# GitHub configuration (workflows, actions, CODEOWNERS): cloud-security only
+/.github/ @ethereum-optimism/cloud-security
