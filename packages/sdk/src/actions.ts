@@ -1,3 +1,5 @@
+import type { PublicClient } from 'viem'
+
 import type { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
 import type { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
 import { ACTION_MODULES, ACTION_NAMES } from '@/actions/registry.js'
@@ -6,6 +8,7 @@ import type {
   ActionModuleDeps,
 } from '@/actions/shared/ActionModule.js'
 import type { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
@@ -103,35 +106,6 @@ export class Actions<
   }
 
   /**
-   * Build providers and (optionally) the read-only namespace for one action
-   * module. Generic over `K` so the per-action types unify; the slot-write
-   * casts are the one place TS can't follow the registry indirection.
-   * Adding a future action is purely a new entry in `ACTION_MODULES` plus
-   * any user-facing config field — this helper handles the rest.
-   */
-  private setupAction<K extends ActionName>(
-    name: K,
-    config: ActionsConfig<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerConfigs']
-    >,
-    moduleDeps: ActionModuleDeps,
-  ): void {
-    const module = ACTION_MODULES[name] as ActionModule<K>
-    const actionConfig = config[name]
-    const providers = module.buildProviders(actionConfig, moduleDeps)
-    this._actionProviders[name] = providers as ActionProvidersMap[K]
-    this._actionSettings[name] = actionConfig?.settings
-    if (module.isConfigured(providers) && module.buildActionsNamespace) {
-      this._actionsNamespaces[name] = module.buildActionsNamespace(
-        providers,
-        moduleDeps,
-        actionConfig?.settings,
-      ) as ActionsNamespacesMap[K]
-    }
-  }
-
-  /**
    * Get lend operations interface
    * @description Access to lending operations like markets and vault information.
    * Throws an error if no lend provider is configured in ActionsConfig.
@@ -208,6 +182,50 @@ export class Actions<
       return !addresses.some((addr) => blockedAddresses.has(addr))
     })
   }
+
+  /**
+   * Get the public client for a configured chain.
+   * @description Returns the viem client already built from `ActionsConfig.chains`,
+   * including its RPC URLs, fallback transport, and polling interval. Use it for
+   * reads outside lend, swap, and borrow instead of calling `createPublicClient`
+   * with a second transport.
+   * @param chainId - Chain to read. Must be one of the configured chains.
+   * @returns Public client for `chainId`. Repeated calls return the same instance.
+   * @throws {ChainNotSupportedError} When `chainId` is not in the configured chains.
+   */
+  public getPublicClient(chainId: SupportedChainId): PublicClient {
+    return this.chainManager.getPublicClient(chainId)
+  }
+
+  /**
+   * Build providers and (optionally) the read-only namespace for one action
+   * module. Generic over `K` so the per-action types unify; the slot-write
+   * casts are the one place TS can't follow the registry indirection.
+   * Adding a future action is purely a new entry in `ACTION_MODULES` plus
+   * any user-facing config field. This helper handles the rest.
+   */
+  private setupAction<K extends ActionName>(
+    name: K,
+    config: ActionsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >,
+    moduleDeps: ActionModuleDeps,
+  ): void {
+    const module = ACTION_MODULES[name] as ActionModule<K>
+    const actionConfig = config[name]
+    const providers = module.buildProviders(actionConfig, moduleDeps)
+    this._actionProviders[name] = providers as ActionProvidersMap[K]
+    this._actionSettings[name] = actionConfig?.settings
+    if (module.isConfigured(providers) && module.buildActionsNamespace) {
+      this._actionsNamespaces[name] = module.buildActionsNamespace(
+        providers,
+        moduleDeps,
+        actionConfig?.settings,
+      ) as ActionsNamespacesMap[K]
+    }
+  }
+
   /**
    * Narrow + return the read-only namespace for an action, throwing when
    * not configured. Single helper backs every typed accessor.
