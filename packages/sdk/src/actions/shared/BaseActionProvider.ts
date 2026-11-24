@@ -1,3 +1,5 @@
+import type { Address } from 'viem'
+
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { ApprovalMode } from '@/types/actions.js'
@@ -89,4 +91,15 @@ export abstract class BaseActionProvider<
    * developer-config filtering.
    */
   public abstract protocolSupportedChainIds(): number[]
+
+  /**
+   * Contract addresses deployed by this provider, keyed by chain id.
+   * @description Reads the `contracts` object of the provider's per-chain
+   * config, the same shape Velodrome already uses. Unset optional slots are
+   * omitted. Metadata is not included. Address tests call this instead of
+   * importing each registry, and the compiler requires every provider to
+   * implement it.
+   * @returns Map of chain id to contract addresses on that chain.
+   */
+  public abstract contractAddresses(): Record<number, Address[]>
 }

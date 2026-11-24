@@ -72,6 +72,14 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     return [1, 130, 8453, 84532]
   }
 
+  /**
+   * @description Mocks have no protocol deployments to validate.
+   * @returns An empty map.
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return {}
+  }
+
   constructor(
     config?: LendProviderConfig,
     mockConfig?: Partial<MockLendProviderConfig>,
