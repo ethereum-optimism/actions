@@ -16,10 +16,12 @@ on:
 
 jobs:
   renovate:
-    uses: ethereum-optimism/factory/.github/workflows/renovate.yaml@fdcd6acceb0cbad90040e0be9f59a1ad60e65a86
+    uses: ethereum-optimism/factory/.github/workflows/renovate.yaml@b335b58374858d6582440ce8cdea4c7be458eba7
     permissions:
       contents: read
-    secrets: inherit
+      id-token: write
+    secrets:
+      NOVE_RENOVATE_URL: ${{ secrets.NOVE_RENOVATE_URL }}
     with:
       logLevel: ${{ inputs.logLevel || 'info' }}
       dryRun: ${{ inputs.dryRun || false }}
