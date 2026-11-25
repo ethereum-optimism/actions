@@ -19,10 +19,9 @@ import {
   fetchAavePositionState,
 } from '@/actions/borrow/providers/aave/state.js'
 import {
-  getPoolAddress,
   getSupportedChainIds as getAaveSupportedChainIds,
+  requireAavePoolAddress,
 } from '@/actions/shared/aave/addresses.js'
-import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
@@ -176,11 +175,6 @@ function assertAaveMarketChainsSupported(
 ): void {
   for (const market of allowlist ?? []) {
     if (market.kind !== 'aave-v3') continue
-    if (!getPoolAddress(market.chainId)) {
-      throw new ChainNotSupportedError({
-        chainId: market.chainId,
-        supportedChainIds: getAaveSupportedChainIds(),
-      })
-    }
+    requireAavePoolAddress(market.chainId)
   }
 }
