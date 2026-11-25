@@ -9,6 +9,7 @@ import type {
   Wallet,
 } from '@eth-optimism/actions-sdk'
 import {
+  getBlockExplorerUrls,
   ProviderNotConfiguredError,
   serializeBigInt,
 } from '@eth-optimism/actions-sdk'
@@ -19,7 +20,6 @@ import { baseSepolia } from 'viem/chains'
 
 import { getActions, getPrivyClient } from '@/config/actions.js'
 import { mintUsdcDemo } from '@/services/usdcDemo.js'
-import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 /**
  * Options for getting all wallets
@@ -156,11 +156,7 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
     transactionHashes = [(result as EOATransactionReceipt).transactionHash]
   }
 
-  const blockExplorerUrls = getBlockExplorerUrls({
-    chainId: baseSepolia.id,
-    userOpHash,
-    transactionHashes,
-  })
+  const blockExplorerUrls = getBlockExplorerUrls(result, baseSepolia.id)
 
   return {
     success: true,

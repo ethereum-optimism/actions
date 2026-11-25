@@ -367,6 +367,11 @@ export interface SwapTransaction {
 export interface SwapReceipt {
   /** Transaction receipt(s) */
   receipt: TransactionReturnType | BatchTransactionReturnType
+  /**
+   * Block-explorer `/tx/` link per dispatched transaction. Empty when the
+   * chain definition carries no explorer.
+   */
+  blockExplorerUrls: string[]
   /** Human-readable input amount */
   amountIn: number
   /** Human-readable output amount */

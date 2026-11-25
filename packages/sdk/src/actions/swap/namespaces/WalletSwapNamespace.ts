@@ -20,6 +20,7 @@ import type {
   WalletSwapParams,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -97,7 +98,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
     const swapTx = await provider.execute(executeParams)
     const receipt = await this.dispatch(swapTx, params.chainId)
-    return this.buildReceipt(swapTx, receipt)
+    return this.buildReceipt(swapTx, receipt, params.chainId)
   }
 
   /**
@@ -136,9 +137,11 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   private buildReceipt(
     swapTx: SwapTransaction,
     receipt: SwapReceipt['receipt'],
+    chainId: SupportedChainId,
   ): SwapReceipt {
     return {
       receipt,
+      blockExplorerUrls: getBlockExplorerUrls(receipt, chainId),
       amountIn: swapTx.amountIn,
       amountOut: swapTx.amountOut,
       amountInRaw: swapTx.amountInRaw,
