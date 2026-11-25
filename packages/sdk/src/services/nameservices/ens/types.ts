@@ -67,8 +67,8 @@ export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
  * such as Basename, Lens, Unstoppable Domains, etc.
  */
 export interface NameServiceProvider {
-  /** Resolve a name or address to a checksummed hex address. */
-  getAddress(input: Address | EnsName): Promise<Address>
+  /** Resolve an ENS name to a checksummed hex address. */
+  getAddress(name: EnsName): Promise<Address>
   /** Reverse-resolve an address to its primary name, or null if not set. */
   getName(address: Address): Promise<EnsName | null>
   /** Fetch all standard profile text record fields in a single batched call. */
