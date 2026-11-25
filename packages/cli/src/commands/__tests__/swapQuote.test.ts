@@ -85,6 +85,23 @@ describe('runSwapQuote', () => {
     expect(body.provider).toBe('uniswap')
   })
 
+  it('forwards --recipient to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockActions(async (params) => {
+      captured.push(params)
+      return stubQuote('uniswap', 4900000000000000000n)
+    })
+    await runSwapQuote({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '5',
+      chain: 'base-sepolia',
+      recipient: 'vitalik.eth',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('vitalik.eth')
+  })
+
   it('converts --slippage percent to SDK decimal', async () => {
     const captured: unknown[] = []
     mockActions(async (params) => {
@@ -243,5 +260,22 @@ describe('runSwapQuotes', () => {
     expect(body[0].provider).toBe('uniswap')
     expect(body[1].provider).toBe('velodrome')
     expect(body[0].amountOutRaw).toBe('5000000000000000000')
+  })
+
+  it('forwards --recipient to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockActions(async (params) => {
+      captured.push(params)
+      return [stubQuote('uniswap', 5000000000000000000n)]
+    })
+    await runSwapQuotes({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '5',
+      chain: 'base-sepolia',
+      recipient: 'vitalik.eth',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('vitalik.eth')
   })
 })

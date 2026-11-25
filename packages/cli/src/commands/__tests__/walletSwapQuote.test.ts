@@ -97,6 +97,40 @@ describe('wallet swap quote/quotes (recipient-bound)', () => {
     expect(body).toHaveLength(2)
   })
 
+  it('forwards --recipient to wallet.swap.getQuote when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubQuote('uniswap', 950000000000000000n)
+    })
+    await runWalletSwapQuote({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      recipient: 'vitalik.eth',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('vitalik.eth')
+  })
+
+  it('forwards --recipient to wallet.swap.getQuotes when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(undefined, async (params) => {
+      captured.push(params)
+      return [stubQuote('uniswap', 950000000000000000n)]
+    })
+    await runWalletSwapQuotes({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      recipient: '0xoverride',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('0xoverride')
+  })
+
   it('rejects with CliError(config) when wallet.swap is undefined', async () => {
     mockWallet(async () => stubQuote('uniswap', 1n), undefined, false)
     try {
